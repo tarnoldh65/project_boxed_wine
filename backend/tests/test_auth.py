@@ -12,7 +12,13 @@ from app import idp
 from app.auth import SESSION_COOKIE
 from tests.conftest import MakeUser, audit_actions
 
-ADMIN_PERMISSIONS = ["cases:read", "cases:write", "config:manage", "tokens:manage"]
+ADMIN_PERMISSIONS = [
+    "cases:read",
+    "cases:write",
+    "config:manage",
+    "legal_hold:manage",
+    "tokens:manage",
+]
 
 
 def identity(subject: str, groups: list[str]) -> idp.Identity:

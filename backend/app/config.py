@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: str | None = None
     mail_from: str = "casemgr@localhost"
+    # Evidence storage. The public endpoint is what browsers reach for presigned uploads.
+    s3_endpoint_url: str | None = None
+    s3_public_endpoint_url: str | None = None
+    s3_region: str = "us-east-1"
+    s3_bucket: str = "casemgr-evidence"
+    s3_access_key: str | None = None
+    s3_secret_key: str | None = None
+    s3_part_size_mb: int = 64
+    malware_max_mb: int = 100
 
 
 settings = Settings()  # pyright: ignore[reportCallIssue]

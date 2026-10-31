@@ -127,6 +127,33 @@ export const CASE: Case = {
     },
   ],
   assets: [{ id: 'h1', kind: 'host', name: 'web-01', external_id: 'CI-1' }],
+  legal_hold: false,
+  evidence: [
+    {
+      id: 'e1',
+      kind: 'file',
+      name: 'mail.eml',
+      description: '',
+      size: 2048,
+      location: null,
+      status: 'hashed',
+      sha256: 'a'.repeat(64),
+      created_by: 'user:u1',
+      created_at: '2026-10-31T10:00:00Z',
+    },
+    {
+      id: 'e2',
+      kind: 'malware',
+      name: 'invoice.exe',
+      description: '',
+      size: 1024,
+      location: null,
+      status: 'hashed',
+      sha256: 'b'.repeat(64),
+      created_by: 'user:u1',
+      created_at: '2026-10-31T10:00:00Z',
+    },
+  ],
   observables: [
     {
       id: 'o1',

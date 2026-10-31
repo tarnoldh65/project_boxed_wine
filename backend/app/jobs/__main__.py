@@ -6,7 +6,7 @@ import sys
 
 from app import audit
 from app.db import SessionLocal
-from app.jobs import email_intake, sla
+from app.jobs import email_intake, evidence_hash, sla
 
 
 async def audit_verify() -> int:
@@ -16,7 +16,13 @@ async def audit_verify() -> int:
     return 0 if broken_at is None else 1
 
 
-JOBS = {"audit_verify": audit_verify, "email_intake": email_intake.run, "sla": sla.run}
+JOBS = {
+    "audit_verify": audit_verify,
+    "create_bucket": evidence_hash.create_bucket,
+    "email_intake": email_intake.run,
+    "evidence_hash": evidence_hash.run,
+    "sla": sla.run,
+}
 
 
 def main(argv: list[str]) -> int:

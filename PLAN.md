@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 5 complete.**
+Status: **Phase 6 complete.**
 
 ---
 
@@ -125,13 +125,13 @@ README.md
 
 ### Phase 6 - Evidence and chain of custody (FR-40, FR-41, FR-42, FR-43, FR-44)
 
-- [ ] Upload: browser does S3 multipart upload with presigned URLs (tested with a multi-GB file; designed for 50 GB+); external evidence references also supported
-- [ ] `evidence_hash` job streams each new object and stores its SHA-256; downloads stream through the API, re-hash, and record the result
-- [ ] Chain-of-custody entries (collected by/when/where/how, transfers, every access) in an append-only, hash-chained table; custody report export
-- [ ] Malware samples: direct upload through the API (size-capped), wrapped server-side in an AES zip (password `infected`) before storage; download requires `malware:read`
-- [ ] All downloads served as `Content-Disposition: attachment`, never rendered inline
-- [ ] Legal hold flag on case blocks evidence deletion
-- [ ] Tests: hash mismatch is detected and logged; custody table rejects UPDATE/DELETE; user without `malware:read` gets 403; delete under legal hold fails
+- [x] Upload: browser does S3 multipart upload with presigned URLs (parts of 64 MiB or more, up to S3's 10,000 parts); the server completes the upload from S3's own part list. Verified with a 2.27 GB object (34 parts) against the dev S3; external evidence references also supported
+- [x] `evidence_hash` job streams each new object and stores its SHA-256; downloads stream through the API, re-hash, and record `verified` or `mismatch` (a mismatch also flags the item and is audited)
+- [x] Chain-of-custody entries (collected by/when/where/how, upload, hashing, transfers, every access, verification, deletion) in an append-only table, hash-chained per evidence item; custody report with chain verification, savable as JSON
+- [x] Malware samples: direct upload through the API (size-capped, 100 MB by default), wrapped server-side in an AES zip (password `infected`) before storage; download requires `malware:read`
+- [x] All downloads served as `Content-Disposition: attachment` and `application/octet-stream`, never rendered inline
+- [x] Legal hold on a case (set through its own endpoint with a reason, by holders of `legal_hold:manage`: legal, IR leads, admins) blocks evidence deletion; deletion otherwise requires a reason and keeps the custody record
+- [x] Tests: hash mismatch is detected and logged; custody table rejects UPDATE/DELETE; user without `malware:read` gets 403; delete under legal hold fails
 
 ### Phase 7 - Timeline, notes, comments, privilege (FR-50, FR-52, FR-54, FR-70, FR-74)
 
@@ -165,6 +165,7 @@ README.md
 - [ ] Helm chart: backend (>= 3 replicas, PodDisruptionBudget, HPA), frontend, CronJobs, NetworkPolicies (default deny), non-root read-only containers, Pod Security `restricted`
 - [ ] Postgres via CloudNativePG: 3 instances, synchronous replica, WAL archiving to object storage (RPO <= 15 min), scheduled base backups to an Object Lock bucket
 - [ ] TLS 1.2+ at the Gateway (cert-manager) and between app and Postgres; encrypted volumes and SSE-KMS for buckets
+- [ ] Evidence bucket: CORS allowing PUT from the app origin, a lifecycle rule aborting incomplete multipart uploads, `CASEMGR_S3_PUBLIC_ORIGIN` in the frontend CSP, and the `evidence_hash` job as a CronJob
 - [ ] Rate limiting on the API at the Gateway
 - [ ] Images signed with cosign; SBOM published per release
 - [ ] Load test (k6) against a dataset seeded to 1M cases / 100M observables: case view p95 < 2s, search p95 < 3s

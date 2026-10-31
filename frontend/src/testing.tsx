@@ -14,10 +14,22 @@ export function json(body: unknown, status = 200): Response {
   })
 }
 
+/**
+ * A request for a fetch(url, init) call. Node's Request rejects jsdom's FormData, so a form
+ * body is kept aside and returned by formData() as is.
+ */
+function toRequest(url: string, init: RequestInit = {}): Request {
+  const { body, ...rest } = init
+  if (!(body instanceof FormData)) return new Request(url, init)
+  const request = new Request(url, rest)
+  return Object.assign(request, { clone: () => request, formData: async () => body })
+}
+
 /** Stub fetch with handlers keyed by "METHOD /path"; returns the requests received. */
 export function mockApi(routes: Record<string, Route>): Request[] {
   const requests: Request[] = []
-  vi.stubGlobal('fetch', async (request: Request) => {
+  vi.stubGlobal('fetch', async (input: Request | string, init?: RequestInit) => {
+    const request = typeof input === 'string' ? toRequest(input, init) : input
     requests.push(request.clone())
     const route = routes[`${request.method} ${new URL(request.url).pathname}`]
     return route ? route(request) : json({ detail: 'Not Found' }, 404)
