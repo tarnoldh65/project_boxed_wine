@@ -23,13 +23,18 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
       }}
     >
       <h3>Lifecycle states</h3>
-      <p>Cases start in the first state. Terminal states close a case.</p>
+      <p>
+        Cases start in the first state. Terminal states close a case. Entering a milestone state
+        meets that SLA; a gated state needs every task done or waived.
+      </p>
       <table>
         <thead>
           <tr>
             <th>Key</th>
             <th>Name</th>
             <th>Terminal</th>
+            <th>SLA milestone</th>
+            <th>Tasks done gate</th>
             <th />
           </tr>
         </thead>
@@ -59,6 +64,33 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
                 />
               </td>
               <td>
+                <select
+                  aria-label={`State ${i + 1} SLA milestone`}
+                  value={state.sla_milestone ?? ''}
+                  onChange={(e) =>
+                    setDraft(
+                      updateAt(draft, i, {
+                        sla_milestone: (e.target.value || null) as State['sla_milestone'],
+                      }),
+                    )
+                  }
+                >
+                  <option value="">None</option>
+                  <option value="triage">Triage met</option>
+                  <option value="contain">Contain met</option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  aria-label={`State ${i + 1} tasks done gate`}
+                  checked={state.require_tasks_done}
+                  onChange={(e) =>
+                    setDraft(updateAt(draft, i, { require_tasks_done: e.target.checked }))
+                  }
+                />
+              </td>
+              <td>
                 <button type="button" disabled={i === 0} onClick={() => move(i, -1)}>
                   Up
                 </button>
@@ -73,7 +105,7 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={() => setDraft([...draft, { key: '', name: '', terminal: false }])}>
+      <button type="button" onClick={() => setDraft([...draft, { key: '', name: '', terminal: false, require_tasks_done: false }])}>
         Add state
       </button>
       <SaveBar save={save} />

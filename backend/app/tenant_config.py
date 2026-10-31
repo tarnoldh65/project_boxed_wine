@@ -3,7 +3,7 @@
 from datetime import date
 from enum import StrEnum
 from math import isfinite
-from typing import Annotated, Any, Self
+from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 
 from pydantic import (
@@ -35,6 +35,10 @@ class State(BaseModel):
     key: Key
     name: Label
     terminal: bool = False
+    # Entering this state (or any later one) meets the triage or contain SLA.
+    sla_milestone: Literal["triage", "contain"] | None = None
+    # Gate: a case can only enter this state once every task is done or waived.
+    require_tasks_done: bool = False
 
 
 class FieldType(StrEnum):
@@ -152,11 +156,13 @@ class EscalationRule(BaseModel):
     severities: list[Key] = []  # empty means every severity
     notify_emails: list[EmailStr] = []
     webhook_url: HttpUrl | None = None
+    # Hand the case to this team and its on-call member.
+    reassign_to_team: Key | None = None
 
     @model_validator(mode="after")
     def check_action(self) -> Self:
-        if not self.notify_emails and self.webhook_url is None:
-            raise ValueError(f"rule {self.name!r} needs an email or a webhook")
+        if not self.notify_emails and self.webhook_url is None and self.reassign_to_team is None:
+            raise ValueError(f"rule {self.name!r} needs an email, a webhook, or a reassignment")
         if self.webhook_url is not None and self.webhook_url.scheme != "https":
             raise ValueError(f"rule {self.name!r} webhook must use https")
         return self
@@ -183,6 +189,24 @@ class Team(BaseModel):
     on_call: UUID | None = None  # user id; new intake cases are assigned to them
 
 
+# Case fields a playbook condition can test, besides custom field keys.
+CONDITION_FIELDS = {"severity", "impact", "urgency", "tlp", "pap", "team"}
+
+
+class Condition(BaseModel):
+    field: Key
+    value: Annotated[str, StringConstraints(min_length=1, max_length=200)]
+
+
+class PlaybookTask(BaseModel):
+    key: Key
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+    description: Annotated[str, StringConstraints(max_length=MAX_TEXT)] = ""
+    due_hours: PositiveInt | None = None
+    depends_on: list[Key] = []  # keys of earlier tasks in the playbook
+    when: Condition | None = None  # created once the case matches; always created if None
+
+
 class Template(BaseModel):
     """An incident type: the defaults a new case of this category starts with."""
 
@@ -193,12 +217,66 @@ class Template(BaseModel):
     tlp: Tlp = Tlp.AMBER
     pap: Pap = Pap.AMBER
     team: Key | None = None
+    tasks: list[PlaybookTask] = []
+
+    @model_validator(mode="after")
+    def check_playbook(self) -> Self:
+        seen: set[str] = set()
+        for task in self.tasks:
+            if task.key in seen:
+                raise ValueError(f"template {self.key} has duplicate task {task.key}")
+            if unknown := set(task.depends_on) - seen:
+                raise ValueError(
+                    f"task {task.key} can only depend on earlier tasks, not {sorted(unknown)}"
+                )
+            seen.add(task.key)
+        return self
+
+
+def _task(key: str, title: str, *depends_on: str, **extra: Any) -> PlaybookTask:
+    return PlaybookTask(key=key, title=title, depends_on=list(depends_on), **extra)
+
+
+CRITICAL = Condition(field="severity", value="critical")
 
 
 DEFAULT_TEMPLATES = [
-    Template(key="phishing", name="Phishing", impact="medium", urgency="high"),
-    Template(key="ransomware", name="Ransomware", impact="high", urgency="high"),
-    Template(key="bec", name="Business email compromise", impact="high", urgency="medium"),
+    Template(
+        key="phishing",
+        name="Phishing",
+        impact="medium",
+        urgency="high",
+        tasks=[
+            _task("recipients", "Identify every recipient and who clicked", due_hours=2),
+            _task("block", "Block sender, URLs, and attachment hashes", due_hours=2),
+            _task("reset", "Reset credentials of users who clicked", "recipients", due_hours=4),
+            _task("purge", "Purge the message from all mailboxes", "recipients"),
+        ],
+    ),
+    Template(
+        key="ransomware",
+        name="Ransomware",
+        impact="high",
+        urgency="high",
+        tasks=[
+            _task("isolate", "Isolate affected hosts", due_hours=1),
+            _task("scope", "Identify the strain and scope of encryption", "isolate"),
+            _task("backups", "Confirm backups are intact and offline", due_hours=4),
+            _task("retainer", "Engage the IR retainer firm", when=CRITICAL, due_hours=2),
+            _task("restore", "Restore from clean backups", "scope", "backups"),
+        ],
+    ),
+    Template(
+        key="bec",
+        name="Business email compromise",
+        impact="high",
+        urgency="medium",
+        tasks=[
+            _task("payments", "Contact finance to stop or recall payments", due_hours=1),
+            _task("mailbox", "Review mailbox rules and sign-in logs"),
+            _task("reset", "Reset credentials and revoke sessions", "mailbox"),
+        ],
+    ),
     Template(
         key="insider",
         name="Insider threat",
@@ -206,14 +284,42 @@ DEFAULT_TEMPLATES = [
         urgency="medium",
         tlp=Tlp.RED,
         pap=Pap.RED,
+        tasks=[
+            _task("legal", "Engage legal and HR before any action", due_hours=4),
+            _task("preserve", "Preserve evidence under legal hold", "legal"),
+            _task("access", "Review and restrict the subject's access", "legal"),
+        ],
     ),
-    Template(key="ddos", name="DDoS", impact="medium", urgency="high"),
-    Template(key="data_exposure", name="Data exposure", impact="high", urgency="medium"),
+    Template(
+        key="ddos",
+        name="DDoS",
+        impact="medium",
+        urgency="high",
+        tasks=[
+            _task("provider", "Engage the DDoS mitigation provider", due_hours=1),
+            _task("monitor", "Monitor service availability until stable", "provider"),
+        ],
+    ),
+    Template(
+        key="data_exposure",
+        name="Data exposure",
+        impact="high",
+        urgency="medium",
+        tasks=[
+            _task("contain", "Remove or restrict the exposed data", due_hours=4),
+            _task("assess", "Assess what data and which people are affected", "contain"),
+            _task("notify", "Decide on breach notification obligations", "assess", due_hours=48),
+        ],
+    ),
     Template(
         key="vulnerability_exploitation",
         name="Vulnerability exploitation",
         impact="high",
         urgency="high",
+        tasks=[
+            _task("patch", "Patch or mitigate the vulnerability", due_hours=24),
+            _task("hunt", "Hunt for post-exploitation activity"),
+        ],
     ),
 ]
 
@@ -239,12 +345,21 @@ class TenantConfig(BaseModel):
         for field in self.custom_fields:
             if field.required_from is not None and field.required_from not in keys:
                 raise ValueError(f"field {field.key} is required from unknown state")
+        milestones = [s.sla_milestone for s in self.states if s.sla_milestone]
+        _unique(milestones, "SLA milestones")
+        if milestones == ["contain", "triage"]:
+            raise ValueError("the triage milestone must come before the contain milestone")
+        if any(s.terminal and s.sla_milestone for s in self.states):
+            raise ValueError("terminal states already meet every SLA milestone")
+        _unique([t.key for t in self.teams], "team keys")
+        team_keys = {t.key for t in self.teams}
         for rule in self.escalation_rules:
             if unknown := set(rule.severities) - set(self.severity.keys):
                 raise ValueError(f"rule {rule.name!r} uses unknown severities: {sorted(unknown)}")
-        _unique([t.key for t in self.teams], "team keys")
+            if rule.reassign_to_team is not None and rule.reassign_to_team not in team_keys:
+                raise ValueError(f"rule {rule.name!r} reassigns to an unknown team")
         _unique([t.key for t in self.templates], "template keys")
-        team_keys = {t.key for t in self.teams}
+        condition_fields = CONDITION_FIELDS | {f.key for f in self.custom_fields}
         for template in self.templates:
             if template.impact not in self.severity.impacts:
                 raise ValueError(f"template {template.key} uses unknown impact")
@@ -252,6 +367,9 @@ class TenantConfig(BaseModel):
                 raise ValueError(f"template {template.key} uses unknown urgency")
             if template.team is not None and template.team not in team_keys:
                 raise ValueError(f"template {template.key} uses unknown team")
+            for task in template.tasks:
+                if task.when is not None and task.when.field not in condition_fields:
+                    raise ValueError(f"task {task.key} has a condition on an unknown field")
         return self
 
     def template(self, key: str) -> Template | None:
@@ -298,12 +416,12 @@ DEFAULT_CONFIG = TenantConfig(
     states=[
         State(key="new", name="New"),
         State(key="triage", name="Triage"),
-        State(key="analysis", name="Analysis"),
+        State(key="analysis", name="Analysis", sla_milestone="triage"),
         State(key="containment", name="Containment"),
-        State(key="eradication", name="Eradication"),
+        State(key="eradication", name="Eradication", sla_milestone="contain"),
         State(key="recovery", name="Recovery"),
         State(key="post_incident", name="Post-Incident"),
-        State(key="closed", name="Closed", terminal=True),
+        State(key="closed", name="Closed", terminal=True, require_tasks_done=True),
     ],
     custom_fields=[],
     severity=Severity(

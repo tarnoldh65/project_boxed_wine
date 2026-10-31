@@ -103,6 +103,7 @@ export function CasesPage() {
                 <th>Title</th>
                 <th>State</th>
                 <th>Severity</th>
+                <th>SLA</th>
                 <th>Owner</th>
                 <th>Created</th>
               </tr>
@@ -114,11 +115,13 @@ export function CasesPage() {
                   <td>
                     <Link to={`/t/${slug}/cases/${c.number}`}>{c.title}</Link>
                     {c.restricted && ' (restricted)'}
+                    {c.major_incident_at && ' (major incident)'}
                   </td>
                   <td>{stateName(c.state)}</td>
                   <td>
                     {c.priority} {c.severity}
                   </td>
+                  <td className={c.sla_status ? `sla-${c.sla_status}` : undefined}>{c.sla_status}</td>
                   <td>{ownerName(c.owner_id)}</td>
                   <td>{new Date(c.created_at).toLocaleString()}</td>
                 </tr>

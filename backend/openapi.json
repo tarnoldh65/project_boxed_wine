@@ -946,6 +946,118 @@
         }
       }
     },
+    "/api/tenants/{slug}/cases/{number}/acknowledge": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Acknowledge Case",
+        "operationId": "acknowledge_case_api_tenants__slug__cases__number__acknowledge_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/major-incident": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Declare Major Incident",
+        "operationId": "declare_major_incident_api_tenants__slug__cases__number__major_incident_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MajorIncidentIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tenants/{slug}/cases/{number}/merge": {
       "post": {
         "tags": [
@@ -1046,6 +1158,138 @@
         },
         "responses": {
           "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/tasks": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Add Task",
+        "operationId": "add_task_api_tenants__slug__cases__number__tasks_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/tasks/{task_id}": {
+      "patch": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Update Task",
+        "operationId": "update_task_api_tenants__slug__cases__number__tasks__task_id__patch",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -1791,6 +2035,18 @@
             "type": "boolean",
             "title": "Restricted"
           },
+          "major_incident_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Incident At"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -1800,6 +2056,24 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "sla_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "met",
+                  "late",
+                  "pending",
+                  "warning",
+                  "breached"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sla Status"
           },
           "id": {
             "type": "string",
@@ -1906,6 +2180,53 @@
             ],
             "title": "Closed At"
           },
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "triaged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triaged At"
+          },
+          "contained_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contained At"
+          },
+          "major_incident_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Incident Reason"
+          },
           "merged_into": {
             "anyOf": [
               {
@@ -1930,6 +2251,20 @@
             },
             "type": "array",
             "title": "Assets"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskOut"
+            },
+            "type": "array",
+            "title": "Tasks"
+          },
+          "sla": {
+            "items": {
+              "$ref": "#/components/schemas/SlaClock"
+            },
+            "type": "array",
+            "title": "Sla"
           }
         },
         "type": "object",
@@ -1943,6 +2278,7 @@
           "team",
           "owner_id",
           "restricted",
+          "major_incident_at",
           "created_at",
           "updated_at",
           "id",
@@ -1961,9 +2297,15 @@
           "resolution",
           "detected_at",
           "closed_at",
+          "acknowledged_at",
+          "triaged_at",
+          "contained_at",
+          "major_incident_reason",
           "merged_into",
           "alerts",
-          "assets"
+          "assets",
+          "tasks",
+          "sla"
         ],
         "title": "CaseOut"
       },
@@ -2020,6 +2362,18 @@
             "type": "boolean",
             "title": "Restricted"
           },
+          "major_incident_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Major Incident At"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2029,6 +2383,24 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "sla_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "met",
+                  "late",
+                  "pending",
+                  "warning",
+                  "breached"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sla Status"
           }
         },
         "type": "object",
@@ -2042,6 +2414,7 @@
           "team",
           "owner_id",
           "restricted",
+          "major_incident_at",
           "created_at",
           "updated_at"
         ],
@@ -2278,6 +2651,48 @@
         "title": "CaseUpdate",
         "description": "Fields to change; omitted fields stay as they are."
       },
+      "ChecklistItem": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ChecklistItem"
+      },
+      "Condition": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Field"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "value"
+        ],
+        "title": "Condition"
+      },
       "CustomField": {
         "properties": {
           "key": {
@@ -2370,6 +2785,19 @@
               }
             ],
             "title": "Webhook Url"
+          },
+          "reassign_to_team": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reassign To Team"
           }
         },
         "type": "object",
@@ -2444,6 +2872,21 @@
           "logout_url"
         ],
         "title": "LogoutOut"
+      },
+      "MajorIncidentIn": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "MajorIncidentIn"
       },
       "MeOut": {
         "properties": {
@@ -2563,6 +3006,66 @@
         ],
         "title": "Pap"
       },
+      "PlaybookTask": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "due_hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Hours"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "type": "array",
+            "title": "Depends On",
+            "default": []
+          },
+          "when": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Condition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title"
+        ],
+        "title": "PlaybookTask"
+      },
       "Regulated": {
         "type": "string",
         "enum": [
@@ -2656,6 +3159,56 @@
         ],
         "title": "SeverityLevel"
       },
+      "SlaClock": {
+        "properties": {
+          "step": {
+            "type": "string",
+            "enum": [
+              "acknowledge",
+              "triage",
+              "contain",
+              "resolve"
+            ],
+            "title": "Step"
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due At"
+          },
+          "met_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Met At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "met",
+              "late",
+              "pending",
+              "warning",
+              "breached"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "step",
+          "due_at",
+          "met_at",
+          "status"
+        ],
+        "title": "SlaClock"
+      },
       "SlaTarget": {
         "properties": {
           "acknowledge_minutes": {
@@ -2739,6 +3292,26 @@
             "type": "boolean",
             "title": "Terminal",
             "default": false
+          },
+          "sla_milestone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "triage",
+                  "contain"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sla Milestone"
+          },
+          "require_tasks_done": {
+            "type": "boolean",
+            "title": "Require Tasks Done",
+            "default": false
           }
         },
         "type": "object",
@@ -2747,6 +3320,307 @@
           "name"
         ],
         "title": "State"
+      },
+      "TaskIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "assignee_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Id"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Depends On",
+            "default": []
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItem"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Checklist",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "TaskIn"
+      },
+      "TaskOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "assignee_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Id"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Depends On"
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItem"
+            },
+            "type": "array",
+            "title": "Checklist"
+          },
+          "waive_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waive Reason"
+          },
+          "playbook_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playbook Key"
+          },
+          "blocked": {
+            "type": "boolean",
+            "title": "Blocked",
+            "default": false
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "status",
+          "assignee_id",
+          "due_at",
+          "depends_on",
+          "checklist",
+          "waive_reason",
+          "playbook_key",
+          "created_at",
+          "completed_at"
+        ],
+        "title": "TaskOut"
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "in_progress",
+          "done",
+          "waived"
+        ],
+        "title": "TaskStatus"
+      },
+      "TaskUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "assignee_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Id"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "waive_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waive Reason"
+          },
+          "depends_on": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On"
+          },
+          "checklist": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChecklistItem"
+                },
+                "type": "array",
+                "maxItems": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checklist"
+          }
+        },
+        "type": "object",
+        "title": "TaskUpdate",
+        "description": "Fields to change; omitted fields stay as they are."
       },
       "Team": {
         "properties": {
@@ -2828,6 +3702,14 @@
               }
             ],
             "title": "Team"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/PlaybookTask"
+            },
+            "type": "array",
+            "title": "Tasks",
+            "default": []
           }
         },
         "type": "object",
@@ -2915,7 +3797,40 @@
                 "impact": "medium",
                 "urgency": "high",
                 "tlp": "amber",
-                "pap": "amber"
+                "pap": "amber",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 2,
+                    "key": "recipients",
+                    "title": "Identify every recipient and who clicked"
+                  },
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 2,
+                    "key": "block",
+                    "title": "Block sender, URLs, and attachment hashes"
+                  },
+                  {
+                    "depends_on": [
+                      "recipients"
+                    ],
+                    "description": "",
+                    "due_hours": 4,
+                    "key": "reset",
+                    "title": "Reset credentials of users who clicked"
+                  },
+                  {
+                    "depends_on": [
+                      "recipients"
+                    ],
+                    "description": "",
+                    "key": "purge",
+                    "title": "Purge the message from all mailboxes"
+                  }
+                ]
               },
               {
                 "key": "ransomware",
@@ -2923,7 +3838,51 @@
                 "impact": "high",
                 "urgency": "high",
                 "tlp": "amber",
-                "pap": "amber"
+                "pap": "amber",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 1,
+                    "key": "isolate",
+                    "title": "Isolate affected hosts"
+                  },
+                  {
+                    "depends_on": [
+                      "isolate"
+                    ],
+                    "description": "",
+                    "key": "scope",
+                    "title": "Identify the strain and scope of encryption"
+                  },
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 4,
+                    "key": "backups",
+                    "title": "Confirm backups are intact and offline"
+                  },
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 2,
+                    "key": "retainer",
+                    "title": "Engage the IR retainer firm",
+                    "when": {
+                      "field": "severity",
+                      "value": "critical"
+                    }
+                  },
+                  {
+                    "depends_on": [
+                      "scope",
+                      "backups"
+                    ],
+                    "description": "",
+                    "key": "restore",
+                    "title": "Restore from clean backups"
+                  }
+                ]
               },
               {
                 "key": "bec",
@@ -2931,7 +3890,30 @@
                 "impact": "high",
                 "urgency": "medium",
                 "tlp": "amber",
-                "pap": "amber"
+                "pap": "amber",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 1,
+                    "key": "payments",
+                    "title": "Contact finance to stop or recall payments"
+                  },
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "key": "mailbox",
+                    "title": "Review mailbox rules and sign-in logs"
+                  },
+                  {
+                    "depends_on": [
+                      "mailbox"
+                    ],
+                    "description": "",
+                    "key": "reset",
+                    "title": "Reset credentials and revoke sessions"
+                  }
+                ]
               },
               {
                 "key": "insider",
@@ -2939,7 +3921,32 @@
                 "impact": "high",
                 "urgency": "medium",
                 "tlp": "red",
-                "pap": "red"
+                "pap": "red",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 4,
+                    "key": "legal",
+                    "title": "Engage legal and HR before any action"
+                  },
+                  {
+                    "depends_on": [
+                      "legal"
+                    ],
+                    "description": "",
+                    "key": "preserve",
+                    "title": "Preserve evidence under legal hold"
+                  },
+                  {
+                    "depends_on": [
+                      "legal"
+                    ],
+                    "description": "",
+                    "key": "access",
+                    "title": "Review and restrict the subject's access"
+                  }
+                ]
               },
               {
                 "key": "ddos",
@@ -2947,7 +3954,24 @@
                 "impact": "medium",
                 "urgency": "high",
                 "tlp": "amber",
-                "pap": "amber"
+                "pap": "amber",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 1,
+                    "key": "provider",
+                    "title": "Engage the DDoS mitigation provider"
+                  },
+                  {
+                    "depends_on": [
+                      "provider"
+                    ],
+                    "description": "",
+                    "key": "monitor",
+                    "title": "Monitor service availability until stable"
+                  }
+                ]
               },
               {
                 "key": "data_exposure",
@@ -2955,7 +3979,33 @@
                 "impact": "high",
                 "urgency": "medium",
                 "tlp": "amber",
-                "pap": "amber"
+                "pap": "amber",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 4,
+                    "key": "contain",
+                    "title": "Remove or restrict the exposed data"
+                  },
+                  {
+                    "depends_on": [
+                      "contain"
+                    ],
+                    "description": "",
+                    "key": "assess",
+                    "title": "Assess what data and which people are affected"
+                  },
+                  {
+                    "depends_on": [
+                      "assess"
+                    ],
+                    "description": "",
+                    "due_hours": 48,
+                    "key": "notify",
+                    "title": "Decide on breach notification obligations"
+                  }
+                ]
               },
               {
                 "key": "vulnerability_exploitation",
@@ -2963,7 +4013,22 @@
                 "impact": "high",
                 "urgency": "high",
                 "tlp": "amber",
-                "pap": "amber"
+                "pap": "amber",
+                "tasks": [
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "due_hours": 24,
+                    "key": "patch",
+                    "title": "Patch or mitigate the vulnerability"
+                  },
+                  {
+                    "depends_on": [],
+                    "description": "",
+                    "key": "hunt",
+                    "title": "Hunt for post-exploitation activity"
+                  }
+                ]
               }
             ]
           }

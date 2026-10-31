@@ -149,3 +149,48 @@ pre {
   overflow-x: auto;
   max-width: 100%;
 }
+
+.banner {
+  padding: 0.5rem 0.75rem;
+  background: var(--notice-bg);
+  font-weight: 600;
+}
+
+.sla td {
+  vertical-align: top;
+}
+
+.sla-warning {
+  background: var(--notice-bg);
+}
+
+.sla-breached,
+.sla-late {
+  color: #b00020;
+  font-weight: 600;
+}
+
+.task {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--muted);
+}
+
+.task-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.badge {
+  padding: 0 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+
+.checklist {
+  margin: 0.25rem 0;
+  list-style: none;
+  padding-left: 1rem;
+}

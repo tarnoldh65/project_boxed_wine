@@ -33,6 +33,12 @@ Alerts arrive through `POST /api/tenants/<tenant>/alerts` or `POST /api/tenants/
 docker compose -f deploy/compose.yaml exec backend python -m app.jobs email_intake
 ```
 
+The `sla` job fires SLA escalations and sends pending notifications (delivered to Mailpit in dev):
+
+```sh
+docker compose -f deploy/compose.yaml exec backend python -m app.jobs sla
+```
+
 After changing API routes or models, run the backend tests (they regenerate `backend/openapi.json`), then `npm run gen:api` in `frontend/`.
 
 ## Tests

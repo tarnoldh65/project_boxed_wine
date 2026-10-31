@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     imap_url: str | None = None
     imap_tenant: str | None = None
     imap_template: str = "phishing"
+    # Outbound mail for escalation notifications.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_starttls: bool = True
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    mail_from: str = "casemgr@localhost"
 
 
 settings = Settings()  # pyright: ignore[reportCallIssue]

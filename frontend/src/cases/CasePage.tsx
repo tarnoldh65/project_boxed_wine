@@ -5,6 +5,7 @@ import { api, describeError, type AssetKind, type Case } from '../api/client'
 import { useMembers, useTenantConfig } from '../api/queries'
 import { useTenant } from '../tenant'
 import { CaseForm } from './CaseForm'
+import { TasksPanel } from './TasksPanel'
 
 const ASSET_KINDS: AssetKind[] = ['host', 'account', 'application', 'data_set']
 
@@ -81,6 +82,14 @@ export function CasePage() {
     )
   }
 
+  function declareMajor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const reason = String(new FormData(event.currentTarget).get('reason'))
+    action.mutate(() =>
+      api.POST('/api/tenants/{slug}/cases/{number}/major-incident', { ...path, body: { reason } }),
+    )
+  }
+
   function merge(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const into = Number(new FormData(event.currentTarget).get('into'))
@@ -115,6 +124,50 @@ export function CasePage() {
           Merged into <Link to={`/t/${slug}/cases/${current.merged_into}`}>#{current.merged_into}</Link>
         </p>
       )}
+      {current.major_incident_at && (
+        <p className="banner">
+          Major incident declared {new Date(current.major_incident_at).toLocaleString()}:{' '}
+          {current.major_incident_reason}
+        </p>
+      )}
+
+      <table className="sla">
+        <caption>SLA</caption>
+        <tbody>
+          <tr>
+            {current.sla.map((clock) => (
+              <td key={clock.step} className={`sla-${clock.status}`}>
+                <strong>{clock.step}</strong> {clock.status}
+                <br />
+                {clock.met_at
+                  ? `met ${new Date(clock.met_at).toLocaleString()}`
+                  : `due ${new Date(clock.due_at).toLocaleString()}`}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+
+      {canWrite && !state?.terminal && (
+        <div className="inline-form">
+          {!current.acknowledged_at && (
+            <button
+              type="button"
+              onClick={() =>
+                action.mutate(() => api.POST('/api/tenants/{slug}/cases/{number}/acknowledge', path))
+              }
+            >
+              Acknowledge
+            </button>
+          )}
+          {!current.major_incident_at && (
+            <form className="inline-form" onSubmit={declareMajor}>
+              <input name="reason" required maxLength={1000} aria-label="Major incident reason" placeholder="Reason" />
+              <button type="submit">Declare major incident</button>
+            </form>
+          )}
+        </div>
+      )}
 
       <CaseForm
         key={current.number}
@@ -124,6 +177,13 @@ export function CasePage() {
         members={members.data}
         canWrite={canWrite}
         canRestrict={permissions.includes('restricted_case')}
+      />
+
+      <TasksPanel
+        slug={slug}
+        current={current}
+        members={members.data}
+        editable={canWrite && !state?.terminal}
       />
 
       <section>

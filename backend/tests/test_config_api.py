@@ -89,7 +89,7 @@ async def test_templates_can_reference_teams(make_user: MakeUser, tenant: str) -
     assert "unknown team" in rejected.text
     await admin.client.put(url(tenant, "/teams"), json=[{"key": "soc", "name": "SOC"}])
     saved = await admin.client.put(url(tenant, "/templates"), json=[template])
-    assert saved.json()["templates"] == [template | {"tlp": "amber", "pap": "amber"}]
+    assert saved.json()["templates"] == [template | {"tlp": "amber", "pap": "amber", "tasks": []}]
 
 
 async def test_changes_must_keep_references_valid(make_user: MakeUser, tenant: str) -> None:

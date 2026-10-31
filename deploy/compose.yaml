@@ -70,6 +70,10 @@ services:
       CASEMGR_GROUP_SYNC_MINUTES: "0"
       CASEMGR_IMAP_URL: imap://intake%40example.test:intake@greenmail:3143/INBOX
       CASEMGR_IMAP_TENANT: detect-respond
+      CASEMGR_SMTP_HOST: mailpit
+      CASEMGR_SMTP_PORT: "1025"
+      CASEMGR_SMTP_STARTTLS: "false"
+      CASEMGR_MAIL_FROM: casemgr@example.test
     ports: ["8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }

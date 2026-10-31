@@ -297,6 +297,40 @@ export interface paths {
         patch: operations["update_case_api_tenants__slug__cases__number__patch"];
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge Case */
+        post: operations["acknowledge_case_api_tenants__slug__cases__number__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/major-incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Declare Major Incident */
+        post: operations["declare_major_incident_api_tenants__slug__cases__number__major_incident_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tenants/{slug}/cases/{number}/merge": {
         parameters: {
             query?: never;
@@ -329,6 +363,40 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Task */
+        post: operations["add_task_api_tenants__slug__cases__number__tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Task */
+        patch: operations["update_task_api_tenants__slug__cases__number__tasks__task_id__patch"];
         trace?: never;
     };
     "/api/tenants/{slug}/cases/{number}/assets": {
@@ -573,6 +641,8 @@ export interface components {
             owner_id: string | null;
             /** Restricted */
             restricted: boolean;
+            /** Major Incident At */
+            major_incident_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -583,6 +653,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Sla Status */
+            sla_status?: ("met" | "late" | "pending" | "warning" | "breached") | null;
             /**
              * Id
              * Format: uuid
@@ -617,12 +689,24 @@ export interface components {
             detected_at: string | null;
             /** Closed At */
             closed_at: string | null;
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /** Triaged At */
+            triaged_at: string | null;
+            /** Contained At */
+            contained_at: string | null;
+            /** Major Incident Reason */
+            major_incident_reason: string | null;
             /** Merged Into */
             merged_into: number | null;
             /** Alerts */
             alerts: components["schemas"]["AlertOut"][];
             /** Assets */
             assets: components["schemas"]["AssetOut"][];
+            /** Tasks */
+            tasks: components["schemas"]["TaskOut"][];
+            /** Sla */
+            sla: components["schemas"]["SlaClock"][];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -644,6 +728,8 @@ export interface components {
             owner_id: string | null;
             /** Restricted */
             restricted: boolean;
+            /** Major Incident At */
+            major_incident_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -654,6 +740,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Sla Status */
+            sla_status?: ("met" | "late" | "pending" | "warning" | "breached") | null;
         };
         /**
          * CaseUpdate
@@ -695,6 +783,23 @@ export interface components {
             /** Detected At */
             detected_at?: string | null;
         };
+        /** ChecklistItem */
+        ChecklistItem: {
+            /** Text */
+            text: string;
+            /**
+             * Done
+             * @default false
+             */
+            done: boolean;
+        };
+        /** Condition */
+        Condition: {
+            /** Field */
+            field: string;
+            /** Value */
+            value: string;
+        };
         /** CustomField */
         CustomField: {
             /** Key */
@@ -727,6 +832,8 @@ export interface components {
             notify_emails: string[];
             /** Webhook Url */
             webhook_url?: string | null;
+            /** Reassign To Team */
+            reassign_to_team?: string | null;
         };
         /**
          * FieldType
@@ -756,6 +863,11 @@ export interface components {
         LogoutOut: {
             /** Logout Url */
             logout_url: string;
+        };
+        /** MajorIncidentIn */
+        MajorIncidentIn: {
+            /** Reason */
+            reason: string;
         };
         /** MeOut */
         MeOut: {
@@ -804,6 +916,26 @@ export interface components {
          * @enum {string}
          */
         Pap: "clear" | "green" | "amber" | "red";
+        /** PlaybookTask */
+        PlaybookTask: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Due Hours */
+            due_hours?: number | null;
+            /**
+             * Depends On
+             * @default []
+             */
+            depends_on: string[];
+            when?: components["schemas"]["Condition"] | null;
+        };
         /**
          * Regulated
          * @enum {string}
@@ -833,6 +965,26 @@ export interface components {
             /** Key */
             key: string;
             sla: components["schemas"]["SlaTarget"];
+        };
+        /** SlaClock */
+        SlaClock: {
+            /**
+             * Step
+             * @enum {string}
+             */
+            step: "acknowledge" | "triage" | "contain" | "resolve";
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /** Met At */
+            met_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "met" | "late" | "pending" | "warning" | "breached";
         };
         /** SlaTarget */
         SlaTarget: {
@@ -871,6 +1023,100 @@ export interface components {
              * @default false
              */
             terminal: boolean;
+            /** Sla Milestone */
+            sla_milestone?: ("triage" | "contain") | null;
+            /**
+             * Require Tasks Done
+             * @default false
+             */
+            require_tasks_done: boolean;
+        };
+        /** TaskIn */
+        TaskIn: {
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            /**
+             * Depends On
+             * @default []
+             */
+            depends_on: string[];
+            /**
+             * Checklist
+             * @default []
+             */
+            checklist: components["schemas"]["ChecklistItem"][];
+        };
+        /** TaskOut */
+        TaskOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            status: components["schemas"]["TaskStatus"];
+            /** Assignee Id */
+            assignee_id: string | null;
+            /** Due At */
+            due_at: string | null;
+            /** Depends On */
+            depends_on: string[];
+            /** Checklist */
+            checklist: components["schemas"]["ChecklistItem"][];
+            /** Waive Reason */
+            waive_reason: string | null;
+            /** Playbook Key */
+            playbook_key: string | null;
+            /**
+             * Blocked
+             * @default false
+             */
+            blocked: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /**
+         * TaskStatus
+         * @enum {string}
+         */
+        TaskStatus: "open" | "in_progress" | "done" | "waived";
+        /**
+         * TaskUpdate
+         * @description Fields to change; omitted fields stay as they are.
+         */
+        TaskUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Due At */
+            due_at?: string | null;
+            status?: components["schemas"]["TaskStatus"] | null;
+            /** Waive Reason */
+            waive_reason?: string | null;
+            /** Depends On */
+            depends_on?: string[] | null;
+            /** Checklist */
+            checklist?: components["schemas"]["ChecklistItem"][] | null;
         };
         /** Team */
         Team: {
@@ -900,6 +1146,11 @@ export interface components {
             pap: components["schemas"]["Pap"];
             /** Team */
             team?: string | null;
+            /**
+             * Tasks
+             * @default []
+             */
+            tasks: components["schemas"]["PlaybookTask"][];
         };
         /** TenantAccess */
         TenantAccess: {
@@ -933,7 +1184,40 @@ export interface components {
              *         "impact": "medium",
              *         "urgency": "high",
              *         "tlp": "amber",
-             *         "pap": "amber"
+             *         "pap": "amber",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 2,
+             *             "key": "recipients",
+             *             "title": "Identify every recipient and who clicked"
+             *           },
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 2,
+             *             "key": "block",
+             *             "title": "Block sender, URLs, and attachment hashes"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "recipients"
+             *             ],
+             *             "description": "",
+             *             "due_hours": 4,
+             *             "key": "reset",
+             *             "title": "Reset credentials of users who clicked"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "recipients"
+             *             ],
+             *             "description": "",
+             *             "key": "purge",
+             *             "title": "Purge the message from all mailboxes"
+             *           }
+             *         ]
              *       },
              *       {
              *         "key": "ransomware",
@@ -941,7 +1225,51 @@ export interface components {
              *         "impact": "high",
              *         "urgency": "high",
              *         "tlp": "amber",
-             *         "pap": "amber"
+             *         "pap": "amber",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 1,
+             *             "key": "isolate",
+             *             "title": "Isolate affected hosts"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "isolate"
+             *             ],
+             *             "description": "",
+             *             "key": "scope",
+             *             "title": "Identify the strain and scope of encryption"
+             *           },
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 4,
+             *             "key": "backups",
+             *             "title": "Confirm backups are intact and offline"
+             *           },
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 2,
+             *             "key": "retainer",
+             *             "title": "Engage the IR retainer firm",
+             *             "when": {
+             *               "field": "severity",
+             *               "value": "critical"
+             *             }
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "scope",
+             *               "backups"
+             *             ],
+             *             "description": "",
+             *             "key": "restore",
+             *             "title": "Restore from clean backups"
+             *           }
+             *         ]
              *       },
              *       {
              *         "key": "bec",
@@ -949,7 +1277,30 @@ export interface components {
              *         "impact": "high",
              *         "urgency": "medium",
              *         "tlp": "amber",
-             *         "pap": "amber"
+             *         "pap": "amber",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 1,
+             *             "key": "payments",
+             *             "title": "Contact finance to stop or recall payments"
+             *           },
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "key": "mailbox",
+             *             "title": "Review mailbox rules and sign-in logs"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "mailbox"
+             *             ],
+             *             "description": "",
+             *             "key": "reset",
+             *             "title": "Reset credentials and revoke sessions"
+             *           }
+             *         ]
              *       },
              *       {
              *         "key": "insider",
@@ -957,7 +1308,32 @@ export interface components {
              *         "impact": "high",
              *         "urgency": "medium",
              *         "tlp": "red",
-             *         "pap": "red"
+             *         "pap": "red",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 4,
+             *             "key": "legal",
+             *             "title": "Engage legal and HR before any action"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "legal"
+             *             ],
+             *             "description": "",
+             *             "key": "preserve",
+             *             "title": "Preserve evidence under legal hold"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "legal"
+             *             ],
+             *             "description": "",
+             *             "key": "access",
+             *             "title": "Review and restrict the subject's access"
+             *           }
+             *         ]
              *       },
              *       {
              *         "key": "ddos",
@@ -965,7 +1341,24 @@ export interface components {
              *         "impact": "medium",
              *         "urgency": "high",
              *         "tlp": "amber",
-             *         "pap": "amber"
+             *         "pap": "amber",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 1,
+             *             "key": "provider",
+             *             "title": "Engage the DDoS mitigation provider"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "provider"
+             *             ],
+             *             "description": "",
+             *             "key": "monitor",
+             *             "title": "Monitor service availability until stable"
+             *           }
+             *         ]
              *       },
              *       {
              *         "key": "data_exposure",
@@ -973,7 +1366,33 @@ export interface components {
              *         "impact": "high",
              *         "urgency": "medium",
              *         "tlp": "amber",
-             *         "pap": "amber"
+             *         "pap": "amber",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 4,
+             *             "key": "contain",
+             *             "title": "Remove or restrict the exposed data"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "contain"
+             *             ],
+             *             "description": "",
+             *             "key": "assess",
+             *             "title": "Assess what data and which people are affected"
+             *           },
+             *           {
+             *             "depends_on": [
+             *               "assess"
+             *             ],
+             *             "description": "",
+             *             "due_hours": 48,
+             *             "key": "notify",
+             *             "title": "Decide on breach notification obligations"
+             *           }
+             *         ]
              *       },
              *       {
              *         "key": "vulnerability_exploitation",
@@ -981,7 +1400,22 @@ export interface components {
              *         "impact": "high",
              *         "urgency": "high",
              *         "tlp": "amber",
-             *         "pap": "amber"
+             *         "pap": "amber",
+             *         "tasks": [
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "due_hours": 24,
+             *             "key": "patch",
+             *             "title": "Patch or mitigate the vulnerability"
+             *           },
+             *           {
+             *             "depends_on": [],
+             *             "description": "",
+             *             "key": "hunt",
+             *             "title": "Hunt for post-exploitation activity"
+             *           }
+             *         ]
              *       }
              *     ]
              */
@@ -1739,6 +2173,74 @@ export interface operations {
             };
         };
     };
+    acknowledge_case_api_tenants__slug__cases__number__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    declare_major_incident_api_tenants__slug__cases__number__major_incident_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MajorIncidentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     merge_case_api_tenants__slug__cases__number__merge_post: {
         parameters: {
             query?: never;
@@ -1793,6 +2295,79 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_task_api_tenants__slug__cases__number__tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_task_api_tenants__slug__cases__number__tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                task_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

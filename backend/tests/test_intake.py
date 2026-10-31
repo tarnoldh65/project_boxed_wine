@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.auth import hash_secret
-from tests.conftest import MakeToken, MakeUser, audit_actions
+from tests.conftest import MakeToken, MakeUser, audit_actions, close_case
 
 
 @pytest.fixture
@@ -59,7 +59,8 @@ async def test_alert_opens_case_from_template(
     assert case["detected_at"] == "2026-10-31T08:00:00Z"
     assert case["alerts"][0]["payload"] == {"host": "fs-01", "count": 4000}
     actions = await audit_actions(owner, f"token:{await token_id(owner, token)}")
-    assert actions == ["case.create", "alert.ingest"]
+    assert actions == ["case.create"] + ["task.create"] * 5 + ["alert.ingest"]
+    assert len(case["tasks"]) == 5  # critical ransomware includes the retainer task
 
 
 async def token_id(owner: AsyncEngine, raw: str) -> str:
@@ -96,10 +97,7 @@ async def test_grouped_alerts_share_an_open_case(
     assert len(case["alerts"]) == 2
 
     analyst = await make_user({tenant: ["analyst"]})
-    await analyst.client.patch(
-        f"/api/tenants/{tenant}/cases/{first['case_number']}",
-        json={"state": "closed", "resolution": "true_positive"},
-    )
+    await close_case(analyst.client, tenant, first["case_number"], "true_positive")
     after_close = (await post_alert(client, tenant, token, group_key="incident-7")).json()
     assert after_close["new_case"] is True
 

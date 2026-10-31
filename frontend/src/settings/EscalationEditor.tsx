@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api, type EscalationRule, type Trigger } from '../api/client'
+import { api, type EscalationRule, type Team, type Trigger } from '../api/client'
 import { SaveBar } from './SaveBar'
 import { removeAt, splitList, updateAt, useSaveSection } from './editing'
 
@@ -27,10 +27,12 @@ export function EscalationEditor({
   slug,
   rules,
   severities,
+  teams,
 }: {
   slug: string
   rules: EscalationRule[]
   severities: string[]
+  teams: Team[]
 }) {
   const [draft, setDraft] = useState(() => rules.map(toRow))
   const save = useSaveSection(slug, (body: EscalationRule[]) =>
@@ -112,6 +114,23 @@ export function EscalationEditor({
                 onChange={(e) => setDraft(updateAt(draft, i, { webhook: e.target.value }))}
               />
             </label>
+            <label>
+              Reassign to team{' '}
+              <select
+                aria-label={`Rule ${i + 1} reassign`}
+                value={rule.reassign_to_team ?? ''}
+                onChange={(e) =>
+                  setDraft(updateAt(draft, i, { reassign_to_team: e.target.value || null }))
+                }
+              >
+                <option value="">No reassignment</option>
+                {teams.map((team) => (
+                  <option key={team.key} value={team.key}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div>
               <button type="button" onClick={() => setDraft(removeAt(draft, i))}>
                 Remove rule
@@ -125,7 +144,14 @@ export function EscalationEditor({
         onClick={() =>
           setDraft([
             ...draft,
-            { name: '', trigger: 'sla_breach', severities: [], emailsText: '', webhook: '' },
+            {
+              name: '',
+              trigger: 'sla_breach',
+              severities: [],
+              emailsText: '',
+              webhook: '',
+              reassign_to_team: null,
+            },
           ])
         }
       >

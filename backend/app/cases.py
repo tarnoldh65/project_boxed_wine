@@ -20,10 +20,11 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit
+from app import audit, escalation, sla, tasks
 from app.auth import TenantContext, deny
-from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, User
-from app.tenant_config import MAX_TEXT, FieldType, Key, Label, Pap, TenantConfig, Tlp
+from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, Task, User
+from app.tasks import TaskOut
+from app.tenant_config import MAX_TEXT, FieldType, Key, Label, Pap, TenantConfig, Tlp, Trigger
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
 LongText = Annotated[str, StringConstraints(max_length=MAX_TEXT)]
@@ -75,8 +76,10 @@ class CaseSummary(BaseModel):
     team: str | None
     owner_id: UUID | None
     restricted: bool
+    major_incident_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    sla_status: sla.Status | None = None
 
 
 class CaseFields(CaseSummary):
@@ -96,6 +99,10 @@ class CaseFields(CaseSummary):
     resolution: Resolution | None
     detected_at: datetime | None
     closed_at: datetime | None
+    acknowledged_at: datetime | None
+    triaged_at: datetime | None
+    contained_at: datetime | None
+    major_incident_reason: str | None
 
 
 class AlertOut(BaseModel):
@@ -123,6 +130,12 @@ class CaseOut(CaseFields):
     merged_into: int | None
     alerts: list[AlertOut]
     assets: list[AssetOut]
+    tasks: list[TaskOut]
+    sla: list[sla.SlaClock]
+
+
+class MajorIncidentIn(BaseModel):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 
 
 class CaseCreate(BaseModel):
@@ -239,7 +252,25 @@ async def members(db: AsyncSession, tenant_id: UUID) -> Sequence[User]:
     ).all()
 
 
-async def case_out(db: AsyncSession, case: Case) -> CaseOut:
+def clocks(case: Case, config: TenantConfig, now: datetime) -> list[sla.SlaClock]:
+    level = next((lv for lv in config.severity.levels if lv.key == case.severity), None)
+    if level is None:
+        return []  # the severity was removed from the configuration
+    met: dict[sla.Step, datetime | None] = {
+        "acknowledge": case.acknowledged_at,
+        "triage": case.triaged_at,
+        "contain": case.contained_at,
+        "resolve": case.closed_at,
+    }
+    return sla.clocks(level.sla, case.created_at, met, now)
+
+
+def summary(case: Case, config: TenantConfig, now: datetime) -> CaseSummary:
+    status = sla.worst(clocks(case, config, now))
+    return CaseSummary.model_validate(case).model_copy(update={"sla_status": status})
+
+
+async def case_out(db: AsyncSession, case: Case, config: TenantConfig) -> CaseOut:
     alerts = await db.scalars(
         select(Alert).where(Alert.case_id == case.id).order_by(Alert.received_at)
     )
@@ -252,11 +283,15 @@ async def case_out(db: AsyncSession, case: Case) -> CaseOut:
     merged_into = None
     if case.merged_into_id is not None:
         merged_into = await db.scalar(select(Case.number).where(Case.id == case.merged_into_id))
+    case_clocks = clocks(case, config, datetime.now(UTC))
     return CaseOut(
-        **CaseFields.model_validate(case).model_dump(),
+        **CaseFields.model_validate(case).model_dump(exclude={"sla_status"}),
+        sla_status=sla.worst(case_clocks),
         merged_into=merged_into,
         alerts=[AlertOut.model_validate(a) for a in alerts],
         assets=[AssetOut.model_validate(a) for a in assets],
+        tasks=tasks.task_outs(await tasks.case_tasks(db, case.id)),
+        sla=case_clocks,
     )
 
 
@@ -326,6 +361,8 @@ async def create_case(
         tenant_id,
         {"template": template.key, "source": source},
     )
+    await tasks.sync_playbook(db, case, config, actor)
+    await escalation.fire(db, config, case, Trigger.CASE_CREATED)
     return case
 
 
@@ -399,6 +436,7 @@ async def update_case(
         invalid("owner must be a tenant member", "owner_id")
 
     was_terminal = case.state in config.terminal_states
+    previous_state = case.state
     for key in fields - {"override"}:
         setattr(case, key, getattr(change, key))
 
@@ -424,6 +462,9 @@ async def update_case(
             invalid("only closed cases have a resolution", "resolution")
     if terminal != was_terminal:
         case.closed_at = datetime.now(UTC) if terminal else None
+    if case.state != previous_state:
+        await _check_gate(db, config, case)
+        _record_milestones(case, config)
 
     for key, message in config.validate_values(case.custom, case.state).items():
         invalid(message, "custom", key)
@@ -440,6 +481,55 @@ async def update_case(
         f"case:{case.number}",
         changes=change.model_dump(mode="json", include=fields),
     )
+    if not terminal:
+        await tasks.sync_playbook(db, case, config, ctx.principal.actor)
+
+
+async def _check_gate(db: AsyncSession, config: TenantConfig, case: Case) -> None:
+    state = next(s for s in config.states if s.key == case.state)
+    if state.require_tasks_done:
+        unfinished = [
+            t.title for t in await tasks.case_tasks(db, case.id) if t.status not in tasks.FINISHED
+        ]
+        if unfinished:
+            invalid(f"finish or waive every task first: {'; '.join(unfinished)}", "state")
+
+
+def _record_milestones(case: Case, config: TenantConfig) -> None:
+    """Meet SLA milestones the case has now reached; closing meets them all."""
+    now = datetime.now(UTC)
+    reached = config.state_keys.index(case.state)
+    milestones = {s.sla_milestone for s in config.states[: reached + 1]}
+    if case.state in config.terminal_states:
+        milestones |= {"triage", "contain"}
+    # Working a case past its first state acknowledges it.
+    if reached > 0:
+        case.acknowledged_at = case.acknowledged_at or now
+    if "triage" in milestones:
+        case.triaged_at = case.triaged_at or now
+    if "contain" in milestones:
+        case.contained_at = case.contained_at or now
+
+
+async def acknowledge(db: AsyncSession, ctx: TenantContext, case: Case) -> None:
+    if case.acknowledged_at is not None:
+        invalid("the case is already acknowledged")
+    case.acknowledged_at = case.updated_at = datetime.now(UTC)
+    case.owner_id = case.owner_id or ctx.principal.user_id
+    await ctx.audit(db, "case.acknowledge", f"case:{case.number}")
+
+
+async def declare_major_incident(
+    db: AsyncSession, ctx: TenantContext, config: TenantConfig, case: Case, reason: str
+) -> None:
+    if case.major_incident_at is not None:
+        invalid("a major incident is already declared", "reason")
+    if case.state in config.terminal_states:
+        invalid("closed cases cannot be declared major incidents", "reason")
+    case.major_incident_at = case.updated_at = datetime.now(UTC)
+    case.major_incident_reason = reason
+    await ctx.audit(db, "case.major_incident", f"case:{case.number}", reason=reason)
+    await escalation.fire(db, config, case, Trigger.MAJOR_INCIDENT)
 
 
 async def _link_assets(db: AsyncSession, case: Case, asset_ids: Sequence[UUID]) -> None:
@@ -478,6 +568,17 @@ async def _move(
     return sorted(map(str, moved_alerts)), sorted(map(str, moved_assets))
 
 
+async def _move_tasks(db: AsyncSession, source: Case, target: Case) -> list[str]:
+    # Moved tasks no longer stand for the target's own playbook steps.
+    moved = await db.scalars(
+        update(Task)
+        .where(Task.case_id == source.id)
+        .values(case_id=target.id, playbook_key=None)
+        .returning(Task.id)
+    )
+    return sorted(map(str, moved))
+
+
 async def merge(
     db: AsyncSession, ctx: TenantContext, config: TenantConfig, source: Case, target: Case
 ) -> None:
@@ -488,12 +589,19 @@ async def merge(
     if source.restricted and not target.restricted:
         invalid("a restricted case can only merge into a restricted case", "into")
     alerts, assets = await _move(db, source, target, None, None)
+    moved_tasks = await _move_tasks(db, source, target)
     source.state = config.terminal_states[0]
     source.resolution = Resolution.MERGED
     source.merged_into_id = target.id
     source.closed_at = datetime.now(UTC)
     await ctx.audit(
-        db, "case.merge", f"case:{source.number}", into=target.number, alerts=alerts, assets=assets
+        db,
+        "case.merge",
+        f"case:{source.number}",
+        into=target.number,
+        alerts=alerts,
+        assets=assets,
+        tasks=moved_tasks,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
 
