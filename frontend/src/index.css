@@ -1,0 +1,39 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  --bg: #f6f7f9;
+  --fg: #1b1f24;
+  --header-bg: #1b2a3a;
+  --header-fg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --fg: #e6e8eb;
+    --header-bg: #0b1520;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  height: 3rem;
+  background: var(--header-bg);
+  color: var(--header-fg);
+}
+
+.brand {
+  font-weight: 600;
+}
+
+.shell-main {
+  padding: 1rem;
+}
