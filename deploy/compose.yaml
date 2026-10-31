@@ -22,6 +22,12 @@ services:
     command: server -s3 -dir=/data
     ports: ["8333:8333"]
     volumes: [s3:/data]
+    # Its master, volume, filer, and S3 servers need more than the default 10 s to stop cleanly.
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 2s
+      retries: 30
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b
@@ -59,9 +65,11 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
-  backend:
+  # Creates the evidence bucket; production buckets are provisioned with the infrastructure.
+  s3-init:
     build: ../backend
-    environment:
+    command: ["python", "-m", "app.jobs", "create_bucket"]
+    environment: &backend-env
       CASEMGR_DATABASE_URL: postgresql+asyncpg://casemgr_app:casemgr_app@postgres:5432/casemgr
       CASEMGR_OIDC_METADATA_URL: http://keycloak:8080/realms/casemgr/.well-known/openid-configuration
       CASEMGR_OIDC_CLIENT_SECRET: dev-only-client-secret
@@ -74,9 +82,21 @@ services:
       CASEMGR_SMTP_PORT: "1025"
       CASEMGR_SMTP_STARTTLS: "false"
       CASEMGR_MAIL_FROM: casemgr@example.test
+      CASEMGR_S3_ENDPOINT_URL: http://s3:8333
+      # Browsers upload evidence parts here directly.
+      CASEMGR_S3_PUBLIC_ENDPOINT_URL: http://localhost:8333
+      CASEMGR_S3_ACCESS_KEY: dev
+      CASEMGR_S3_SECRET_KEY: dev
+    depends_on:
+      s3: { condition: service_healthy }
+
+  backend:
+    build: ../backend
+    environment: *backend-env
     ports: ["8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
+      s3-init: { condition: service_completed_successfully }
       keycloak: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
@@ -87,6 +107,7 @@ services:
     build: ../frontend
     environment:
       CASEMGR_API_UPSTREAM: http://backend:8000
+      CASEMGR_S3_PUBLIC_ORIGIN: http://localhost:8333
     ports: ["8080:8080"]
     depends_on:
       backend: { condition: service_healthy }

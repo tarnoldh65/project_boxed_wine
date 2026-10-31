@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { api, describeError, type AssetKind, type Case } from '../api/client'
+import { api, describeError, type AssetKind, type Case, type Me } from '../api/client'
 import { useMembers, useTenantConfig } from '../api/queries'
 import { useTenant } from '../tenant'
 import { CaseForm } from './CaseForm'
+import { EvidencePanel } from './EvidencePanel'
 import { ObservablesPanel } from './ObservablesPanel'
 import { TasksPanel } from './TasksPanel'
 
@@ -85,6 +86,18 @@ export function CasePage() {
     )
   }
 
+  function setLegalHold(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const reason = String(new FormData(event.currentTarget).get('reason'))
+    event.currentTarget.reset()
+    action.mutate(() =>
+      api.PUT('/api/tenants/{slug}/cases/{number}/legal-hold', {
+        ...path,
+        body: { on: !current.legal_hold, reason },
+      }),
+    )
+  }
+
   function declareMajor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const reason = String(new FormData(event.currentTarget).get('reason'))
@@ -131,6 +144,9 @@ export function CasePage() {
         <p>
           Merged into <Link to={`/t/${slug}/cases/${current.merged_into}`}>#{current.merged_into}</Link>
         </p>
+      )}
+      {current.legal_hold && (
+        <p className="banner">Legal hold: evidence on this case cannot be deleted.</p>
       )}
       {current.major_incident_at && (
         <p className="banner">
@@ -218,6 +234,20 @@ export function CasePage() {
           </div>
         ))}
       </section>
+
+      {permissions.includes('legal_hold:manage') && (
+        <form className="inline-form" onSubmit={setLegalHold}>
+          <input name="reason" required maxLength={1000} aria-label="Legal hold reason" placeholder="Reason" />
+          <button type="submit">{current.legal_hold ? 'Lift legal hold' : 'Place legal hold'}</button>
+        </form>
+      )}
+
+      <EvidencePanel
+        slug={slug}
+        current={current}
+        permissions={permissions}
+        collector={queryClient.getQueryData<Me>(['me'])?.display_name ?? ''}
+      />
 
       <ObservablesPanel
         slug={slug}

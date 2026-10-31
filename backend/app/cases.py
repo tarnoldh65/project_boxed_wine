@@ -20,8 +20,9 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit, escalation, observable_store, sla, tasks
+from app import audit, escalation, evidence, observable_store, sla, tasks
 from app.auth import TenantContext, deny
+from app.evidence import EvidenceOut
 from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, Task, User
 from app.observable_store import ObservableOut
 from app.tasks import TaskOut
@@ -104,6 +105,7 @@ class CaseFields(CaseSummary):
     triaged_at: datetime | None
     contained_at: datetime | None
     major_incident_reason: str | None
+    legal_hold: bool
 
 
 class AlertOut(BaseModel):
@@ -134,6 +136,12 @@ class CaseOut(CaseFields):
     tasks: list[TaskOut]
     sla: list[sla.SlaClock]
     observables: list[ObservableOut]
+    evidence: list[EvidenceOut]
+
+
+class LegalHoldIn(BaseModel):
+    on: bool
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 
 
 class MajorIncidentIn(BaseModel):
@@ -298,6 +306,7 @@ async def case_out(
         tasks=tasks.task_outs(await tasks.case_tasks(db, case.id)),
         sla=case_clocks,
         observables=await observable_store.for_case(db, case, "restricted_case" in ctx.permissions),
+        evidence=await evidence.for_case(db, case),
     )
 
 
@@ -597,6 +606,7 @@ async def merge(
     alerts, assets = await _move(db, source, target, None, None)
     moved_tasks = await _move_tasks(db, source, target)
     moved_observables = await observable_store.move(db, source, target, None)
+    moved_evidence = await evidence.move(db, source, target)
     source.state = config.terminal_states[0]
     source.resolution = Resolution.MERGED
     source.merged_into_id = target.id
@@ -610,6 +620,7 @@ async def merge(
         assets=assets,
         tasks=moved_tasks,
         observables=moved_observables,
+        evidence=moved_evidence,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
 

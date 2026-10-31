@@ -232,3 +232,22 @@ test('closed cases offer no workflow actions', async () => {
   expect(screen.queryByRole('button', { name: 'Declare major incident' })).not.toBeInTheDocument()
   expect(screen.getByLabelText('Status of Identify recipients')).toBeDisabled()
 })
+
+test('places a legal hold with a reason', async () => {
+  const requests = api(CASE, {
+    [`PUT ${BASE}/legal-hold`]: () => json({ ...CASE, legal_hold: true }),
+  })
+  open([...TENANT.permissions, 'legal_hold:manage'])
+  fireEvent.change(await screen.findByLabelText('Legal hold reason'), { target: { value: 'Litigation' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Place legal hold' }))
+  expect(await body(requests, 'PUT', `${BASE}/legal-hold`)).toEqual({ on: true, reason: 'Litigation' })
+  expect(await screen.findByText(/Legal hold: evidence/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Lift legal hold' })).toBeInTheDocument()
+})
+
+test('only legal hold managers see the control', async () => {
+  api()
+  open()
+  await screen.findByRole('heading', { name: '#7 Suspicious email' })
+  expect(screen.queryByLabelText('Legal hold reason')).not.toBeInTheDocument()
+})

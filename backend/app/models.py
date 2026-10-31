@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Identity, Text, Uuid, func
+from sqlalchemy import ARRAY, BigInteger, DateTime, ForeignKey, Identity, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -142,6 +142,7 @@ class Case(Base):
     contained_at: Mapped[datetime | None]
     major_incident_at: Mapped[datetime | None]
     major_incident_reason: Mapped[str | None]
+    legal_hold: Mapped[bool] = mapped_column(server_default="false")
 
 
 class Alert(Base):
@@ -233,3 +234,40 @@ class CaseObservable(Base):
     observable_id: Mapped[UUID] = mapped_column(ForeignKey("observables.id"), primary_key=True)
     tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
     added_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Evidence(Base):
+    __tablename__ = "evidence"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    kind: Mapped[str]  # file, malware, or reference
+    name: Mapped[str]
+    description: Mapped[str]
+    size: Mapped[int | None] = mapped_column(BigInteger)
+    location: Mapped[str | None]  # where a reference's evidence is held
+    object_key: Mapped[str | None]
+    upload_id: Mapped[str | None]
+    status: Mapped[str]
+    sha256: Mapped[str | None]  # of the evidence itself
+    object_sha256: Mapped[str | None]  # of the stored object, checked on every download
+    created_by: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    deleted_at: Mapped[datetime | None]
+
+
+class CustodyEntry(Base):
+    """Chain of custody; append-only and hash-chained per evidence item."""
+
+    __tablename__ = "custody_log"
+
+    id: Mapped[int] = mapped_column(Identity(always=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    evidence_id: Mapped[UUID] = mapped_column(ForeignKey("evidence.id"))
+    at: Mapped[datetime]
+    actor: Mapped[str]
+    action: Mapped[str]
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    prev_hash: Mapped[str]
+    hash: Mapped[str]

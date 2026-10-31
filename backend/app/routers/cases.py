@@ -15,6 +15,7 @@ from app.cases import (
     CaseOut,
     CaseSummary,
     CaseUpdate,
+    LegalHoldIn,
     MajorIncidentIn,
     MergeIn,
     SplitIn,
@@ -87,6 +88,21 @@ async def update_case(number: int, body: CaseUpdate, ctx: Writer, db: Db) -> Cas
 async def acknowledge_case(number: int, ctx: Writer, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     await cases.acknowledge(db, ctx, case)
+    return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
+
+
+@router.put("/cases/{number}/legal-hold")
+async def set_legal_hold(
+    number: int,
+    body: LegalHoldIn,
+    ctx: Annotated[TenantContext, require("legal_hold:manage")],
+    db: Db,
+) -> CaseOut:
+    """Place or lift a legal hold; while held, the case's evidence cannot be deleted."""
+    case = await cases.get_case(db, ctx, number)
+    case.legal_hold = body.on
+    case.updated_at = datetime.now(UTC)
+    await ctx.audit(db, "case.legal_hold", f"case:{number}", on=body.on, reason=body.reason)
     return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
 

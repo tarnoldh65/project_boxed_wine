@@ -997,6 +997,68 @@
         }
       }
     },
+    "/api/tenants/{slug}/cases/{number}/legal-hold": {
+      "put": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Set Legal Hold",
+        "description": "Place or lift a legal hold; while held, the case's evidence cannot be deleted.",
+        "operationId": "set_legal_hold_api_tenants__slug__cases__number__legal_hold_put",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegalHoldIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tenants/{slug}/cases/{number}/major-incident": {
       "post": {
         "tags": [
@@ -1887,6 +1949,561 @@
         }
       }
     },
+    "/api/tenants/{slug}/cases/{number}/evidence/uploads": {
+      "post": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Start Upload",
+        "operationId": "start_upload_api_tenants__slug__cases__number__evidence_uploads_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadStart"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/complete": {
+      "post": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Complete Upload",
+        "operationId": "complete_upload_api_tenants__slug__cases__number__evidence__evidence_id__complete_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/abort": {
+      "post": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Abort Upload",
+        "operationId": "abort_upload_api_tenants__slug__cases__number__evidence__evidence_id__abort_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/references": {
+      "post": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Add Reference",
+        "operationId": "add_reference_api_tenants__slug__cases__number__evidence_references_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferenceIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/malware": {
+      "post": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Add Malware",
+        "description": "Upload a malware sample; it is stored only inside a password-protected AES zip.",
+        "operationId": "add_malware_api_tenants__slug__cases__number__evidence_malware_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_malware_api_tenants__slug__cases__number__evidence_malware_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/download": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Download",
+        "operationId": "download_api_tenants__slug__cases__number__evidence__evidence_id__download_get",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/custody": {
+      "get": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Custody Report",
+        "operationId": "custody_report_api_tenants__slug__cases__number__evidence__evidence_id__custody_get",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustodyReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/transfer": {
+      "post": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Transfer",
+        "operationId": "transfer_api_tenants__slug__cases__number__evidence__evidence_id__transfer_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustodyReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}": {
+      "delete": {
+        "tags": [
+          "evidence"
+        ],
+        "summary": "Delete",
+        "operationId": "delete_api_tenants__slug__cases__number__evidence__evidence_id__delete",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "evidence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Evidence Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "title": "Reason"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -2148,6 +2765,57 @@
           "external_id"
         ],
         "title": "AssetOut"
+      },
+      "Body_add_malware_api_tenants__slug__cases__number__evidence_malware_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "collected_by": {
+            "type": "string",
+            "title": "Collected By"
+          },
+          "collected_at": {
+            "type": "string",
+            "title": "Collected At"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "collected_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collected From"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "collected_by",
+          "collected_at"
+        ],
+        "title": "Body_add_malware_api_tenants__slug__cases__number__evidence_malware_post"
       },
       "CandidateOut": {
         "properties": {
@@ -2487,6 +3155,10 @@
             ],
             "title": "Major Incident Reason"
           },
+          "legal_hold": {
+            "type": "boolean",
+            "title": "Legal Hold"
+          },
           "merged_into": {
             "anyOf": [
               {
@@ -2532,6 +3204,13 @@
             },
             "type": "array",
             "title": "Observables"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceOut"
+            },
+            "type": "array",
+            "title": "Evidence"
           }
         },
         "type": "object",
@@ -2568,12 +3247,14 @@
           "triaged_at",
           "contained_at",
           "major_incident_reason",
+          "legal_hold",
           "merged_into",
           "alerts",
           "assets",
           "tasks",
           "sla",
-          "observables"
+          "observables",
+          "evidence"
         ],
         "title": "CaseOut"
       },
@@ -2939,6 +3620,54 @@
         ],
         "title": "ChecklistItem"
       },
+      "Collection": {
+        "properties": {
+          "collected_by": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Collected By"
+          },
+          "collected_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Collected At"
+          },
+          "collected_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collected From"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "type": "object",
+        "required": [
+          "collected_by",
+          "collected_at"
+        ],
+        "title": "Collection",
+        "description": "Who collected the evidence, when, where, and how."
+      },
       "Condition": {
         "properties": {
           "field": {
@@ -2960,6 +3689,86 @@
           "value"
         ],
         "title": "Condition"
+      },
+      "CustodyAction": {
+        "type": "string",
+        "enum": [
+          "collected",
+          "uploaded",
+          "registered",
+          "hashed",
+          "accessed",
+          "verified",
+          "mismatch",
+          "transferred",
+          "deleted"
+        ],
+        "title": "CustodyAction"
+      },
+      "CustodyEntryOut": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor"
+          },
+          "action": {
+            "$ref": "#/components/schemas/CustodyAction"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail"
+          },
+          "hash": {
+            "type": "string",
+            "title": "Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "actor",
+          "action",
+          "detail",
+          "hash"
+        ],
+        "title": "CustodyEntryOut"
+      },
+      "CustodyReport": {
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceOut"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/CustodyEntryOut"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "chain_intact": {
+            "type": "boolean",
+            "title": "Chain Intact"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evidence",
+          "entries",
+          "chain_intact",
+          "generated_at"
+        ],
+        "title": "CustodyReport"
       },
       "CustomField": {
         "properties": {
@@ -3075,6 +3884,106 @@
         ],
         "title": "EscalationRule"
       },
+      "EvidenceKind": {
+        "type": "string",
+        "enum": [
+          "file",
+          "malware",
+          "reference"
+        ],
+        "title": "EvidenceKind"
+      },
+      "EvidenceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EvidenceKind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EvidenceStatus"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "description",
+          "size",
+          "location",
+          "status",
+          "sha256",
+          "created_by",
+          "created_at"
+        ],
+        "title": "EvidenceOut"
+      },
+      "EvidenceStatus": {
+        "type": "string",
+        "enum": [
+          "uploading",
+          "stored",
+          "hashed",
+          "mismatch",
+          "reference",
+          "deleted"
+        ],
+        "title": "EvidenceStatus"
+      },
       "ExtractIn": {
         "properties": {
           "text": {
@@ -3146,6 +4055,26 @@
           "duplicate"
         ],
         "title": "IntakeOut"
+      },
+      "LegalHoldIn": {
+        "properties": {
+          "on": {
+            "type": "boolean",
+            "title": "On"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "on",
+          "reason"
+        ],
+        "title": "LegalHoldIn"
       },
       "LinkIn": {
         "properties": {
@@ -3511,6 +4440,62 @@
           "title"
         ],
         "title": "PlaybookTask"
+      },
+      "ReferenceIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Location"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "collection": {
+            "$ref": "#/components/schemas/Collection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "location",
+          "collection"
+        ],
+        "title": "ReferenceIn"
       },
       "Regulated": {
         "type": "string",
@@ -4709,6 +5694,41 @@
         ],
         "title": "TokenOut"
       },
+      "TransferIn": {
+        "properties": {
+          "to": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "To"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          }
+        },
+        "type": "object",
+        "required": [
+          "to",
+          "reason"
+        ],
+        "title": "TransferIn"
+      },
       "Trigger": {
         "type": "string",
         "enum": [
@@ -4718,6 +5738,63 @@
           "major_incident"
         ],
         "title": "Trigger"
+      },
+      "UploadIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Description",
+            "default": ""
+          },
+          "size": {
+            "type": "integer",
+            "maximum": 5497558138880.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Size"
+          },
+          "collection": {
+            "$ref": "#/components/schemas/Collection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "size",
+          "collection"
+        ],
+        "title": "UploadIn"
+      },
+      "UploadStart": {
+        "properties": {
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceOut"
+          },
+          "part_size": {
+            "type": "integer",
+            "title": "Part Size"
+          },
+          "part_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Part Urls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evidence",
+          "part_size",
+          "part_urls"
+        ],
+        "title": "UploadStart"
       },
       "ValidationError": {
         "properties": {

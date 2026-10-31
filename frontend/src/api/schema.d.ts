@@ -314,6 +314,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/legal-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Legal Hold
+         * @description Place or lift a legal hold; while held, the case's evidence cannot be deleted.
+         */
+        put: operations["set_legal_hold_api_tenants__slug__cases__number__legal_hold_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tenants/{slug}/cases/{number}/major-incident": {
         parameters: {
             query?: never;
@@ -558,6 +578,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/evidence/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Upload */
+        post: operations["start_upload_api_tenants__slug__cases__number__evidence_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Upload */
+        post: operations["complete_upload_api_tenants__slug__cases__number__evidence__evidence_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/abort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Abort Upload */
+        post: operations["abort_upload_api_tenants__slug__cases__number__evidence__evidence_id__abort_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Reference */
+        post: operations["add_reference_api_tenants__slug__cases__number__evidence_references_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/malware": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Malware
+         * @description Upload a malware sample; it is stored only inside a password-protected AES zip.
+         */
+        post: operations["add_malware_api_tenants__slug__cases__number__evidence_malware_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download */
+        get: operations["download_api_tenants__slug__cases__number__evidence__evidence_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/custody": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Custody Report */
+        get: operations["custody_report_api_tenants__slug__cases__number__evidence__evidence_id__custody_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transfer */
+        post: operations["transfer_api_tenants__slug__cases__number__evidence__evidence_id__transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/evidence/{evidence_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete */
+        delete: operations["delete_api_tenants__slug__cases__number__evidence__evidence_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -674,6 +850,24 @@ export interface components {
             /** External Id */
             external_id: string | null;
         };
+        /** Body_add_malware_api_tenants__slug__cases__number__evidence_malware_post */
+        Body_add_malware_api_tenants__slug__cases__number__evidence_malware_post: {
+            /** File */
+            file: string;
+            /** Collected By */
+            collected_by: string;
+            /** Collected At */
+            collected_at: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Collected From */
+            collected_from?: string | null;
+            /** Method */
+            method?: string | null;
+        };
         /** CandidateOut */
         CandidateOut: {
             type: components["schemas"]["ObservableType"];
@@ -778,6 +972,8 @@ export interface components {
             contained_at: string | null;
             /** Major Incident Reason */
             major_incident_reason: string | null;
+            /** Legal Hold */
+            legal_hold: boolean;
             /** Merged Into */
             merged_into: number | null;
             /** Alerts */
@@ -790,6 +986,8 @@ export interface components {
             sla: components["schemas"]["SlaClock"][];
             /** Observables */
             observables: components["schemas"]["ObservableOut"][];
+            /** Evidence */
+            evidence: components["schemas"]["EvidenceOut"][];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -876,12 +1074,64 @@ export interface components {
              */
             done: boolean;
         };
+        /**
+         * Collection
+         * @description Who collected the evidence, when, where, and how.
+         */
+        Collection: {
+            /** Collected By */
+            collected_by: string;
+            /**
+             * Collected At
+             * Format: date-time
+             */
+            collected_at: string;
+            /** Collected From */
+            collected_from?: string | null;
+            /** Method */
+            method?: string | null;
+        };
         /** Condition */
         Condition: {
             /** Field */
             field: string;
             /** Value */
             value: string;
+        };
+        /**
+         * CustodyAction
+         * @enum {string}
+         */
+        CustodyAction: "collected" | "uploaded" | "registered" | "hashed" | "accessed" | "verified" | "mismatch" | "transferred" | "deleted";
+        /** CustodyEntryOut */
+        CustodyEntryOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Actor */
+            actor: string;
+            action: components["schemas"]["CustodyAction"];
+            /** Detail */
+            detail: {
+                [key: string]: unknown;
+            };
+            /** Hash */
+            hash: string;
+        };
+        /** CustodyReport */
+        CustodyReport: {
+            evidence: components["schemas"]["EvidenceOut"];
+            /** Entries */
+            entries: components["schemas"]["CustodyEntryOut"][];
+            /** Chain Intact */
+            chain_intact: boolean;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
         };
         /** CustomField */
         CustomField: {
@@ -919,6 +1169,43 @@ export interface components {
             reassign_to_team?: string | null;
         };
         /**
+         * EvidenceKind
+         * @enum {string}
+         */
+        EvidenceKind: "file" | "malware" | "reference";
+        /** EvidenceOut */
+        EvidenceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["EvidenceKind"];
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Size */
+            size: number | null;
+            /** Location */
+            location: string | null;
+            status: components["schemas"]["EvidenceStatus"];
+            /** Sha256 */
+            sha256: string | null;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * EvidenceStatus
+         * @enum {string}
+         */
+        EvidenceStatus: "uploading" | "stored" | "hashed" | "mismatch" | "reference" | "deleted";
+        /**
          * ExtractIn
          * @description Text to extract from; when omitted, the case's alerts are used.
          */
@@ -949,6 +1236,13 @@ export interface components {
             new_case: boolean;
             /** Duplicate */
             duplicate: boolean;
+        };
+        /** LegalHoldIn */
+        LegalHoldIn: {
+            /** On */
+            on: boolean;
+            /** Reason */
+            reason: string;
         };
         /** LinkIn */
         LinkIn: {
@@ -1088,6 +1382,23 @@ export interface components {
              */
             depends_on: string[];
             when?: components["schemas"]["Condition"] | null;
+        };
+        /** ReferenceIn */
+        ReferenceIn: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Location */
+            location: string;
+            /** Sha256 */
+            sha256?: string | null;
+            /** Size */
+            size?: number | null;
+            collection: components["schemas"]["Collection"];
         };
         /**
          * Regulated
@@ -1666,11 +1977,41 @@ export interface components {
             /** Revoked At */
             revoked_at: string | null;
         };
+        /** TransferIn */
+        TransferIn: {
+            /** To */
+            to: string;
+            /** Reason */
+            reason: string;
+            /** Location */
+            location?: string | null;
+        };
         /**
          * Trigger
          * @enum {string}
          */
         Trigger: "case_created" | "sla_warning" | "sla_breach" | "major_incident";
+        /** UploadIn */
+        UploadIn: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Size */
+            size: number;
+            collection: components["schemas"]["Collection"];
+        };
+        /** UploadStart */
+        UploadStart: {
+            evidence: components["schemas"]["EvidenceOut"];
+            /** Part Size */
+            part_size: number;
+            /** Part Urls */
+            part_urls: string[];
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -2363,6 +2704,42 @@ export interface operations {
             };
         };
     };
+    set_legal_hold_api_tenants__slug__cases__number__legal_hold_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     declare_major_incident_api_tenants__slug__cases__number__major_incident_post: {
         parameters: {
             query?: never;
@@ -2845,6 +3222,314 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ObservablePage"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_upload_api_tenants__slug__cases__number__evidence_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadStart"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_upload_api_tenants__slug__cases__number__evidence__evidence_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                evidence_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abort_upload_api_tenants__slug__cases__number__evidence__evidence_id__abort_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                evidence_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_reference_api_tenants__slug__cases__number__evidence_references_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_malware_api_tenants__slug__cases__number__evidence_malware_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_malware_api_tenants__slug__cases__number__evidence_malware_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidenceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_api_tenants__slug__cases__number__evidence__evidence_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                evidence_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    custody_report_api_tenants__slug__cases__number__evidence__evidence_id__custody_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                evidence_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustodyReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transfer_api_tenants__slug__cases__number__evidence__evidence_id__transfer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                evidence_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustodyReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_tenants__slug__cases__number__evidence__evidence_id__delete: {
+        parameters: {
+            query: {
+                reason: string;
+            };
+            header?: never;
+            path: {
+                number: number;
+                evidence_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

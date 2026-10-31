@@ -33,6 +33,12 @@ Alerts arrive through `POST /api/tenants/<tenant>/alerts` or `POST /api/tenants/
 docker compose -f deploy/compose.yaml exec backend python -m app.jobs email_intake
 ```
 
+Evidence files upload from the browser straight to the dev S3 store (SeaweedFS, localhost:8333). The `evidence_hash` job hashes new uploads:
+
+```sh
+docker compose -f deploy/compose.yaml exec backend python -m app.jobs evidence_hash
+```
+
 The `sla` job fires SLA escalations and sends pending notifications (delivered to Mailpit in dev):
 
 ```sh

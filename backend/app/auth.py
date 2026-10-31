@@ -20,10 +20,12 @@ GROUP_PREFIX = "casemgr-"
 PLATFORM_ADMIN_GROUP = "casemgr-platform_admin"
 
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
-    "admin": frozenset({"cases:read", "cases:write", "config:manage", "tokens:manage"}),
-    "ir_lead": frozenset({"cases:read", "cases:write"}),
+    "admin": frozenset(
+        {"cases:read", "cases:write", "config:manage", "legal_hold:manage", "tokens:manage"}
+    ),
+    "ir_lead": frozenset({"cases:read", "cases:write", "legal_hold:manage"}),
     "analyst": frozenset({"cases:read", "cases:write"}),
-    "legal": frozenset({"cases:read"}),
+    "legal": frozenset({"cases:read", "legal_hold:manage"}),
     "executive": frozenset({"cases:read"}),
     "auditor": frozenset({"cases:read"}),
 }

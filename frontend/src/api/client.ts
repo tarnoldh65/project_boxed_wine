@@ -38,6 +38,10 @@ export type Observable = Schemas['ObservableOut']
 export type ObservableType = Schemas['ObservableType']
 export type Candidate = Schemas['CandidateOut']
 export type ObservablePage = Schemas['ObservablePage']
+export type Evidence = Schemas['EvidenceOut']
+export type UploadStart = Schemas['UploadStart']
+export type CustodyReport = Schemas['CustodyReport']
+export type Collection = Schemas['Collection']
 
 export const api = createClient<paths>({
   baseUrl: window.location.origin,

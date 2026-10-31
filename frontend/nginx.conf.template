@@ -3,7 +3,8 @@ server {
     server_tokens off;
     root /usr/share/nginx/html;
 
-    add_header Content-Security-Policy "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    # Evidence uploads go from the browser straight to object storage.
+    add_header Content-Security-Policy "default-src 'self'; connect-src 'self' ${CASEMGR_S3_PUBLIC_ORIGIN}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
     add_header X-Content-Type-Options nosniff always;
     add_header Referrer-Policy no-referrer always;
 
@@ -12,6 +13,12 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # Malware samples are uploaded through the API; large evidence downloads stream through it.
+        client_max_body_size 110m;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
     }
 
     location / {
