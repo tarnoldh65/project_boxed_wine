@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ARRAY, DateTime, ForeignKey, Identity, Text, func
+from sqlalchemy import ARRAY, DateTime, ForeignKey, Identity, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -137,6 +137,11 @@ class Case(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
     closed_at: Mapped[datetime | None]
+    acknowledged_at: Mapped[datetime | None]
+    triaged_at: Mapped[datetime | None]
+    contained_at: Mapped[datetime | None]
+    major_incident_at: Mapped[datetime | None]
+    major_incident_reason: Mapped[str | None]
 
 
 class Alert(Base):
@@ -170,3 +175,42 @@ class CaseAsset(Base):
     case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"), primary_key=True)
     asset_id: Mapped[UUID] = mapped_column(ForeignKey("assets.id"), primary_key=True)
     tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    title: Mapped[str]
+    description: Mapped[str]
+    status: Mapped[str]
+    assignee_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+    due_at: Mapped[datetime | None]
+    depends_on: Mapped[list[UUID]] = mapped_column(ARRAY(Uuid))
+    checklist: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    waive_reason: Mapped[str | None]
+    playbook_key: Mapped[str | None]
+    position: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    completed_at: Mapped[datetime | None]
+
+
+class Notification(Base):
+    """Outbox of escalation messages; one row per rule, trigger, and SLA step of a case."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    rule: Mapped[str]
+    trigger: Mapped[str]
+    step: Mapped[str]
+    emails: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    webhook: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    sent_at: Mapped[datetime | None]
+    attempts: Mapped[int] = mapped_column(server_default="0")
+    last_error: Mapped[str | None]

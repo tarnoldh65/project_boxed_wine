@@ -29,6 +29,11 @@ export type Asset = Schemas['AssetOut']
 export type AssetKind = Schemas['AssetKind']
 export type Regulated = Schemas['Regulated']
 export type Resolution = Schemas['Resolution']
+export type Task = Schemas['TaskOut']
+export type TaskStatus = Schemas['TaskStatus']
+export type TaskUpdate = Schemas['TaskUpdate']
+export type SlaClock = Schemas['SlaClock']
+export type PlaybookTask = Schemas['PlaybookTask']
 
 export const api = createClient<paths>({
   baseUrl: window.location.origin,

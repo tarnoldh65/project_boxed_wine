@@ -5,7 +5,14 @@ from httpx2 import AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from tests.conftest import MakeToken, MakeUser, SignedIn, audit_actions, new_tenant
+from tests.conftest import (
+    MakeToken,
+    MakeUser,
+    SignedIn,
+    audit_actions,
+    close_case,
+    new_tenant,
+)
 
 
 def cases_url(tenant: str, suffix: str = "") -> str:
@@ -100,7 +107,8 @@ async def test_view_and_list_are_audited(
     assert (await analyst.client.get(cases_url(tenant, f"/{case['number']}"))).status_code == 200
     listed = (await analyst.client.get(cases_url(tenant))).json()
     assert [c["number"] for c in listed] == [case["number"]]
-    assert await audit_actions(owner, f"user:{analyst.id}") == [
+    actions = await audit_actions(owner, f"user:{analyst.id}")
+    assert [a for a in actions if a.startswith("case.")] == [
         "case.create",
         "case.view",
         "case.list",
@@ -217,9 +225,7 @@ async def test_severity_follows_matrix_until_overridden(analyst: SignedIn, tenan
 async def test_close_and_reopen(analyst: SignedIn, tenant: str) -> None:
     number = (await create(analyst.client, tenant))["number"]
 
-    closed = (
-        await patch(analyst.client, tenant, number, state="closed", resolution="false_positive")
-    ).json()
+    closed = await close_case(analyst.client, tenant, number, "false_positive")
     assert closed["resolution"] == "false_positive"
     assert closed["closed_at"] is not None
 
@@ -362,7 +368,7 @@ async def test_merge_rules(make_user: MakeUser, tenant: str) -> None:
     restricted = (await create(insider.client, tenant))["number"]
     await patch(insider.client, tenant, restricted, restricted=True)
     closed = (await create(insider.client, tenant))["number"]
-    await patch(insider.client, tenant, closed, state="closed", resolution="benign")
+    await close_case(insider.client, tenant, closed)
 
     async def merge(source: int, into: int) -> list[str]:
         response = await insider.client.post(
@@ -428,7 +434,7 @@ async def test_split_rules(analyst: SignedIn, tenant: str) -> None:
         url, json={"title": "x", "alert_ids": ["00000000-0000-0000-0000-000000000000"]}
     )
     assert errors(stray) == ["alerts must belong to the case"]
-    await patch(analyst.client, tenant, number, state="closed", resolution="benign")
+    await close_case(analyst.client, tenant, number)
     closed = await analyst.client.post(
         url, json={"title": "x", "alert_ids": ["00000000-0000-0000-0000-000000000000"]}
     )

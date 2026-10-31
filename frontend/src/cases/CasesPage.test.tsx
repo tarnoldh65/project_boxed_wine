@@ -24,8 +24,8 @@ test('lists cases with state, severity, and owner names', async () => {
   renderInTenant(<CasesPage />, TENANT)
   const rows = (await screen.findAllByRole('row')).slice(1)
   expect(rows.map((r) => within(r).getAllByRole('cell').map((c) => c.textContent))).toEqual([
-    ['7', 'Suspicious email', 'New', 'P1 high', 'J Doe', expect.any(String)],
-    ['8', 'Ransom note (restricted)', 'New', 'P1 high', 'Unassigned', expect.any(String)],
+    ['7', 'Suspicious email', 'New', 'P1 high', 'pending', 'J Doe', expect.any(String)],
+    ['8', 'Ransom note (restricted)', 'New', 'P1 high', 'pending', 'Unassigned', expect.any(String)],
   ])
   expect(screen.getByRole('link', { name: 'Suspicious email' })).toHaveAttribute('href', '/t/dr/cases/7')
 })

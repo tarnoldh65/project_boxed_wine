@@ -3,6 +3,7 @@ import { useTenant } from '../tenant'
 import { TokensPanel } from '../TokensPanel'
 import { EscalationEditor } from './EscalationEditor'
 import { FieldsEditor } from './FieldsEditor'
+import { PlaybookEditor } from './PlaybookEditor'
 import { SeverityEditor } from './SeverityEditor'
 import { StatesEditor } from './StatesEditor'
 import { TeamsEditor } from './TeamsEditor'
@@ -31,9 +32,11 @@ export function Settings() {
             slug={slug}
             rules={config.data.escalation_rules}
             severities={config.data.severity.levels.map((level) => level.key)}
+            teams={config.data.teams}
           />
           <TeamsEditor slug={slug} teams={config.data.teams} members={members.data} />
           <TemplatesEditor slug={slug} config={config.data} />
+          <PlaybookEditor slug={slug} config={config.data} />
         </section>
       )}
       {permissions.includes('tokens:manage') && <TokensPanel slug={slug} />}

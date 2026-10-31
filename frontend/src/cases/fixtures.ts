@@ -15,9 +15,9 @@ export const MEMBERS: Member[] = [
 
 export const CONFIG: TenantConfig = {
   states: [
-    { key: 'new', name: 'New', terminal: false },
-    { key: 'triage', name: 'Triage', terminal: false },
-    { key: 'closed', name: 'Closed', terminal: true },
+    { key: 'new', name: 'New', terminal: false, require_tasks_done: false },
+    { key: 'triage', name: 'Triage', terminal: false, sla_milestone: 'triage', require_tasks_done: false },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true },
   ],
   custom_fields: [
     { key: 'vector', label: 'Vector', type: 'picklist', options: ['email', 'web'] },
@@ -39,8 +39,8 @@ export const CONFIG: TenantConfig = {
   escalation_rules: [],
   teams: [{ key: 'soc', name: 'SOC', on_call: 'u1' }],
   templates: [
-    { key: 'phishing', name: 'Phishing', impact: 'low', urgency: 'high', tlp: 'amber', pap: 'amber', team: 'soc' },
-    { key: 'bec', name: 'BEC', impact: 'high', urgency: 'low', tlp: 'amber', pap: 'amber', team: null },
+    { key: 'phishing', name: 'Phishing', impact: 'low', urgency: 'high', tlp: 'amber', pap: 'amber', team: 'soc', tasks: [] },
+    { key: 'bec', name: 'BEC', impact: 'high', urgency: 'low', tlp: 'amber', pap: 'amber', team: null, tasks: [] },
   ],
 }
 
@@ -71,6 +71,48 @@ export const CASE: Case = {
   merged_into: null,
   detected_at: null,
   closed_at: null,
+  acknowledged_at: null,
+  triaged_at: null,
+  contained_at: null,
+  major_incident_at: null,
+  major_incident_reason: null,
+  sla_status: 'pending',
+  sla: [
+    { step: 'acknowledge', due_at: '2026-10-31T10:30:00Z', met_at: null, status: 'warning' },
+    { step: 'triage', due_at: '2026-10-31T14:00:00Z', met_at: null, status: 'pending' },
+  ],
+  tasks: [
+    {
+      id: 't1',
+      title: 'Identify recipients',
+      description: '',
+      status: 'open',
+      assignee_id: null,
+      due_at: '2026-10-31T12:00:00Z',
+      depends_on: [],
+      checklist: [{ text: 'Query mail logs', done: false }],
+      waive_reason: null,
+      playbook_key: 'recipients',
+      blocked: false,
+      created_at: '2026-10-31T10:00:00Z',
+      completed_at: null,
+    },
+    {
+      id: 't2',
+      title: 'Reset credentials',
+      description: '',
+      status: 'open',
+      assignee_id: null,
+      due_at: null,
+      depends_on: ['t1'],
+      checklist: [],
+      waive_reason: null,
+      playbook_key: 'reset',
+      blocked: true,
+      created_at: '2026-10-31T10:00:00Z',
+      completed_at: null,
+    },
+  ],
   created_at: '2026-10-31T10:00:00Z',
   updated_at: '2026-10-31T10:00:00Z',
   alerts: [

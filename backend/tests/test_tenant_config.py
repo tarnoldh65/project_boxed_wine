@@ -153,7 +153,7 @@ def test_unknown_matrix_axis_is_rejected() -> None:
         ),
         (
             {"escalation_rules": [{"name": "r", "trigger": "sla_breach"}]},
-            "needs an email or a webhook",
+            "needs an email, a webhook, or a reassignment",
         ),
         (
             {

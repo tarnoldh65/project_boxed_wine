@@ -8,8 +8,8 @@ const BASE = '/api/tenants/dr/config'
 const SLA = { acknowledge_minutes: 15, triage_minutes: 60, contain_minutes: 240, resolve_minutes: 1440 }
 const CONFIG: TenantConfig = {
   states: [
-    { key: 'new', name: 'New', terminal: false },
-    { key: 'closed', name: 'Closed', terminal: true },
+    { key: 'new', name: 'New', terminal: false, require_tasks_done: false },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true },
   ],
   custom_fields: [],
   severity: {
@@ -23,7 +23,7 @@ const CONFIG: TenantConfig = {
   },
   escalation_rules: [],
   teams: [],
-  templates: [{ key: 'phishing', name: 'Phishing', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null }],
+  templates: [{ key: 'phishing', name: 'Phishing', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null, tasks: [] }],
 }
 const MEMBERS = [{ id: 'u1', username: 'jdoe', display_name: 'J Doe' }]
 const ADMIN: TenantAccess = { slug: 'dr', name: 'DR', permissions: ['cases:read', 'config:manage'] }
@@ -106,9 +106,9 @@ test('edits, reorders, and saves lifecycle states', async () => {
   fireEvent.click(states.getByRole('button', { name: 'Save' }))
 
   expect(await lastBody(requests, '/states')).toEqual([
-    { key: 'new', name: 'Open', terminal: false },
-    { key: 'triage', name: 'Triage', terminal: false },
-    { key: 'closed', name: 'Closed', terminal: true },
+    { key: 'new', name: 'Open', terminal: false, require_tasks_done: false },
+    { key: 'triage', name: 'Triage', terminal: false, require_tasks_done: false },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true },
   ])
   expect(await states.findByRole('status')).toHaveTextContent('Saved')
 })
@@ -213,6 +213,7 @@ test('adds and removes escalation rules', async () => {
       severities: ['high'],
       notify_emails: ['ir@example.com', 'lead@example.com'],
       webhook_url: 'https://hooks.example.com/x',
+      reassign_to_team: null,
     },
   ])
 })
@@ -252,7 +253,85 @@ test('edits case templates', async () => {
   fireEvent.click(templates.getByRole('button', { name: 'Save' }))
 
   expect(await lastBody(requests, '/templates')).toEqual([
-    { key: 'phishing', name: 'Phishing', impact: 'narrow', urgency: 'now', tlp: 'red', pap: 'amber', team: null },
-    { key: 'ddos', name: 'DDoS', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null },
+    { key: 'phishing', name: 'Phishing', impact: 'narrow', urgency: 'now', tlp: 'red', pap: 'amber', team: null, tasks: [] },
+    { key: 'ddos', name: 'DDoS', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null, tasks: [] },
+  ])
+})
+
+test('sets SLA milestones and the tasks gate on states', async () => {
+  const requests = mockConfig()
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Lifecycle states' })
+  const states = section('Lifecycle states')
+  fireEvent.change(states.getByLabelText('State 1 SLA milestone'), { target: { value: 'triage' } })
+  fireEvent.click(states.getByLabelText('State 2 tasks done gate'))
+  fireEvent.click(states.getByRole('button', { name: 'Save' }))
+  expect(await lastBody(requests, '/states')).toEqual([
+    { key: 'new', name: 'New', terminal: false, require_tasks_done: false, sla_milestone: 'triage' },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: false },
+  ])
+})
+
+test('escalation rules can reassign to a team', async () => {
+  let config = { ...CONFIG, teams: [{ key: 'tier2', name: 'Tier 2', on_call: null }] }
+  const requests = mockApi({
+    [`GET ${BASE}`]: () => json(config),
+    'GET /api/tenants/dr/members': () => json(MEMBERS),
+    [`PUT ${BASE}/escalation-rules`]: async (request) => {
+      config = { ...config, escalation_rules: await request.json() }
+      return json(config)
+    },
+  })
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Escalation rules' })
+  const rules = section('Escalation rules')
+  fireEvent.click(rules.getByRole('button', { name: 'Add rule' }))
+  fireEvent.change(rules.getByLabelText('Rule 1 name'), { target: { value: 'Escalate' } })
+  fireEvent.change(rules.getByLabelText('Rule 1 reassign'), { target: { value: 'tier2' } })
+  fireEvent.click(rules.getByRole('button', { name: 'Save' }))
+  expect(await lastBody(requests, '/escalation-rules')).toEqual([
+    {
+      name: 'Escalate',
+      trigger: 'sla_breach',
+      severities: [],
+      notify_emails: [],
+      webhook_url: null,
+      reassign_to_team: 'tier2',
+    },
+  ])
+})
+
+test('edits a template playbook without touching other template settings', async () => {
+  const requests = mockConfig()
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Playbooks' })
+  const playbook = within(screen.getByRole('heading', { name: 'Playbooks' }).closest('section')!)
+
+  for (const [i, key, title] of [[1, 'triage', 'Triage the report'], [2, 'reset', 'Reset passwords']] as const) {
+    fireEvent.click(playbook.getByRole('button', { name: 'Add task' }))
+    fireEvent.change(playbook.getByLabelText(`Task ${i} key`), { target: { value: key } })
+    fireEvent.change(playbook.getByLabelText(`Task ${i} title`), { target: { value: title } })
+  }
+  fireEvent.change(playbook.getByLabelText('Task 1 due hours'), { target: { value: '4' } })
+  fireEvent.change(playbook.getByLabelText('Task 2 depends on'), { target: { value: 'triage' } })
+  fireEvent.change(playbook.getByLabelText('Task 2 condition field'), { target: { value: 'severity' } })
+  fireEvent.change(playbook.getByLabelText('Task 2 condition value'), { target: { value: 'high' } })
+  fireEvent.click(playbook.getByRole('button', { name: 'Save' }))
+
+  expect(await lastBody(requests, '/templates')).toEqual([
+    {
+      ...CONFIG.templates[0],
+      tasks: [
+        { key: 'triage', title: 'Triage the report', description: '', due_hours: 4, depends_on: [], when: null },
+        {
+          key: 'reset',
+          title: 'Reset passwords',
+          description: '',
+          due_hours: null,
+          depends_on: ['triage'],
+          when: { field: 'severity', value: 'high' },
+        },
+      ],
+    },
   ])
 })

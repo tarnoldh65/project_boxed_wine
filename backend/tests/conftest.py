@@ -168,3 +168,19 @@ def make_token(owner: AsyncEngine) -> MakeToken:
         return raw
 
     return make
+
+
+async def close_case(
+    client: AsyncClient, tenant: str, number: int, resolution: str = "benign"
+) -> dict:
+    """Waive any open tasks (the closing gate requires it), then close the case."""
+    url = f"/api/tenants/{tenant}/cases/{number}"
+    for task in (await client.get(url)).json()["tasks"]:
+        if task["status"] not in ("done", "waived"):
+            response = await client.patch(
+                f"{url}/tasks/{task['id']}", json={"status": "waived", "waive_reason": "test"}
+            )
+            assert response.status_code == 200, response.text
+    response = await client.patch(url, json={"state": "closed", "resolution": resolution})
+    assert response.status_code == 200, response.text
+    return response.json()

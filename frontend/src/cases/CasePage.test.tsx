@@ -197,3 +197,36 @@ test('reports a missing case', async () => {
   open()
   expect(await screen.findByRole('alert')).toHaveTextContent('Case not found')
 })
+
+test('shows SLA clocks and acknowledges the case', async () => {
+  const requests = api(CASE, {
+    [`POST ${BASE}/acknowledge`]: () => json({ ...CASE, acknowledged_at: '2026-10-31T10:05:00Z' }),
+  })
+  open()
+  const sla = await screen.findByRole('table', { name: 'SLA' })
+  expect(sla).toHaveTextContent('acknowledge warning')
+  expect(sla).toHaveTextContent('triage pending')
+  fireEvent.click(screen.getByRole('button', { name: 'Acknowledge' }))
+  await sent(requests, 'POST', `${BASE}/acknowledge`)
+  await vi.waitFor(() => expect(screen.queryByRole('button', { name: 'Acknowledge' })).not.toBeInTheDocument())
+})
+
+test('declares a major incident', async () => {
+  const declared = { ...CASE, major_incident_at: '2026-10-31T11:00:00Z', major_incident_reason: 'Payroll down' }
+  const requests = api(CASE, { [`POST ${BASE}/major-incident`]: () => json(declared) })
+  open()
+  fireEvent.change(await screen.findByLabelText('Major incident reason'), { target: { value: 'Payroll down' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Declare major incident' }))
+  expect(await body(requests, 'POST', `${BASE}/major-incident`)).toEqual({ reason: 'Payroll down' })
+  expect(await screen.findByText(/Major incident declared .*: Payroll down/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Declare major incident' })).not.toBeInTheDocument()
+})
+
+test('closed cases offer no workflow actions', async () => {
+  api({ ...CASE, state: 'closed', resolution: 'benign' })
+  open()
+  await screen.findByRole('heading', { name: '#7 Suspicious email' })
+  expect(screen.queryByRole('button', { name: 'Acknowledge' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Declare major incident' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Status of Identify recipients')).toBeDisabled()
+})

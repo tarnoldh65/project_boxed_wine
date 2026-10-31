@@ -13,7 +13,12 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
   )
   const { impacts, urgencies } = config.severity
 
-  function select<K extends keyof Template>(i: number, key: K, label: string, values: string[]) {
+  function select(
+    i: number,
+    key: 'impact' | 'urgency' | 'tlp' | 'pap' | 'team',
+    label: string,
+    values: string[],
+  ) {
     return (
       <select
         aria-label={`Template ${i + 1} ${label}`}
@@ -32,7 +37,9 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        save.mutate(draft)
+        // Playbook tasks are edited separately; keep the latest saved ones.
+        const tasks = Object.fromEntries(config.templates.map((t) => [t.key, t.tasks]))
+        save.mutate(draft.map((t) => ({ ...t, tasks: tasks[t.key] ?? [] })))
       }}
     >
       <h3>Case templates</h3>
@@ -94,6 +101,7 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
               tlp: 'amber',
               pap: 'amber',
               team: null,
+              tasks: [],
             },
           ])
         }

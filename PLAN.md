@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 3 complete.**
+Status: **Phase 4 complete.**
 
 ---
 
@@ -109,12 +109,12 @@ README.md
 
 ### Phase 4 - Workflow, tasks, playbooks, SLAs, escalation (FR-21, FR-22, FR-23, FR-24, FR-60)
 
-- [ ] Transitions validated against gate rules (required fields, all tasks resolved or waived with reason, PIR complete before Closed)
-- [ ] Tasks: assignee, due date, status, dependencies (blocked until done), checklists, waive-with-reason
-- [ ] Playbooks: ordered task lists with an optional condition (`field = value`), attached to case types; tasks generated on case creation and when the condition becomes true
-- [ ] SLA timers (acknowledge, triage, contain, resolve) per severity; `sla` job sends warning and breach notifications and applies escalation rules (notify / reassign)
-- [ ] "Declare major incident" action escalates per rules
-- [ ] Tests: every gate rule pass/fail; dependency cycles rejected; SLA math across boundaries; escalation fires exactly once per breach
+- [x] Transitions validated against gate rules: required custom fields, a resolution to close, and (per state, on by default for Closed) every task done or waived. The PIR gate is added with the PIR module in Phase 9
+- [x] Tasks: assignee, due date, status, dependencies (blocked until done or waived), checklists, waive-with-reason; tasks of closed cases are read-only; merge moves tasks
+- [x] Playbooks: ordered task lists per case template with an optional condition (`field = value` on severity, impact, urgency, TLP, PAP, team, or a custom field); tasks generated on case creation and when the condition becomes true; the seven default templates ship with playbooks
+- [x] SLA timers (acknowledge, triage, contain, resolve) per severity in calendar time from case creation, warning at 75% of the target; acknowledge is an explicit action (or any move past the first state), triage and contain are met by states marked as those milestones, resolve by closing. The `sla` job fires warning and breach escalations and delivers them; escalation rules notify (email, https webhook) and/or reassign to a team's on-call member. Rules fire through a notifications outbox, so requests never wait on mail or webhooks, and messages carry only the case number, severity, event, and link
+- [x] "Declare major incident" action records the reason and escalates per rules
+- [x] Tests: every gate rule pass/fail; dependency cycles rejected; SLA math across boundaries; escalation fires exactly once per breach
 
 ### Phase 5 - Observables and correlation (FR-30, FR-31, FR-33)
 
@@ -155,7 +155,7 @@ README.md
 - [ ] Full-text search across cases, notes, observables, and attachment metadata via Postgres FTS; saved searches; results filtered through `visible_cases`
 - [ ] Dashboard: open cases by severity/status, SLA compliance, analyst workload, aging, active clocks
 - [ ] Metrics: MTTD, MTTA, MTTC, MTTR, dwell time, false-positive rate, volume by category and ATT&CK technique, recurrence (new case sharing an observable with a closed case)
-- [ ] PIR module: root cause, contributing factors, what went well / didn't, action items tracked to closure
+- [ ] PIR module: root cause, contributing factors, what went well / didn't, action items tracked to closure; a case cannot close until its PIR is complete (FR-21 gate deferred from Phase 4)
 - [ ] Reports (executive summary, technical, PIR) to PDF and DOCX, with privilege marking when set; layouts are fixed in code for MVP
 - [ ] Retention policies per case type; `retention` job purges expired cases and evidence, skipping legal holds, and audits each purge
 - [ ] Tests: metric calculations on fixed fixtures; restricted content never appears in search for unauthorized users; purge respects legal hold
