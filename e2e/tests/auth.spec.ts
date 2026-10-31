@@ -13,6 +13,7 @@ test('user signs in with MFA and sees only their tenants', async ({ page, reques
 test('tenant admin issues and revokes a scoped API token', async ({ page, request }) => {
   const user = await createUser(request, ['casemgr-detect-respond-admin'])
   await signIn(page, user)
+  await page.getByRole('button', { name: 'Settings' }).click()
 
   await page.getByLabel('Name').fill('siem-ingest')
   await page.getByRole('button', { name: 'Create token' }).click()
@@ -27,8 +28,10 @@ test('tenant admin issues and revokes a scoped API token', async ({ page, reques
     (await request.get('/api/tenants/insider-threat/tokens', { headers: auth })).status(),
   ).toBe(403)
 
-  await page.getByRole('button', { name: 'Revoke siem-ingest' }).click()
-  await expect(page.getByRole('cell', { name: 'Revoked' })).toBeVisible()
+  // Earlier runs leave tokens with the same name, so find this one by its prefix.
+  const row = page.getByRole('row').filter({ hasText: token!.slice(0, 12) })
+  await row.getByRole('button', { name: 'Revoke siem-ingest' }).click()
+  await expect(row.getByRole('cell', { name: 'Revoked' })).toBeVisible()
   expect((await request.get(tokens, { headers: auth })).status()).toBe(401)
 })
 

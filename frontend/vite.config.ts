@@ -9,6 +9,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Keep test runs light on developer machines.
+    maxWorkers: 2,
     setupFiles: ['./src/test-setup.ts'],
   },
 })

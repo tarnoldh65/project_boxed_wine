@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 1 complete.**
+Status: **Phase 2 complete.**
 
 ---
 
@@ -91,9 +91,9 @@ README.md
 
 ### Phase 2 - Admin configuration (FR-100, FR-11, FR-12, FR-20)
 
-- [ ] Per-tenant admin UI + API for: lifecycle states (default NIST set seeded), custom fields (text, picklist, date, user, number) with "required at state X", severity matrix (impact x urgency), SLA targets per severity, notification/escalation rules
-- [ ] Config changes are audited and take effect without restart
-- [ ] Tests: severity matrix lookup for every cell; custom field validation by type; required-at-state enforcement
+- [x] Per-tenant admin UI + API for: lifecycle states (default NIST set, served from code until a tenant customizes it), custom fields (text, picklist, date, user, number) required from a chosen state onward, severity matrix (impact x urgency; priority P1..Pn follows severity order), SLA targets per severity (edited with the matrix), notification/escalation rules (email and https webhook; reassignment is added with teams in Phase 4)
+- [x] Config changes are audited (with the new section content) and take effect without restart; each change revalidates the whole configuration so cross-references (states, severities) stay consistent
+- [x] Tests: severity matrix lookup for every cell; custom field validation by type; required-at-state enforcement (pure functions that Phase 3 applies to cases)
 
 ### Phase 3 - Cases, assets, intake (FR-01, FR-02, FR-04, FR-10, FR-14, FR-15)
 

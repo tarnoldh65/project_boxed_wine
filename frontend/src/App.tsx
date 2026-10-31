@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
 import { api, type Me, type TenantAccess } from './api/client'
-import { TokensPanel } from './TokensPanel'
+import { Settings } from './settings/Settings'
 
 const TENANT_KEY = 'casemgr.tenant'
 
@@ -106,14 +106,34 @@ function Workspace({ me }: { me: Me }) {
 }
 
 function TenantHome({ tenant }: { tenant: TenantAccess }) {
+  const [view, setView] = useState<'cases' | 'settings'>('cases')
+  const isAdmin = ['config:manage', 'tokens:manage'].some((p) => tenant.permissions.includes(p))
+
   return (
     <>
       <h1>{tenant.name}</h1>
-      <section>
-        <h2>Cases</h2>
-        <p>No cases yet.</p>
-      </section>
-      {tenant.permissions.includes('tokens:manage') && <TokensPanel slug={tenant.slug} />}
+      {isAdmin && (
+        <nav className="tabs">
+          <button type="button" aria-pressed={view === 'cases'} onClick={() => setView('cases')}>
+            Cases
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === 'settings'}
+            onClick={() => setView('settings')}
+          >
+            Settings
+          </button>
+        </nav>
+      )}
+      {view === 'settings' ? (
+        <Settings tenant={tenant} />
+      ) : (
+        <section>
+          <h2>Cases</h2>
+          <p>No cases yet.</p>
+        </section>
+      )}
     </>
   )
 }

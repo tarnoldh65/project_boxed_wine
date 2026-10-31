@@ -69,7 +69,17 @@ test('shows token management to tenant admins', async () => {
     'GET /api/tenants/detect-respond/tokens': () => json([]),
   })
   renderWithQuery(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
   expect(await screen.findByRole('heading', { name: 'API tokens' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Cases' }))
+  expect(screen.getByRole('heading', { name: 'Cases' })).toBeInTheDocument()
+})
+
+test('hides settings from non-admins', async () => {
+  mockApi({ 'GET /api/me': () => json(ME) })
+  renderWithQuery(<App />)
+  expect(await screen.findByRole('heading', { name: 'Cases' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument()
 })
 
 test('explains when the user has no tenants', async () => {
