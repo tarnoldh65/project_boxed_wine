@@ -20,9 +20,10 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit, escalation, sla, tasks
+from app import audit, escalation, observable_store, sla, tasks
 from app.auth import TenantContext, deny
 from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, Task, User
+from app.observable_store import ObservableOut
 from app.tasks import TaskOut
 from app.tenant_config import MAX_TEXT, FieldType, Key, Label, Pap, TenantConfig, Tlp, Trigger
 
@@ -132,6 +133,7 @@ class CaseOut(CaseFields):
     assets: list[AssetOut]
     tasks: list[TaskOut]
     sla: list[sla.SlaClock]
+    observables: list[ObservableOut]
 
 
 class MajorIncidentIn(BaseModel):
@@ -213,11 +215,12 @@ class SplitIn(BaseModel):
     title: Title
     alert_ids: list[UUID] = []
     asset_ids: list[UUID] = []
+    observable_ids: list[UUID] = []
 
     @model_validator(mode="after")
     def check_selection(self) -> Self:
-        if not self.alert_ids and not self.asset_ids:
-            raise ValueError("select at least one alert or asset to split off")
+        if not (self.alert_ids or self.asset_ids or self.observable_ids):
+            raise ValueError("select at least one alert, asset, or observable to split off")
         return self
 
 
@@ -270,7 +273,9 @@ def summary(case: Case, config: TenantConfig, now: datetime) -> CaseSummary:
     return CaseSummary.model_validate(case).model_copy(update={"sla_status": status})
 
 
-async def case_out(db: AsyncSession, case: Case, config: TenantConfig) -> CaseOut:
+async def case_out(
+    db: AsyncSession, ctx: TenantContext, case: Case, config: TenantConfig
+) -> CaseOut:
     alerts = await db.scalars(
         select(Alert).where(Alert.case_id == case.id).order_by(Alert.received_at)
     )
@@ -292,6 +297,7 @@ async def case_out(db: AsyncSession, case: Case, config: TenantConfig) -> CaseOu
         assets=[AssetOut.model_validate(a) for a in assets],
         tasks=tasks.task_outs(await tasks.case_tasks(db, case.id)),
         sla=case_clocks,
+        observables=await observable_store.for_case(db, case, "restricted_case" in ctx.permissions),
     )
 
 
@@ -590,6 +596,7 @@ async def merge(
         invalid("a restricted case can only merge into a restricted case", "into")
     alerts, assets = await _move(db, source, target, None, None)
     moved_tasks = await _move_tasks(db, source, target)
+    moved_observables = await observable_store.move(db, source, target, None)
     source.state = config.terminal_states[0]
     source.resolution = Resolution.MERGED
     source.merged_into_id = target.id
@@ -602,6 +609,7 @@ async def merge(
         alerts=alerts,
         assets=assets,
         tasks=moved_tasks,
+        observables=moved_observables,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
 
@@ -626,6 +634,8 @@ async def split(
     )
     if not set(body.asset_ids) <= own_assets:
         invalid("assets must be linked to the case", "asset_ids")
+    if not set(body.observable_ids) <= await observable_store.own_ids(db, source):
+        invalid("observables must be linked to the case", "observable_ids")
 
     new = Case(
         tenant_id=source.tenant_id,
@@ -639,8 +649,15 @@ async def split(
     db.add(new)
     await db.flush()
     alerts, assets = await _move(db, source, new, body.alert_ids, body.asset_ids)
+    observables = await observable_store.move(db, source, new, body.observable_ids)
     await ctx.audit(
-        db, "case.split", f"case:{source.number}", to=new.number, alerts=alerts, assets=assets
+        db,
+        "case.split",
+        f"case:{source.number}",
+        to=new.number,
+        alerts=alerts,
+        assets=assets,
+        observables=observables,
     )
     await ctx.audit(db, "case.create", f"case:{new.number}", split_from=source.number)
     return new

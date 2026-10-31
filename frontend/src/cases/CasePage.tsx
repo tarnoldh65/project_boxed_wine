@@ -5,6 +5,7 @@ import { api, describeError, type AssetKind, type Case } from '../api/client'
 import { useMembers, useTenantConfig } from '../api/queries'
 import { useTenant } from '../tenant'
 import { CaseForm } from './CaseForm'
+import { ObservablesPanel } from './ObservablesPanel'
 import { TasksPanel } from './TasksPanel'
 
 const ASSET_KINDS: AssetKind[] = ['host', 'account', 'application', 'data_set']
@@ -22,6 +23,7 @@ export function CasePage() {
   const members = useMembers(slug)
   const [selectedAlerts, setSelectedAlerts] = useState<string[]>([])
   const [selectedAssets, setSelectedAssets] = useState<string[]>([])
+  const [selectedObservables, setSelectedObservables] = useState<string[]>([])
   const path = { params: { path: { slug, number } } }
 
   const caseQuery = useQuery({
@@ -45,6 +47,7 @@ export function CasePage() {
     onSuccess: (shown) => {
       setSelectedAlerts([])
       setSelectedAssets([])
+      setSelectedObservables([])
       queryClient.setQueryData(['case', slug, shown.number], shown)
       void queryClient.invalidateQueries({ queryKey: ['cases', slug] })
       if (shown.number !== number) navigate(`/t/${slug}/cases/${shown.number}`)
@@ -104,7 +107,12 @@ export function CasePage() {
     action.mutate(() =>
       api.POST('/api/tenants/{slug}/cases/{number}/split', {
         ...path,
-        body: { title, alert_ids: selectedAlerts, asset_ids: selectedAssets },
+        body: {
+          title,
+          alert_ids: selectedAlerts,
+          asset_ids: selectedAssets,
+          observable_ids: selectedObservables,
+        },
       }),
     )
   }
@@ -211,6 +219,14 @@ export function CasePage() {
         ))}
       </section>
 
+      <ObservablesPanel
+        slug={slug}
+        current={current}
+        editable={canWrite}
+        selected={selectedObservables}
+        onSelect={setSelectedObservables}
+      />
+
       <section>
         <h3>Assets</h3>
         {current.assets.length === 0 && <p>No assets.</p>}
@@ -272,7 +288,7 @@ export function CasePage() {
           </form>
           <form className="inline-form" onSubmit={split}>
             <input name="title" required maxLength={300} aria-label="New case title" placeholder="New case title" />
-            <button type="submit" disabled={!selectedAlerts.length && !selectedAssets.length}>
+            <button type="submit" disabled={!selectedAlerts.length && !selectedAssets.length && !selectedObservables.length}>
               Split selected into new case
             </button>
           </form>

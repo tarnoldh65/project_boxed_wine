@@ -214,3 +214,22 @@ class Notification(Base):
     sent_at: Mapped[datetime | None]
     attempts: Mapped[int] = mapped_column(server_default="0")
     last_error: Mapped[str | None]
+
+
+class Observable(Base):
+    __tablename__ = "observables"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    type: Mapped[str]
+    value: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class CaseObservable(Base):
+    __tablename__ = "case_observables"
+
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"), primary_key=True)
+    observable_id: Mapped[UUID] = mapped_column(ForeignKey("observables.id"), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    added_at: Mapped[datetime] = mapped_column(server_default=func.now())

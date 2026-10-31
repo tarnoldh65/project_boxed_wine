@@ -4,7 +4,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.db import engine
-from app.routers import auth, cases, config, intake, me, tenants, tokens
+from app.routers import auth, cases, config, intake, me, observables, tenants, tokens
 
 app = FastAPI(title="Case Manager")
 # Holds OIDC state, nonce, and PKCE verifier between login and callback only.
@@ -16,7 +16,7 @@ app.add_middleware(
     same_site="lax",
     https_only=True,
 )
-for module in (auth, me, tenants, tokens, config, cases, intake):
+for module in (auth, me, tenants, tokens, config, cases, intake, observables):
     app.include_router(module.router)
 
 

@@ -127,4 +127,13 @@ export const CASE: Case = {
     },
   ],
   assets: [{ id: 'h1', kind: 'host', name: 'web-01', external_id: 'CI-1' }],
+  observables: [
+    {
+      id: 'o1',
+      type: 'domain',
+      value: 'evil.example',
+      defanged: 'evil[.]example',
+      other_cases: 2,
+    },
+  ],
 }

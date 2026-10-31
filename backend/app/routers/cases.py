@@ -65,14 +65,14 @@ async def list_cases(
 async def create_case(body: CaseCreate, ctx: Writer, db: Db) -> CaseOut:
     config = await tenant_config.load(db, ctx.tenant.id)
     case = await cases.create_case(db, ctx.tenant.id, config, ctx.principal.actor, body)
-    return await cases.case_out(db, case, config)
+    return await cases.case_out(db, ctx, case, config)
 
 
 @router.get("/cases/{number}")
 async def get_case(number: int, ctx: Reader, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     await ctx.audit(db, "case.view", f"case:{number}")
-    return await cases.case_out(db, case, await tenant_config.load(db, ctx.tenant.id))
+    return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
 
 @router.patch("/cases/{number}")
@@ -80,14 +80,14 @@ async def update_case(number: int, body: CaseUpdate, ctx: Writer, db: Db) -> Cas
     case = await cases.get_case(db, ctx, number)
     config = await tenant_config.load(db, ctx.tenant.id)
     await cases.update_case(db, ctx, config, case, body)
-    return await cases.case_out(db, case, config)
+    return await cases.case_out(db, ctx, case, config)
 
 
 @router.post("/cases/{number}/acknowledge")
 async def acknowledge_case(number: int, ctx: Writer, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     await cases.acknowledge(db, ctx, case)
-    return await cases.case_out(db, case, await tenant_config.load(db, ctx.tenant.id))
+    return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
 
 @router.post("/cases/{number}/major-incident")
@@ -97,7 +97,7 @@ async def declare_major_incident(
     case = await cases.get_case(db, ctx, number)
     config = await tenant_config.load(db, ctx.tenant.id)
     await cases.declare_major_incident(db, ctx, config, case, body.reason)
-    return await cases.case_out(db, case, config)
+    return await cases.case_out(db, ctx, case, config)
 
 
 @router.post("/cases/{number}/merge")
@@ -106,7 +106,7 @@ async def merge_case(number: int, body: MergeIn, ctx: Writer, db: Db) -> CaseOut
     target = await cases.get_case(db, ctx, body.into)
     config = await tenant_config.load(db, ctx.tenant.id)
     await cases.merge(db, ctx, config, source, target)
-    return await cases.case_out(db, target, config)
+    return await cases.case_out(db, ctx, target, config)
 
 
 @router.post("/cases/{number}/split", status_code=201)
@@ -114,7 +114,7 @@ async def split_case(number: int, body: SplitIn, ctx: Writer, db: Db) -> CaseOut
     source = await cases.get_case(db, ctx, number)
     config = await tenant_config.load(db, ctx.tenant.id)
     new = await cases.split(db, ctx, config, source, body)
-    return await cases.case_out(db, new, config)
+    return await cases.case_out(db, ctx, new, config)
 
 
 async def _open_case(db: Db, ctx: TenantContext, number: int) -> tuple[Case, set[UUID]]:
@@ -136,7 +136,7 @@ async def add_task(number: int, body: TaskIn, ctx: Writer, db: Db) -> CaseOut:
         cases.invalid("dependencies must be other tasks of this case", "depends_on")
     task = await tasks.add_task(db, case, body)
     await ctx.audit(db, "task.create", f"case:{number}", task=str(task.id))
-    return await cases.case_out(db, case, await tenant_config.load(db, ctx.tenant.id))
+    return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
 
 @router.patch("/cases/{number}/tasks/{task_id}")
@@ -157,7 +157,7 @@ async def update_task(number: int, task_id: UUID, body: TaskUpdate, ctx: Writer,
         task=str(task.id),
         changes=body.model_dump(mode="json", exclude_unset=True),
     )
-    return await cases.case_out(db, case, await tenant_config.load(db, ctx.tenant.id))
+    return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
 
 @router.post("/cases/{number}/assets", status_code=201)

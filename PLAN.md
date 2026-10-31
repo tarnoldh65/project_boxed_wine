@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 4 complete.**
+Status: **Phase 5 complete.**
 
 ---
 
@@ -118,10 +118,10 @@ README.md
 
 ### Phase 5 - Observables and correlation (FR-30, FR-31, FR-33)
 
-- [ ] Typed observables: IP (v4/v6), domain, URL, MD5, SHA1, SHA256, email, file name, registry key, user, process, CVE
-- [ ] Extraction from pasted text, email bodies/headers, and log snippets, with defang (`hxxp`, `[.]`, `(dot)`, `[@]`) and refang; user confirms before saving
-- [ ] Observable page lists every case it appears in within the active tenant (respecting ACLs); no cross-tenant correlation
-- [ ] Tests: large table-driven extraction suite (true positives, false positives such as version numbers and file extensions, defanged forms, IPv6, overlapping matches)
+- [x] Typed observables: IPv4, IPv6, domain, URL, MD5, SHA1, SHA256, email, file name, registry key, user, process, CVE; values are normalized (re-fanged, lowercased where case-insensitive, IPv6 compressed) and de-duplicated per tenant
+- [x] Extraction from pasted text, email bodies/headers, and log snippets (and from a case's alert payloads), with defang (`hxxp`, `[.]`, `(dot)`, `[@]`, `[:]`) and refang; values are displayed defanged; the user reviews candidates before linking. Users and processes are added by hand (free text has no reliable pattern for them)
+- [x] Observable page lists every case it appears in within the active tenant (respecting ACLs: restricted cases are neither listed nor counted); case pages show how many other cases share each observable; no cross-tenant correlation. Merge and split carry observables
+- [x] Tests: large table-driven extraction suite (true positives, false positives such as version numbers, file extensions, times, MAC addresses and C++ scope operators, defanged forms, IPv6, overlapping matches)
 
 ### Phase 6 - Evidence and chain of custody (FR-40, FR-41, FR-42, FR-43, FR-44)
 

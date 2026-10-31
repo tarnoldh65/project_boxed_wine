@@ -487,6 +487,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/observables/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Observables
+         * @description Propose observables from pasted text, or from the case's alerts when no text is given.
+         */
+        post: operations["extract_observables_api_tenants__slug__cases__number__observables_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/observables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link Observables */
+        post: operations["link_observables_api_tenants__slug__cases__number__observables_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/observables/{observable_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink Observable */
+        delete: operations["unlink_observable_api_tenants__slug__cases__number__observables__observable_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/observables/{observable_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Observable */
+        get: operations["get_observable_api_tenants__slug__observables__observable_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -603,6 +674,16 @@ export interface components {
             /** External Id */
             external_id: string | null;
         };
+        /** CandidateOut */
+        CandidateOut: {
+            type: components["schemas"]["ObservableType"];
+            /** Value */
+            value: string;
+            /** Defanged */
+            defanged: string;
+            /** Linked */
+            linked: boolean;
+        };
         /** CaseCreate */
         CaseCreate: {
             /** Template */
@@ -707,6 +788,8 @@ export interface components {
             tasks: components["schemas"]["TaskOut"][];
             /** Sla */
             sla: components["schemas"]["SlaClock"][];
+            /** Observables */
+            observables: components["schemas"]["ObservableOut"][];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -836,6 +919,14 @@ export interface components {
             reassign_to_team?: string | null;
         };
         /**
+         * ExtractIn
+         * @description Text to extract from; when omitted, the case's alerts are used.
+         */
+        ExtractIn: {
+            /** Text */
+            text?: string | null;
+        };
+        /**
          * FieldType
          * @enum {string}
          */
@@ -858,6 +949,11 @@ export interface components {
             new_case: boolean;
             /** Duplicate */
             duplicate: boolean;
+        };
+        /** LinkIn */
+        LinkIn: {
+            /** Observables */
+            observables: components["schemas"]["ObservableIn"][];
         };
         /** LogoutOut */
         LogoutOut: {
@@ -904,6 +1000,63 @@ export interface components {
             /** Into */
             into: number;
         };
+        /** ObservableCase */
+        ObservableCase: {
+            /** Number */
+            number: number;
+            /** Title */
+            title: string;
+            /** State */
+            state: string;
+            /** Severity */
+            severity: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ObservableIn */
+        ObservableIn: {
+            type: components["schemas"]["ObservableType"];
+            /** Value */
+            value: string;
+        };
+        /** ObservableOut */
+        ObservableOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["ObservableType"];
+            /** Value */
+            value: string;
+            /** Defanged */
+            defanged: string;
+            /** Other Cases */
+            other_cases: number;
+        };
+        /** ObservablePage */
+        ObservablePage: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["ObservableType"];
+            /** Value */
+            value: string;
+            /** Defanged */
+            defanged: string;
+            /** Cases */
+            cases: components["schemas"]["ObservableCase"][];
+        };
+        /**
+         * ObservableType
+         * @enum {string}
+         */
+        ObservableType: "ipv4" | "ipv6" | "domain" | "url" | "md5" | "sha1" | "sha256" | "email" | "filename" | "registry_key" | "user" | "process" | "cve";
         /** Override */
         Override: {
             /** Severity */
@@ -1011,6 +1164,11 @@ export interface components {
              * @default []
              */
             asset_ids: string[];
+            /**
+             * Observable Ids
+             * @default []
+             */
+            observable_ids: string[];
         };
         /** State */
         State: {
@@ -2551,6 +2709,141 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IntakeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_observables_api_tenants__slug__cases__number__observables_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtractIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CandidateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_observables_api_tenants__slug__cases__number__observables_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_observable_api_tenants__slug__cases__number__observables__observable_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                observable_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_observable_api_tenants__slug__observables__observable_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                observable_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservablePage"];
                 };
             };
             /** @description Validation Error */

@@ -427,7 +427,7 @@ async def test_split_rules(analyst: SignedIn, tenant: str) -> None:
     url = cases_url(tenant, f"/{number}/split")
 
     nothing = await analyst.client.post(url, json={"title": "x"})
-    assert errors(nothing) == ["select at least one alert or asset to split off"]
+    assert errors(nothing) == ["select at least one alert, asset, or observable to split off"]
     foreign = await analyst.client.post(url, json={"title": "x", "asset_ids": [host.json()["id"]]})
     assert errors(foreign) == ["assets must be linked to the case"]
     stray = await analyst.client.post(
