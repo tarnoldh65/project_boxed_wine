@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 0 complete.**
+Status: **Phase 1 complete.**
 
 ---
 
@@ -11,8 +11,8 @@ Status: **Phase 0 complete.**
 | Concern | Choice | Why |
 |---|---|---|
 | Backend | Python (latest stable), FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic, `uv` | Generates the OpenAPI spec for free (NFR-07); strong libraries for PDF/DOCX, zip, parsing |
-| Frontend | React + TypeScript, Vite, React Router, TanStack Query, plain CSS | SPA uses only the public REST API, so the API covers 100% of the UI (NFR-07) |
-| API client | Generated from OpenAPI (`openapi-typescript`) | One source of truth for types |
+| Frontend | React + TypeScript, Vite, TanStack Query, plain CSS (React Router when there are multiple pages) | SPA uses only the public REST API, so the API covers 100% of the UI (NFR-07) |
+| API client | `openapi-fetch` with types generated from the committed `backend/openapi.json` | One source of truth; CI fails on drift |
 | Database | PostgreSQL (latest stable) | Relational data, full-text search (GIN/tsvector), triggers for append-only tables |
 | Object storage | S3 API (AWS S3, Ceph RGW, or similar) with SSE-KMS and Object Lock | Large evidence (50 GB via multipart presigned upload), immutable backups |
 | Identity | OIDC only (Keycloak self-hosted, or Entra ID / Okta) | SSO + MFA enforced at the IdP; break-glass accounts live in the IdP (SR-01) |
@@ -22,8 +22,8 @@ Status: **Phase 0 complete.**
 | Packaging | One backend image (API + jobs), one frontend image (static files on nginx-unprivileged), one Helm chart | Simple to deploy |
 
 Key design decisions:
-- **Auth:** the backend runs the OIDC authorization-code + PKCE flow and gives the browser an HttpOnly, Secure, SameSite=Strict session cookie (server-side session in Postgres, idle timeout). Users are created on first login; roles come from IdP group claims. Machines use scoped, expiring API tokens (stored hashed).
-- **Tenancy:** two tenants at launch, `detect-respond` and `insider-threat`, with full data segregation. Every tenant-owned table has a `tenant_id`. Postgres row-level security filters on `app.tenant_id`, which the backend sets per transaction from the user's active tenant, so a missed filter in app code cannot leak data. Users can belong to several tenants with a different role in each, and they switch the active tenant in the UI. Admin configuration (states, fields, templates, SLAs, clocks) is per tenant. Evidence is stored under a per-tenant bucket prefix.
+- **Auth:** the backend runs the OIDC authorization-code + PKCE flow and gives the browser an HttpOnly, Secure, SameSite=Strict session cookie (server-side session in Postgres, idle timeout). Users are created on first login; roles come from IdP group claims and are re-read through the refresh token every `CASEMGR_GROUP_SYNC_MINUTES` (default 5), so IdP changes take effect without a new login. MFA is enforced by the IdP's login flow (OTP always required). Machines use scoped, expiring API tokens (stored hashed).
+- **Tenancy:** two tenants at launch, `detect-respond` and `insider-threat`, with full data segregation. Every tenant-owned table has a `tenant_id`. Postgres row-level security filters on `app.tenant_id`, which the backend sets per transaction from the tenant in the URL (`/api/tenants/{slug}/...`) after checking membership, so a missed filter in app code cannot leak data. Users can belong to several tenants with a different role in each, and they switch the active tenant in the UI. Admin configuration (states, fields, templates, SLAs, clocks) is per tenant. Evidence is stored under a per-tenant bucket prefix.
 - **Authorization:** within a tenant, one query helper (`visible_cases(user)`) applies RBAC and case ACLs. Every case-scoped query, search included, goes through it. Restricted cases (e.g., executive compromise, HR/legal matters) are invisible, not just inaccessible (SR-02).
 - **Append-only tables** (audit log, chain of custody, notification log): the app DB role has INSERT/SELECT only, a trigger rejects UPDATE/DELETE, and each row stores `hash = sha256(prev_hash || row)` so tampering is detectable. A `verify` job checks the chain.
 - **Observables** are deduplicated (`unique(type, value)`) and linked to cases through a join table, so cross-case correlation is a single indexed lookup (FR-33).
@@ -79,15 +79,15 @@ README.md
 
 ### Phase 1 - Identity, tenancy, RBAC, audit log (SR-01, SR-02, SR-03, SR-06, NFR-09, FR-101)
 
-- [ ] OIDC login/logout through Keycloak; the session cookie has the correct flags; idle timeout enforced
-- [ ] Tenants table seeded with `detect-respond` and `insider-threat`; row-level security policy pattern in place for tenant-owned tables; the app DB role cannot bypass RLS
-- [ ] Per-tenant roles: `admin`, `ir_lead`, `analyst`, `legal`, `executive` (read-only), `auditor`, plus permission flags `restricted_case` and `malware:read`; a global `platform_admin` manages tenants and memberships
-- [ ] Roles mapped from IdP groups (`casemgr-<tenant>-<role>`) on each login; removing a group revokes access on next request
-- [ ] Active-tenant switcher in the UI; API requests carry the tenant and are rejected if the user is not a member
-- [ ] Scoped API tokens bound to one tenant: create, list, revoke, expire; stored as hashes; rotation = create new + revoke old
-- [ ] Audit log records every create/read/update/delete (including case views) with actor, tenant, action, target, timestamp, and hash chain
-- [ ] Tests: UPDATE/DELETE on the audit table fails; the verify job detects an edited row; unauthenticated and under-privileged requests are rejected on every router; a query run with tenant A's context returns zero rows from tenant B on every tenant-owned table
-- [ ] Audit events are also emitted as JSON to stdout for SIEM collection
+- [x] OIDC login/logout through Keycloak; the session cookie has the correct flags; idle timeout enforced
+- [x] Tenants table seeded with `detect-respond` and `insider-threat`; row-level security policy pattern in place for tenant-owned tables (`app/rls.py`); the app DB role cannot bypass RLS
+- [x] Per-tenant roles: `admin`, `ir_lead`, `analyst`, `legal`, `executive` (read-only), `auditor`, plus permission flags `restricted_case` and `malware:read`; a global `platform_admin` manages tenants (memberships are managed as IdP groups)
+- [x] Roles mapped from IdP groups (`casemgr-<tenant>-<role>`) on each login; removing a group revokes access within `CASEMGR_GROUP_SYNC_MINUTES` (default 5; 0 in the dev stack) via refresh-token re-sync, and a failed re-sync ends the session
+- [x] Active-tenant switcher in the UI; API requests carry the tenant in the path and are rejected if the user is not a member
+- [x] Scoped API tokens bound to one tenant: create, list, revoke, expire; stored as hashes; rotation = create new + revoke old
+- [x] Audit log records every create/read/update/delete (including case views) with actor, tenant, action, target, timestamp, and hash chain; access denials and login failures are recorded too
+- [x] Tests: UPDATE/DELETE on the audit table fails; the verify job detects an edited row; unauthenticated and under-privileged requests are rejected on every router; a query run with tenant A's context returns zero rows from tenant B on every tenant-owned table
+- [x] Audit events are also emitted as JSON to stdout for SIEM collection
 
 ### Phase 2 - Admin configuration (FR-100, FR-11, FR-12, FR-20)
 

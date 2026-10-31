@@ -9,7 +9,9 @@ services:
       POSTGRES_PASSWORD: casemgr
       POSTGRES_DB: casemgr
     ports: ["5432:5432"]
-    volumes: [postgres:/var/lib/postgresql]
+    volumes:
+      - postgres:/var/lib/postgresql
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "casemgr"]
       interval: 2s
@@ -28,6 +30,9 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: "true"
+      # Browsers use localhost:8180; the backend reaches token and userinfo endpoints at keycloak:8080.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     ports: ["8180:8080"]
     volumes: [./keycloak:/opt/keycloak/data/import:ro]
     healthcheck:
@@ -42,17 +47,24 @@ services:
   migrate:
     build: ../backend
     command: ["alembic", "upgrade", "head"]
-    environment: &backend-env
-      CASEMGR_DATABASE_URL: postgresql+asyncpg://casemgr:casemgr@postgres:5432/casemgr
+    environment:
+      CASEMGR_MIGRATION_DATABASE_URL: postgresql+asyncpg://casemgr:casemgr@postgres:5432/casemgr
     depends_on:
       postgres: { condition: service_healthy }
 
   backend:
     build: ../backend
-    environment: *backend-env
+    environment:
+      CASEMGR_DATABASE_URL: postgresql+asyncpg://casemgr_app:casemgr_app@postgres:5432/casemgr
+      CASEMGR_OIDC_METADATA_URL: http://keycloak:8080/realms/casemgr/.well-known/openid-configuration
+      CASEMGR_OIDC_CLIENT_SECRET: dev-only-client-secret
+      CASEMGR_SECRET_KEY: dev-only-secret-key
+      # Re-read IdP groups on every request so revocation is immediate (and testable) in dev.
+      CASEMGR_GROUP_SYNC_MINUTES: "0"
     ports: ["8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
+      keycloak: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
       interval: 2s

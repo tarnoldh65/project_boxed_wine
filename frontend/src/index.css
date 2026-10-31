@@ -3,15 +3,19 @@
   font-family: system-ui, sans-serif;
   --bg: #f6f7f9;
   --fg: #1b1f24;
+  --muted: #d0d5db;
   --header-bg: #1b2a3a;
   --header-fg: #ffffff;
+  --notice-bg: #fff5d6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #111418;
     --fg: #e6e8eb;
+    --muted: #39414a;
     --header-bg: #0b1520;
+    --notice-bg: #3a3214;
   }
 }
 
@@ -24,10 +28,18 @@ body {
 .shell-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0 1rem;
-  height: 3rem;
+  min-height: 3rem;
   background: var(--header-bg);
   color: var(--header-fg);
+}
+
+.shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .brand {
@@ -36,4 +48,30 @@ body {
 
 .shell-main {
   padding: 1rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 28rem;
+}
+
+.notice {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: var(--notice-bg);
+  overflow-wrap: anywhere;
+}
+
+table {
+  margin-top: 1rem;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.25rem 0.75rem;
+  border-bottom: 1px solid var(--muted);
+  text-align: left;
 }

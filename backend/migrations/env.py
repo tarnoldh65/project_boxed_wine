@@ -1,12 +1,11 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import NullPool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
-
-from app.config import settings
 
 config = context.config
 if config.config_file_name is not None and config.attributes.get("configure_logger", True):
@@ -20,7 +19,8 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_migrations() -> None:
-    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    # Migrations run as the schema owner, not the application role.
+    engine = create_async_engine(os.environ["CASEMGR_MIGRATION_DATABASE_URL"], poolclass=NullPool)
     async with engine.connect() as connection:
         await connection.run_sync(do_run_migrations)
         await connection.commit()

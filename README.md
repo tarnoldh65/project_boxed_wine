@@ -14,8 +14,19 @@ docker compose -f deploy/compose.yaml up --build -d --wait
 |---|---|
 | App | http://localhost:8080 |
 | API | http://localhost:8000 |
-| Keycloak | http://localhost:8180 (admin/admin; dev user analyst/analyst) |
+| Keycloak | http://localhost:8180 (console admin/admin) |
 | Mailpit | http://localhost:8025 |
+
+Dev sign-in accounts (realm `casemgr`; each enrolls a TOTP app on first sign-in):
+
+| User | Access |
+|---|---|
+| admin/admin | platform admin; admin in both tenants |
+| analyst/analyst | analyst in `detect-respond` |
+
+Access comes from IdP groups named `casemgr-<tenant>-<role>` (or `casemgr-platform_admin`).
+
+After changing API routes or models, run the backend tests (they regenerate `backend/openapi.json`), then `npm run gen:api` in `frontend/`.
 
 ## Tests
 
