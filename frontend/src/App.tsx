@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState, type ReactNode } from 'react'
-import { api, type Me, type TenantAccess } from './api/client'
+import { useEffect, type ReactNode } from 'react'
+import {
+  Navigate,
+  NavLink,
+  Outlet,
+  Route,
+  Routes,
+  useNavigate,
+  useParams,
+} from 'react-router'
+import { api, type Me } from './api/client'
+import { CasePage } from './cases/CasePage'
+import { CasesPage } from './cases/CasesPage'
 import { Settings } from './settings/Settings'
 
 const TENANT_KEY = 'casemgr.tenant'
@@ -32,7 +43,16 @@ export default function App() {
       </Shell>
     )
   }
-  return <Workspace me={me.data} />
+  return (
+    <Routes>
+      <Route path="/t/:slug" element={<TenantLayout me={me.data} />}>
+        <Route index element={<CasesPage />} />
+        <Route path="cases/:number" element={<CasePage />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
+      <Route path="*" element={<Home me={me.data} />} />
+    </Routes>
+  )
 }
 
 function Shell({ actions, children }: { actions?: ReactNode; children?: ReactNode }) {
@@ -47,7 +67,7 @@ function Shell({ actions, children }: { actions?: ReactNode; children?: ReactNod
   )
 }
 
-function readStoredTenant(): string | null {
+function storedTenant(): string | null {
   try {
     return localStorage.getItem(TENANT_KEY)
   } catch {
@@ -55,85 +75,75 @@ function readStoredTenant(): string | null {
   }
 }
 
-function Workspace({ me }: { me: Me }) {
-  const [stored, setStored] = useState(readStoredTenant)
+function Home({ me }: { me: Me }) {
+  const stored = storedTenant()
   const tenant = me.tenants.find((t) => t.slug === stored) ?? me.tenants[0]
+  if (tenant) return <Navigate to={`/t/${tenant.slug}`} replace />
+  return (
+    <Shell actions={<UserActions me={me} />}>
+      <p>You do not have access to any tenant. Ask an administrator to add you to a group.</p>
+    </Shell>
+  )
+}
 
-  function switchTenant(slug: string) {
-    setStored(slug)
-    try {
-      localStorage.setItem(TENANT_KEY, slug)
-    } catch {
-      // Remembering the tenant is a convenience only.
-    }
-  }
-
+function UserActions({ me }: { me: Me }) {
   async function signOut() {
     const { data } = await api.POST('/api/auth/logout')
     window.location.assign(data?.logout_url ?? '/')
   }
-
-  const actions = (
+  return (
     <>
-      {tenant && (
-        <label>
-          Tenant{' '}
-          <select value={tenant.slug} onChange={(e) => switchTenant(e.target.value)}>
-            {me.tenants.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
       <span>{me.display_name}</span>
       <button type="button" onClick={signOut}>
         Sign out
       </button>
     </>
   )
+}
+
+function TenantLayout({ me }: { me: Me }) {
+  const { slug } = useParams()
+  const navigate = useNavigate()
+  const tenant = me.tenants.find((t) => t.slug === slug)
+
+  useEffect(() => {
+    if (!tenant) return
+    try {
+      localStorage.setItem(TENANT_KEY, tenant.slug)
+    } catch {
+      // Remembering the tenant is a convenience only.
+    }
+  }, [tenant])
+
+  if (!tenant) return <Navigate to="/" replace />
+  const isAdmin = ['config:manage', 'tokens:manage'].some((p) => tenant.permissions.includes(p))
+
+  const actions = (
+    <>
+      <label>
+        Tenant{' '}
+        <select value={tenant.slug} onChange={(e) => navigate(`/t/${e.target.value}`)}>
+          {me.tenants.map((t) => (
+            <option key={t.slug} value={t.slug}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <UserActions me={me} />
+    </>
+  )
 
   return (
     <Shell actions={actions}>
-      {tenant ? (
-        <TenantHome key={tenant.slug} tenant={tenant} />
-      ) : (
-        <p>You do not have access to any tenant. Ask an administrator to add you to a group.</p>
-      )}
-    </Shell>
-  )
-}
-
-function TenantHome({ tenant }: { tenant: TenantAccess }) {
-  const [view, setView] = useState<'cases' | 'settings'>('cases')
-  const isAdmin = ['config:manage', 'tokens:manage'].some((p) => tenant.permissions.includes(p))
-
-  return (
-    <>
       <h1>{tenant.name}</h1>
-      {isAdmin && (
-        <nav className="tabs">
-          <button type="button" aria-pressed={view === 'cases'} onClick={() => setView('cases')}>
-            Cases
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === 'settings'}
-            onClick={() => setView('settings')}
-          >
-            Settings
-          </button>
-        </nav>
-      )}
-      {view === 'settings' ? (
-        <Settings tenant={tenant} />
-      ) : (
-        <section>
-          <h2>Cases</h2>
-          <p>No cases yet.</p>
-        </section>
-      )}
-    </>
+      <nav className="tabs">
+        <NavLink to={`/t/${tenant.slug}`} end>
+          Cases
+        </NavLink>
+        {isAdmin && <NavLink to={`/t/${tenant.slug}/settings`}>Settings</NavLink>}
+      </nav>
+      <Outlet key={tenant.slug} context={tenant} />
+    </Shell>
   )
 }

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { api, type Token, type TokenCreated, type TokenIn, type TokenScope } from './api/client'
 
-const SCOPES: TokenScope[] = ['cases:read', 'cases:write']
+const SCOPES: TokenScope[] = ['alerts:write', 'cases:read', 'cases:write']
 
 function status(token: Token): string {
   if (token.revoked_at) return 'Revoked'

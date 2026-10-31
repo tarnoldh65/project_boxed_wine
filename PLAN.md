@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 2 complete.**
+Status: **Phase 3 complete.**
 
 ---
 
@@ -11,7 +11,7 @@ Status: **Phase 2 complete.**
 | Concern | Choice | Why |
 |---|---|---|
 | Backend | Python (latest stable), FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic, `uv` | Generates the OpenAPI spec for free (NFR-07); strong libraries for PDF/DOCX, zip, parsing |
-| Frontend | React + TypeScript, Vite, TanStack Query, plain CSS (React Router when there are multiple pages) | SPA uses only the public REST API, so the API covers 100% of the UI (NFR-07) |
+| Frontend | React + TypeScript, Vite, React Router, TanStack Query, plain CSS | SPA uses only the public REST API, so the API covers 100% of the UI (NFR-07) |
 | API client | `openapi-fetch` with types generated from the committed `backend/openapi.json` | One source of truth; CI fails on drift |
 | Database | PostgreSQL (latest stable) | Relational data, full-text search (GIN/tsvector), triggers for append-only tables |
 | Object storage | S3 API (AWS S3, Ceph RGW, or similar) with SSE-KMS and Object Lock | Large evidence (50 GB via multipart presigned upload), immutable backups |
@@ -43,7 +43,7 @@ frontend/
   tests/
 e2e/              Playwright acceptance tests
 deploy/
-  compose.yaml    local dev: Postgres, SeaweedFS (S3), Keycloak, Mailpit
+  compose.yaml    local dev: Postgres, SeaweedFS (S3), Keycloak, Mailpit, GreenMail (intake mailbox)
   keycloak/       dev realm import
   helm/casemgr/
 docs/
@@ -97,14 +97,15 @@ README.md
 
 ### Phase 3 - Cases, assets, intake (FR-01, FR-02, FR-04, FR-10, FR-14, FR-15)
 
-- [ ] Case model with all FR-10 core fields, TLP/PAP, custom fields, regulated-data flags (PII/PHI/PCI/CUI + region), ATT&CK technique IDs (plain text list, needed for FR-91), resolution (incl. false positive)
-- [ ] Severity/priority computed from the matrix; manual override requires a justification (FR-12)
-- [ ] Assets (host, account, application, data set) with optional external CMDB ID, linked to cases
-- [ ] Case templates per incident type (phishing, ransomware, BEC, insider, DDoS, data exposure, vulnerability exploitation) pre-load fields and playbook tasks
-- [ ] Intake: UI create; `POST /api/alerts` (API token) and a generic webhook endpoint that map to a template; email intake job polls an IMAP mailbox and creates cases
-- [ ] Alerts stored raw and linked to a case; alerts can be grouped into one case; cases can be merged (source closed as "merged into", all links moved) and split (selected alerts/observables move to a new case), with history kept in the audit log
-- [ ] Teams have an on-call user; new intake cases are auto-assigned to them
-- [ ] Tests: each intake path creates the correct case from a template; merge/split preserve every linked record; override without justification is rejected
+- [x] Case model with all FR-10 core fields (per-tenant case numbers), TLP/PAP, custom fields, regulated-data flags (PII/PHI/PCI/CUI + region), ATT&CK technique IDs (plain text list, needed for FR-91), resolution (incl. false positive); closing requires a resolution
+- [x] Severity/priority computed from the matrix; manual override requires a justification (FR-12)
+- [x] Assets (host, account, application, data set) with optional external CMDB ID, linked to cases
+- [x] Case templates per incident type (phishing, ransomware, BEC, insider, DDoS, data exposure, vulnerability exploitation) are tenant configuration and pre-load category, impact, urgency, TLP/PAP, and team; their playbook tasks arrive with tasks in Phase 4
+- [x] Intake: UI create; `POST /api/tenants/{slug}/alerts` and a generic webhook `POST /api/tenants/{slug}/webhooks/{source}?template=...` (query parameters name the title, id, and group fields) using API tokens with the `alerts:write` scope; the `email_intake` job polls an IMAP mailbox and creates cases. Alerts are de-duplicated by source and external id (Message-ID for email)
+- [x] Alerts stored raw and linked to a case; alerts sharing a group key join the same open case; cases can be merged (source closed as "merged into", all links moved) and split (selected alerts/assets move to a new case), with history kept in the audit log. Observables, tasks, and notes join merge/split in their phases
+- [x] Teams have an on-call user; new cases (intake and manual) are assigned to the on-call member of the template's team
+- [x] Restricted cases are invisible (404) without `restricted_case`; custom fields are enforced on every case update for the case's state (creation is exempt so intake never drops an alert)
+- [x] Tests: each intake path creates the correct case from a template; merge/split preserve every linked record; override without justification is rejected
 
 ### Phase 4 - Workflow, tasks, playbooks, SLAs, escalation (FR-21, FR-22, FR-23, FR-24, FR-60)
 

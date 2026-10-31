@@ -44,6 +44,13 @@ services:
     image: axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
     ports: ["8025:8025", "1025:1025"]
 
+  # Intake mailbox for the email_intake job: SMTP 3025 in, IMAP 3143 out; any password works.
+  greenmail:
+    image: greenmail/standalone:2.1.15@sha256:309ba544ea482e5d4265d09921cdab07c8dad2cc4481d715c9b8ff5d3f0a149f
+    environment:
+      GREENMAIL_OPTS: -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
+    ports: ["3025:3025", "3143:3143"]
+
   migrate:
     build: ../backend
     command: ["alembic", "upgrade", "head"]
@@ -61,6 +68,8 @@ services:
       CASEMGR_SECRET_KEY: dev-only-secret-key
       # Re-read IdP groups on every request so revocation is immediate (and testable) in dev.
       CASEMGR_GROUP_SYNC_MINUTES: "0"
+      CASEMGR_IMAP_URL: imap://intake%40example.test:intake@greenmail:3143/INBOX
+      CASEMGR_IMAP_TENANT: detect-respond
     ports: ["8000:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }

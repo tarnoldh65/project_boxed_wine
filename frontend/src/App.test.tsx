@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
 import App from './App'
 import type { Me } from './api/client'
@@ -21,86 +22,99 @@ afterEach(() => {
   localStorage.clear()
 })
 
+/** The API a signed-in user's pages call, with empty tenants. */
+function signedIn(me: Me = ME) {
+  return mockApi({
+    'GET /api/me': () => json(me),
+    'GET /api/tenants/detect-respond/cases': () => json([]),
+    'GET /api/tenants/insider-threat/cases': () => json([]),
+    'GET /api/tenants/detect-respond/members': () => json([]),
+    'GET /api/tenants/insider-threat/members': () => json([]),
+    'GET /api/tenants/detect-respond/tokens': () => json([]),
+    'POST /api/auth/logout': () => json({ logout_url: '/' }),
+  })
+}
+
+function renderApp(path = '/') {
+  return renderWithQuery(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+    </MemoryRouter>,
+  )
+}
+
 test('offers sign in when there is no session', async () => {
   mockApi({ 'GET /api/me': () => json({ detail: 'Not authenticated' }, 401) })
-  renderWithQuery(<App />)
+  renderApp()
   expect(await screen.findByRole('link', { name: 'Sign in' })).toHaveAttribute(
     'href',
     '/api/auth/login',
   )
 })
 
-test('shows the user and their first tenant', async () => {
-  mockApi({ 'GET /api/me': () => json(ME) })
-  renderWithQuery(<App />)
+test('opens the first tenant with its cases', async () => {
+  signedIn()
+  renderApp()
   expect(await screen.findByRole('heading', { name: 'Detect and Respond' })).toBeInTheDocument()
   expect(screen.getByText('J Doe')).toBeInTheDocument()
-  expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
-    'Detect and Respond',
-    'Insider Threat',
-  ])
-  expect(screen.queryByRole('heading', { name: 'API tokens' })).not.toBeInTheDocument()
+  expect(screen.getAllByRole('option').map((o) => o.textContent)).toContain('Insider Threat')
+  expect(await screen.findByText('No cases yet.')).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
 })
 
 test('switches tenant and remembers the choice', async () => {
-  mockApi({ 'GET /api/me': () => json(ME) })
-  renderWithQuery(<App />)
+  signedIn()
+  renderApp()
   fireEvent.change(await screen.findByLabelText('Tenant'), {
     target: { value: 'insider-threat' },
   })
-  expect(screen.getByRole('heading', { name: 'Insider Threat' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Insider Threat' })).toBeInTheDocument()
   expect(localStorage.getItem('casemgr.tenant')).toBe('insider-threat')
 })
 
-test('ignores a remembered tenant the user no longer belongs to', async () => {
+test('returns to the remembered tenant', async () => {
+  localStorage.setItem('casemgr.tenant', 'insider-threat')
+  signedIn()
+  renderApp()
+  expect(await screen.findByRole('heading', { name: 'Insider Threat' })).toBeInTheDocument()
+})
+
+test('ignores tenants the user no longer belongs to', async () => {
   localStorage.setItem('casemgr.tenant', 'revoked-tenant')
-  mockApi({ 'GET /api/me': () => json(ME) })
-  renderWithQuery(<App />)
+  signedIn()
+  renderApp('/t/revoked-tenant')
   expect(await screen.findByRole('heading', { name: 'Detect and Respond' })).toBeInTheDocument()
 })
 
-test('shows token management to tenant admins', async () => {
+test('tenant admins reach settings', async () => {
   const admin = {
     ...ME,
     tenants: [{ ...ME.tenants[0], permissions: ['cases:read', 'tokens:manage'] }],
   }
-  mockApi({
-    'GET /api/me': () => json(admin),
-    'GET /api/tenants/detect-respond/tokens': () => json([]),
-  })
-  renderWithQuery(<App />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Settings' }))
+  signedIn(admin)
+  renderApp()
+  fireEvent.click(await screen.findByRole('link', { name: 'Settings' }))
   expect(await screen.findByRole('heading', { name: 'API tokens' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Cases' }))
-  expect(screen.getByRole('heading', { name: 'Cases' })).toBeInTheDocument()
-})
-
-test('hides settings from non-admins', async () => {
-  mockApi({ 'GET /api/me': () => json(ME) })
-  renderWithQuery(<App />)
+  fireEvent.click(screen.getByRole('link', { name: 'Cases' }))
   expect(await screen.findByRole('heading', { name: 'Cases' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument()
 })
 
 test('explains when the user has no tenants', async () => {
-  mockApi({ 'GET /api/me': () => json({ ...ME, tenants: [] }) })
-  renderWithQuery(<App />)
+  signedIn({ ...ME, tenants: [] })
+  renderApp()
   expect(await screen.findByText(/do not have access to any tenant/)).toBeInTheDocument()
   expect(screen.queryByLabelText('Tenant')).not.toBeInTheDocument()
 })
 
 test('reports a server error', async () => {
   mockApi({ 'GET /api/me': () => json({ detail: 'boom' }, 500) })
-  renderWithQuery(<App />)
+  renderApp()
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not load your profile (500)')
 })
 
 test('signs out through the API', async () => {
-  const requests = mockApi({
-    'GET /api/me': () => json(ME),
-    'POST /api/auth/logout': () => json({ logout_url: '/' }),
-  })
-  renderWithQuery(<App />)
+  const requests = signedIn()
+  renderApp()
   fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
   await vi.waitFor(() =>
     expect(requests.map((r) => `${r.method} ${new URL(r.url).pathname}`)).toContain(

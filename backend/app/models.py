@@ -9,6 +9,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     type_annotation_map = {datetime: DateTime(timezone=True)}  # noqa: RUF012
+    # Load server-generated values (ids, timestamps) on insert instead of lazily.
+    __mapper_args__ = {"eager_defaults": True}  # noqa: RUF012
 
 
 class Tenant(Base):
@@ -92,3 +94,79 @@ class TenantConfigRow(Base):
     data: Mapped[dict[str, Any]] = mapped_column(JSONB)
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_by: Mapped[str]
+
+
+class CaseNumber(Base):
+    """Per-tenant counter behind human-readable case numbers."""
+
+    __tablename__ = "case_numbers"
+
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"), primary_key=True)
+    last: Mapped[int]
+
+
+class Case(Base):
+    __tablename__ = "cases"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    number: Mapped[int]
+    title: Mapped[str]
+    description: Mapped[str]
+    state: Mapped[str]
+    category: Mapped[str]
+    impact: Mapped[str]
+    urgency: Mapped[str]
+    severity: Mapped[str]
+    priority: Mapped[str]
+    override_justification: Mapped[str | None]
+    team: Mapped[str | None]
+    owner_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+    source: Mapped[str]
+    tlp: Mapped[str]
+    pap: Mapped[str]
+    restricted: Mapped[bool]
+    regulated_data: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    data_regions: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    business_units: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    attack_techniques: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    custom: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    resolution: Mapped[str | None]
+    merged_into_id: Mapped[UUID | None] = mapped_column(ForeignKey("cases.id"))
+    detected_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    closed_at: Mapped[datetime | None]
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    source: Mapped[str]
+    external_id: Mapped[str | None]
+    group_key: Mapped[str | None]
+    title: Mapped[str]
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    received_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Asset(Base):
+    __tablename__ = "assets"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    kind: Mapped[str]
+    name: Mapped[str]
+    external_id: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class CaseAsset(Base):
+    __tablename__ = "case_assets"
+
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"), primary_key=True)
+    asset_id: Mapped[UUID] = mapped_column(ForeignKey("assets.id"), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))

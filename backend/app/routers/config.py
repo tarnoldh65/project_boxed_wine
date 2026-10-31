@@ -4,10 +4,18 @@ from fastapi import APIRouter
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
-from app import tenant_config
+from app import cases, tenant_config
 from app.auth import TenantContext, require
 from app.db import Db
-from app.tenant_config import CustomField, EscalationRule, Severity, State, TenantConfig
+from app.tenant_config import (
+    CustomField,
+    EscalationRule,
+    Severity,
+    State,
+    Team,
+    Template,
+    TenantConfig,
+)
 
 router = APIRouter(prefix="/api/tenants/{slug}/config", tags=["config"])
 
@@ -52,3 +60,17 @@ async def put_severity(body: Severity, ctx: Manager, db: Db) -> TenantConfig:
 @router.put("/escalation-rules")
 async def put_escalation_rules(body: list[EscalationRule], ctx: Manager, db: Db) -> TenantConfig:
     return await _replace(db, ctx, "escalation_rules", body)
+
+
+@router.put("/teams")
+async def put_teams(body: list[Team], ctx: Manager, db: Db) -> TenantConfig:
+    member_ids = {m.id for m in await cases.members(db, ctx.tenant.id)}
+    for i, team in enumerate(body):
+        if team.on_call is not None and team.on_call not in member_ids:
+            cases.invalid("not a tenant member", i, "on_call")
+    return await _replace(db, ctx, "teams", body)
+
+
+@router.put("/templates")
+async def put_templates(body: list[Template], ctx: Manager, db: Db) -> TenantConfig:
+    return await _replace(db, ctx, "templates", body)

@@ -1,4 +1,4 @@
-"""Per-tenant configuration: lifecycle, custom fields, severity and SLAs, escalation rules."""
+"""Per-tenant configuration: lifecycle, fields, severity and SLAs, escalation, teams, templates."""
 
 from datetime import date
 from enum import StrEnum
@@ -162,11 +162,70 @@ class EscalationRule(BaseModel):
         return self
 
 
+class Tlp(StrEnum):
+    CLEAR = "clear"
+    GREEN = "green"
+    AMBER = "amber"
+    AMBER_STRICT = "amber+strict"
+    RED = "red"
+
+
+class Pap(StrEnum):
+    CLEAR = "clear"
+    GREEN = "green"
+    AMBER = "amber"
+    RED = "red"
+
+
+class Team(BaseModel):
+    key: Key
+    name: Label
+    on_call: UUID | None = None  # user id; new intake cases are assigned to them
+
+
+class Template(BaseModel):
+    """An incident type: the defaults a new case of this category starts with."""
+
+    key: Key
+    name: Label
+    impact: Key
+    urgency: Key
+    tlp: Tlp = Tlp.AMBER
+    pap: Pap = Pap.AMBER
+    team: Key | None = None
+
+
+DEFAULT_TEMPLATES = [
+    Template(key="phishing", name="Phishing", impact="medium", urgency="high"),
+    Template(key="ransomware", name="Ransomware", impact="high", urgency="high"),
+    Template(key="bec", name="Business email compromise", impact="high", urgency="medium"),
+    Template(
+        key="insider",
+        name="Insider threat",
+        impact="high",
+        urgency="medium",
+        tlp=Tlp.RED,
+        pap=Pap.RED,
+    ),
+    Template(key="ddos", name="DDoS", impact="medium", urgency="high"),
+    Template(key="data_exposure", name="Data exposure", impact="high", urgency="medium"),
+    Template(
+        key="vulnerability_exploitation",
+        name="Vulnerability exploitation",
+        impact="high",
+        urgency="high",
+    ),
+]
+
+
 class TenantConfig(BaseModel):
     states: list[State] = Field(min_length=2)
     custom_fields: list[CustomField]
     severity: Severity
     escalation_rules: list[EscalationRule]
+    # Defaults let configurations saved before these sections existed still load.
+    teams: list[Team] = []
+    templates: list[Template] = Field(default=DEFAULT_TEMPLATES, min_length=1)
 
     @model_validator(mode="after")
     def check_references(self) -> Self:
@@ -183,7 +242,27 @@ class TenantConfig(BaseModel):
         for rule in self.escalation_rules:
             if unknown := set(rule.severities) - set(self.severity.keys):
                 raise ValueError(f"rule {rule.name!r} uses unknown severities: {sorted(unknown)}")
+        _unique([t.key for t in self.teams], "team keys")
+        _unique([t.key for t in self.templates], "template keys")
+        team_keys = {t.key for t in self.teams}
+        for template in self.templates:
+            if template.impact not in self.severity.impacts:
+                raise ValueError(f"template {template.key} uses unknown impact")
+            if template.urgency not in self.severity.urgencies:
+                raise ValueError(f"template {template.key} uses unknown urgency")
+            if template.team is not None and template.team not in team_keys:
+                raise ValueError(f"template {template.key} uses unknown team")
         return self
+
+    def template(self, key: str) -> Template | None:
+        return next((t for t in self.templates if t.key == key), None)
+
+    def team(self, key: str | None) -> Team | None:
+        return next((t for t in self.teams if t.key == key), None)
+
+    @property
+    def terminal_states(self) -> list[str]:
+        return [s.key for s in self.states if s.terminal]
 
     @property
     def state_keys(self) -> list[str]:

@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.tenant_config import DEFAULT_CONFIG
-from tests.conftest import MakeUser, audit_actions
+from tests.conftest import MakeUser, audit_actions, new_tenant
 
 DEFAULT = DEFAULT_CONFIG.model_dump(mode="json")
 STATES = [
@@ -13,24 +13,6 @@ STATES = [
     {"key": "working", "name": "Working"},
     {"key": "done", "name": "Done", "terminal": True},
 ]
-
-
-async def new_tenant(owner: AsyncEngine) -> str:
-    async with owner.begin() as conn:
-        slug = await conn.scalar(
-            text(
-                "INSERT INTO tenants (slug, name) "
-                "VALUES ('t-' || substr(md5(random()::text), 1, 8), 'Test') RETURNING slug"
-            )
-        )
-    assert slug is not None
-    return slug
-
-
-@pytest.fixture
-async def tenant(owner: AsyncEngine) -> str:
-    """A fresh tenant, so configuration changes don't leak between tests."""
-    return await new_tenant(owner)
 
 
 def url(tenant: str, section: str = "") -> str:
@@ -83,6 +65,31 @@ async def test_admin_replaces_a_section(
             {"actor": f"user:{admin.id}"},
         )
     assert detail == {"data": saved[key]}
+
+
+async def test_on_call_must_be_a_member(make_user: MakeUser, tenant: str) -> None:
+    admin = await make_user({tenant: ["admin"]})
+    stranger = await make_user({"insider-threat": ["analyst"]})
+    teams = [{"key": "soc", "name": "SOC", "on_call": str(stranger.id)}]
+
+    response = await admin.client.put(url(tenant, "/teams"), json=teams)
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", 0, "on_call"]
+    teams[0]["on_call"] = str(admin.id)
+    saved = await admin.client.put(url(tenant, "/teams"), json=teams)
+    assert saved.json()["teams"] == teams
+
+
+async def test_templates_can_reference_teams(make_user: MakeUser, tenant: str) -> None:
+    admin = await make_user({tenant: ["admin"]})
+    template = {"key": "phishing", "name": "Phish", "impact": "low", "urgency": "low",
+                "team": "soc"}  # fmt: skip
+    rejected = await admin.client.put(url(tenant, "/templates"), json=[template])
+    assert "unknown team" in rejected.text
+    await admin.client.put(url(tenant, "/teams"), json=[{"key": "soc", "name": "SOC"}])
+    saved = await admin.client.put(url(tenant, "/templates"), json=[template])
+    assert saved.json()["templates"] == [template | {"tlp": "amber", "pap": "amber"}]
 
 
 async def test_changes_must_keep_references_valid(make_user: MakeUser, tenant: str) -> None:
