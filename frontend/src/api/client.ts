@@ -34,6 +34,10 @@ export type TaskStatus = Schemas['TaskStatus']
 export type TaskUpdate = Schemas['TaskUpdate']
 export type SlaClock = Schemas['SlaClock']
 export type PlaybookTask = Schemas['PlaybookTask']
+export type Observable = Schemas['ObservableOut']
+export type ObservableType = Schemas['ObservableType']
+export type Candidate = Schemas['CandidateOut']
+export type ObservablePage = Schemas['ObservablePage']
 
 export const api = createClient<paths>({
   baseUrl: window.location.origin,

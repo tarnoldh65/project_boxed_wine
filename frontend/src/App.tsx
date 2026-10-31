@@ -12,6 +12,7 @@ import {
 import { api, type Me } from './api/client'
 import { CasePage } from './cases/CasePage'
 import { CasesPage } from './cases/CasesPage'
+import { ObservablePage } from './cases/ObservablePage'
 import { Settings } from './settings/Settings'
 
 const TENANT_KEY = 'casemgr.tenant'
@@ -48,6 +49,7 @@ export default function App() {
       <Route path="/t/:slug" element={<TenantLayout me={me.data} />}>
         <Route index element={<CasesPage />} />
         <Route path="cases/:number" element={<CasePage />} />
+        <Route path="observables/:observableId" element={<ObservablePage />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Home me={me.data} />} />

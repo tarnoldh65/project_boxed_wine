@@ -160,6 +160,7 @@ test('splits the selected alerts and assets into a new case', async () => {
   expect(button).toBeDisabled()
   fireEvent.click(screen.getByLabelText('Select alert Invoice overdue'))
   fireEvent.click(screen.getByLabelText('Select asset web-01'))
+  fireEvent.click(screen.getByLabelText('Select observable evil[.]example'))
   fireEvent.change(screen.getByLabelText('New case title'), { target: { value: 'Second wave' } })
   fireEvent.click(button)
 
@@ -167,6 +168,7 @@ test('splits the selected alerts and assets into a new case', async () => {
     title: 'Second wave',
     alert_ids: ['a1'],
     asset_ids: ['h1'],
+    observable_ids: ['o1'],
   })
   expect(await screen.findByRole('heading', { name: '#10 Second wave' })).toBeInTheDocument()
 })

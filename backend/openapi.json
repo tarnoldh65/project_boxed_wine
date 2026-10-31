@@ -1654,6 +1654,239 @@
         }
       }
     },
+    "/api/tenants/{slug}/cases/{number}/observables/extract": {
+      "post": {
+        "tags": [
+          "observables"
+        ],
+        "summary": "Extract Observables",
+        "description": "Propose observables from pasted text, or from the case's alerts when no text is given.",
+        "operationId": "extract_observables_api_tenants__slug__cases__number__observables_extract_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateOut"
+                  },
+                  "title": "Response Extract Observables Api Tenants  Slug  Cases  Number  Observables Extract Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/observables": {
+      "post": {
+        "tags": [
+          "observables"
+        ],
+        "summary": "Link Observables",
+        "operationId": "link_observables_api_tenants__slug__cases__number__observables_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/observables/{observable_id}": {
+      "delete": {
+        "tags": [
+          "observables"
+        ],
+        "summary": "Unlink Observable",
+        "operationId": "unlink_observable_api_tenants__slug__cases__number__observables__observable_id__delete",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "observable_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Observable Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/observables/{observable_id}": {
+      "get": {
+        "tags": [
+          "observables"
+        ],
+        "summary": "Get Observable",
+        "operationId": "get_observable_api_tenants__slug__observables__observable_id__get",
+        "parameters": [
+          {
+            "name": "observable_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Observable Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservablePage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -1915,6 +2148,33 @@
           "external_id"
         ],
         "title": "AssetOut"
+      },
+      "CandidateOut": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ObservableType"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "defanged": {
+            "type": "string",
+            "title": "Defanged"
+          },
+          "linked": {
+            "type": "boolean",
+            "title": "Linked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "value",
+          "defanged",
+          "linked"
+        ],
+        "title": "CandidateOut"
       },
       "CaseCreate": {
         "properties": {
@@ -2265,6 +2525,13 @@
             },
             "type": "array",
             "title": "Sla"
+          },
+          "observables": {
+            "items": {
+              "$ref": "#/components/schemas/ObservableOut"
+            },
+            "type": "array",
+            "title": "Observables"
           }
         },
         "type": "object",
@@ -2305,7 +2572,8 @@
           "alerts",
           "assets",
           "tasks",
-          "sla"
+          "sla",
+          "observables"
         ],
         "title": "CaseOut"
       },
@@ -2807,6 +3075,25 @@
         ],
         "title": "EscalationRule"
       },
+      "ExtractIn": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "title": "ExtractIn",
+        "description": "Text to extract from; when omitted, the case's alerts are used."
+      },
       "FieldType": {
         "type": "string",
         "enum": [
@@ -2859,6 +3146,24 @@
           "duplicate"
         ],
         "title": "IntakeOut"
+      },
+      "LinkIn": {
+        "properties": {
+          "observables": {
+            "items": {
+              "$ref": "#/components/schemas/ObservableIn"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Observables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "observables"
+        ],
+        "title": "LinkIn"
       },
       "LogoutOut": {
         "properties": {
@@ -2973,6 +3278,147 @@
           "into"
         ],
         "title": "MergeIn"
+      },
+      "ObservableCase": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "title",
+          "state",
+          "severity",
+          "created_at"
+        ],
+        "title": "ObservableCase"
+      },
+      "ObservableIn": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ObservableType"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "ObservableIn"
+      },
+      "ObservableOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ObservableType"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "defanged": {
+            "type": "string",
+            "title": "Defanged"
+          },
+          "other_cases": {
+            "type": "integer",
+            "title": "Other Cases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "value",
+          "defanged",
+          "other_cases"
+        ],
+        "title": "ObservableOut"
+      },
+      "ObservablePage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ObservableType"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "defanged": {
+            "type": "string",
+            "title": "Defanged"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/ObservableCase"
+            },
+            "type": "array",
+            "title": "Cases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "value",
+          "defanged",
+          "cases"
+        ],
+        "title": "ObservablePage"
+      },
+      "ObservableType": {
+        "type": "string",
+        "enum": [
+          "ipv4",
+          "ipv6",
+          "domain",
+          "url",
+          "md5",
+          "sha1",
+          "sha256",
+          "email",
+          "filename",
+          "registry_key",
+          "user",
+          "process",
+          "cve"
+        ],
+        "title": "ObservableType"
       },
       "Override": {
         "properties": {
@@ -3265,6 +3711,15 @@
             },
             "type": "array",
             "title": "Asset Ids",
+            "default": []
+          },
+          "observable_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Observable Ids",
             "default": []
           }
         },
