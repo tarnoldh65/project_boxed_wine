@@ -101,3 +101,51 @@ td {
 input[type='number'] {
   width: 6rem;
 }
+
+.tabs a {
+  padding: 0.25rem 0.5rem;
+}
+
+.tabs a.active {
+  font-weight: 600;
+  border-bottom: 2px solid currentColor;
+}
+
+.panel {
+  margin-bottom: 1rem;
+}
+
+.case-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.75rem;
+  border: none;
+  padding: 0;
+}
+
+.case-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.case-grid textarea,
+.stack textarea {
+  width: 100%;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.alert-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+pre {
+  overflow-x: auto;
+  max-width: 100%;
+}

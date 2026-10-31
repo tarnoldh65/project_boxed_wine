@@ -19,7 +19,16 @@ TENANT_ROUTES = [(m, p) for m, p in API_ROUTES if p.startswith("/api/tenants/{sl
 
 
 def fill(path: str) -> str:
-    return path.replace("{slug}", "detect-respond").replace("{token_id}", str(uuid4()))
+    params = {
+        "slug": "detect-respond",
+        "token_id": str(uuid4()),
+        "asset_id": str(uuid4()),
+        "number": "1",
+        "source": "siem",
+    }
+    for name, value in params.items():
+        path = path.replace(f"{{{name}}}", value)
+    return path
 
 
 def test_routes_are_discovered() -> None:

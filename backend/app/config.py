@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     session_max_hours: int = 12
     # How often a session re-reads the user's groups from the IdP.
     group_sync_minutes: int = 5
+    # Email intake: imaps://user:password@host:port/MAILBOX, polled by the email_intake job.
+    imap_url: str | None = None
+    imap_tenant: str | None = None
+    imap_template: str = "phishing"
 
 
 settings = Settings()  # pyright: ignore[reportCallIssue]

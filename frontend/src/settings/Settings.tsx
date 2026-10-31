@@ -1,30 +1,23 @@
-import { useQuery } from '@tanstack/react-query'
-import { api, type TenantAccess } from '../api/client'
+import { useMembers, useTenantConfig } from '../api/queries'
+import { useTenant } from '../tenant'
 import { TokensPanel } from '../TokensPanel'
 import { EscalationEditor } from './EscalationEditor'
 import { FieldsEditor } from './FieldsEditor'
 import { SeverityEditor } from './SeverityEditor'
 import { StatesEditor } from './StatesEditor'
+import { TeamsEditor } from './TeamsEditor'
+import { TemplatesEditor } from './TemplatesEditor'
 
-export function Settings({ tenant }: { tenant: TenantAccess }) {
-  const { slug } = tenant
-  const canConfigure = tenant.permissions.includes('config:manage')
-  const config = useQuery({
-    queryKey: ['config', slug],
-    queryFn: async () => {
-      const { data, response } = await api.GET('/api/tenants/{slug}/config', {
-        params: { path: { slug } },
-      })
-      if (!data) throw new Error(`Could not load settings (${response.status})`)
-      return data
-    },
-    enabled: canConfigure,
-  })
+export function Settings() {
+  const { slug, permissions } = useTenant()
+  const canConfigure = permissions.includes('config:manage')
+  const config = useTenantConfig(slug, canConfigure)
+  const members = useMembers(slug)
 
   return (
     <>
       {config.isError && <p role="alert">{config.error.message}</p>}
-      {config.data && (
+      {config.data && members.data && (
         <section className="settings">
           <h2>Workflow settings</h2>
           <StatesEditor slug={slug} states={config.data.states} />
@@ -39,9 +32,11 @@ export function Settings({ tenant }: { tenant: TenantAccess }) {
             rules={config.data.escalation_rules}
             severities={config.data.severity.levels.map((level) => level.key)}
           />
+          <TeamsEditor slug={slug} teams={config.data.teams} members={members.data} />
+          <TemplatesEditor slug={slug} config={config.data} />
         </section>
       )}
-      {tenant.permissions.includes('tokens:manage') && <TokensPanel slug={slug} />}
+      {permissions.includes('tokens:manage') && <TokensPanel slug={slug} />}
     </>
   )
 }

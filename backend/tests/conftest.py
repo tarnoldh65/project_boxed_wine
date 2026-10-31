@@ -117,3 +117,54 @@ async def audit_actions(owner: AsyncEngine, actor: str) -> list[str]:
             text("SELECT action FROM audit_log WHERE actor = :actor ORDER BY id"), {"actor": actor}
         )
         return list(rows)
+
+
+async def new_tenant(owner: AsyncEngine) -> str:
+    async with owner.begin() as conn:
+        slug = await conn.scalar(
+            text(
+                "INSERT INTO tenants (slug, name) "
+                "VALUES ('t-' || substr(md5(random()::text), 1, 8), 'Test') RETURNING slug"
+            )
+        )
+    assert slug is not None
+    return slug
+
+
+@pytest.fixture
+async def tenant(owner: AsyncEngine) -> str:
+    """A fresh tenant, so tests don't see each other's cases or configuration."""
+    return await new_tenant(owner)
+
+
+MakeToken = Callable[..., Awaitable[str]]
+
+
+@pytest.fixture
+def make_token(owner: AsyncEngine) -> MakeToken:
+    """Create an API token in a tenant directly and return its secret."""
+    from app.auth import hash_secret
+
+    async def make(slug: str, scopes: list[str]) -> str:
+        raw = f"cmt_{secrets.token_urlsafe(16)}"
+        async with owner.begin() as conn:
+            creator = await conn.scalar(
+                text(
+                    "INSERT INTO users (subject, username, display_name) "
+                    "VALUES (:sub, 'token-owner', 'Token Owner') RETURNING id"
+                ),
+                {"sub": secrets.token_hex(8)},
+            )
+            await conn.execute(
+                text(
+                    "INSERT INTO api_tokens "
+                    "(tenant_id, name, prefix, token_hash, scopes, created_by, expires_at) "
+                    "SELECT id, 'test', :prefix, :hash, :scopes, :creator, "
+                    "now() + interval '1 day' FROM tenants WHERE slug = :slug"
+                ),
+                {"prefix": raw[:12], "hash": hash_secret(raw), "scopes": scopes,
+                 "creator": creator, "slug": slug},
+            )  # fmt: skip
+        return raw
+
+    return make

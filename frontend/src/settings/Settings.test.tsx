@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { TenantAccess, TenantConfig } from '../api/client'
-import { json, mockApi, renderWithQuery } from '../testing'
+import { json, mockApi, renderInTenant } from '../testing'
 import { Settings } from './Settings'
 
 const BASE = '/api/tenants/dr/config'
@@ -22,7 +22,10 @@ const CONFIG: TenantConfig = {
     matrix: [['high'], ['low']],
   },
   escalation_rules: [],
+  teams: [],
+  templates: [{ key: 'phishing', name: 'Phishing', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null }],
 }
+const MEMBERS = [{ id: 'u1', username: 'jdoe', display_name: 'J Doe' }]
 const ADMIN: TenantAccess = { slug: 'dr', name: 'DR', permissions: ['cases:read', 'config:manage'] }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -34,6 +37,8 @@ function mockConfig() {
     'custom-fields': 'custom_fields',
     severity: 'severity',
     'escalation-rules': 'escalation_rules',
+    teams: 'teams',
+    templates: 'templates',
   }
   let config = CONFIG
   const routes = Object.fromEntries(
@@ -45,7 +50,11 @@ function mockConfig() {
       },
     ]),
   )
-  return mockApi({ [`GET ${BASE}`]: () => json(config), ...routes })
+  return mockApi({
+    [`GET ${BASE}`]: () => json(config),
+    'GET /api/tenants/dr/members': () => json(MEMBERS),
+    ...routes,
+  })
 }
 
 async function lastBody(requests: Request[], path: string) {
@@ -59,23 +68,33 @@ function section(heading: string) {
 
 test('loads every section for configuration admins', async () => {
   mockConfig()
-  renderWithQuery(<Settings tenant={ADMIN} />)
-  for (const heading of ['Lifecycle states', 'Custom fields', 'Severity and SLAs', 'Escalation rules']) {
+  renderInTenant(<Settings />, ADMIN)
+  for (const heading of [
+    'Lifecycle states',
+    'Custom fields',
+    'Severity and SLAs',
+    'Escalation rules',
+    'Teams',
+    'Case templates',
+  ]) {
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
   }
   expect(screen.queryByRole('heading', { name: 'API tokens' })).not.toBeInTheDocument()
 })
 
 test('token-only admins see just API tokens', async () => {
-  const requests = mockApi({ 'GET /api/tenants/dr/tokens': () => json([]) })
-  renderWithQuery(<Settings tenant={{ ...ADMIN, permissions: ['tokens:manage'] }} />)
+  const requests = mockApi({
+    'GET /api/tenants/dr/tokens': () => json([]),
+    'GET /api/tenants/dr/members': () => json(MEMBERS),
+  })
+  renderInTenant(<Settings />, { ...ADMIN, permissions: ['tokens:manage'] })
   expect(await screen.findByRole('heading', { name: 'API tokens' })).toBeInTheDocument()
   expect(requests.map((r) => new URL(r.url).pathname)).not.toContain(BASE)
 })
 
 test('edits, reorders, and saves lifecycle states', async () => {
   const requests = mockConfig()
-  renderWithQuery(<Settings tenant={ADMIN} />)
+  renderInTenant(<Settings />, ADMIN)
   await screen.findByRole('heading', { name: 'Lifecycle states' })
   const states = section('Lifecycle states')
 
@@ -97,6 +116,7 @@ test('edits, reorders, and saves lifecycle states', async () => {
 test('shows validation errors from the server', async () => {
   mockApi({
     [`GET ${BASE}`]: () => json(CONFIG),
+    'GET /api/tenants/dr/members': () => json(MEMBERS),
     [`PUT ${BASE}/states`]: () =>
       json(
         {
@@ -108,7 +128,7 @@ test('shows validation errors from the server', async () => {
         422,
       ),
   })
-  renderWithQuery(<Settings tenant={ADMIN} />)
+  renderInTenant(<Settings />, ADMIN)
   await screen.findByRole('heading', { name: 'Lifecycle states' })
   const states = section('Lifecycle states')
   fireEvent.click(states.getByLabelText('State 2 terminal'))
@@ -120,7 +140,7 @@ test('shows validation errors from the server', async () => {
 
 test('adds a picklist field required from a state', async () => {
   const requests = mockConfig()
-  renderWithQuery(<Settings tenant={ADMIN} />)
+  renderInTenant(<Settings />, ADMIN)
   await screen.findByRole('heading', { name: 'Custom fields' })
   const fields = section('Custom fields')
 
@@ -140,7 +160,7 @@ test('adds a picklist field required from a state', async () => {
 
 test('edits SLAs and the severity matrix, resizing it when axes change', async () => {
   const requests = mockConfig()
-  renderWithQuery(<Settings tenant={ADMIN} />)
+  renderInTenant(<Settings />, ADMIN)
   await screen.findByRole('heading', { name: 'Severity and SLAs' })
   const severity = section('Severity and SLAs')
 
@@ -168,7 +188,7 @@ test('edits SLAs and the severity matrix, resizing it when axes change', async (
 
 test('adds and removes escalation rules', async () => {
   const requests = mockConfig()
-  renderWithQuery(<Settings tenant={ADMIN} />)
+  renderInTenant(<Settings />, ADMIN)
   await screen.findByRole('heading', { name: 'Escalation rules' })
   const rules = section('Escalation rules')
 
@@ -199,6 +219,40 @@ test('adds and removes escalation rules', async () => {
 
 test('reports a failed load', async () => {
   mockApi({ [`GET ${BASE}`]: () => json({ detail: 'Forbidden' }, 403) })
-  renderWithQuery(<Settings tenant={ADMIN} />)
+  renderInTenant(<Settings />, ADMIN)
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not load settings (403)')
+})
+
+test('assigns an on-call member to a team', async () => {
+  const requests = mockConfig()
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Teams' })
+  const teams = section('Teams')
+
+  fireEvent.click(teams.getByRole('button', { name: 'Add team' }))
+  fireEvent.change(teams.getByLabelText('Team 1 key'), { target: { value: 'soc' } })
+  fireEvent.change(teams.getByLabelText('Team 1 name'), { target: { value: 'SOC' } })
+  fireEvent.change(teams.getByLabelText('Team 1 on call'), { target: { value: 'u1' } })
+  fireEvent.click(teams.getByRole('button', { name: 'Save' }))
+
+  expect(await lastBody(requests, '/teams')).toEqual([{ key: 'soc', name: 'SOC', on_call: 'u1' }])
+})
+
+test('edits case templates', async () => {
+  const requests = mockConfig()
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Case templates' })
+  const templates = section('Case templates')
+
+  fireEvent.change(templates.getByLabelText('Template 1 impact'), { target: { value: 'narrow' } })
+  fireEvent.change(templates.getByLabelText('Template 1 TLP'), { target: { value: 'red' } })
+  fireEvent.click(templates.getByRole('button', { name: 'Add template' }))
+  fireEvent.change(templates.getByLabelText('Template 2 key'), { target: { value: 'ddos' } })
+  fireEvent.change(templates.getByLabelText('Template 2 name'), { target: { value: 'DDoS' } })
+  fireEvent.click(templates.getByRole('button', { name: 'Save' }))
+
+  expect(await lastBody(requests, '/templates')).toEqual([
+    { key: 'phishing', name: 'Phishing', impact: 'narrow', urgency: 'now', tlp: 'red', pap: 'amber', team: null },
+    { key: 'ddos', name: 'DDoS', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null },
+  ])
 })

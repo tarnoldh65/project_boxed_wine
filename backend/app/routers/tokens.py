@@ -13,7 +13,7 @@ from app.models import ApiToken
 
 router = APIRouter(prefix="/api/tenants/{slug}/tokens", tags=["tokens"])
 
-TokenScope = Literal["cases:read", "cases:write"]
+TokenScope = Literal["alerts:write", "cases:read", "cases:write"]
 TokenManager = Annotated[TenantContext, require("tokens:manage")]
 TOKEN_PREFIX = "cmt_"  # noqa: S105 - identifies the token type, not a secret
 

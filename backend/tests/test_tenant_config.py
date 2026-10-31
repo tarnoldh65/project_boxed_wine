@@ -64,7 +64,8 @@ def test_custom_matrix_lookup_and_priority() -> None:
             "impacts": ["wide", "narrow"],
             "urgencies": ["now", "later"],
             "matrix": [["sev1", "sev1"], ["sev2", "sev1"]],
-        }
+        },
+        templates=[{"key": "t", "name": "T", "impact": "wide", "urgency": "now"}],
     ).severity
     assert custom.severity("narrow", "now") == "sev2"
     assert custom.severity("narrow", "later") == "sev1"
@@ -194,6 +195,26 @@ def test_unknown_matrix_axis_is_rejected() -> None:
     ],
 )
 def test_invalid_config_is_rejected(changes: dict[str, Any], message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        config(**changes)
+
+
+TEMPLATE = {"key": "t", "name": "T", "impact": "high", "urgency": "low"}
+
+
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"templates": []}, "at least 1"),
+        ({"templates": [TEMPLATE, TEMPLATE]}, "duplicate template keys"),
+        ({"templates": [TEMPLATE | {"impact": "cosmic"}]}, "unknown impact"),
+        ({"templates": [TEMPLATE | {"urgency": "never"}]}, "unknown urgency"),
+        ({"templates": [TEMPLATE | {"team": "ghosts"}]}, "unknown team"),
+        ({"templates": [TEMPLATE | {"tlp": "purple"}]}, "Input should be"),
+        ({"teams": [{"key": "a", "name": "A"}, {"key": "a", "name": "B"}]}, "duplicate team keys"),
+    ],
+)
+def test_invalid_teams_and_templates(changes: dict[str, Any], message: str) -> None:
     with pytest.raises(ValidationError, match=message):
         config(**changes)
 

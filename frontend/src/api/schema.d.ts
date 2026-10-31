@@ -210,6 +210,215 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/config/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Teams */
+        put: operations["put_teams_api_tenants__slug__config_teams_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Templates */
+        put: operations["put_templates_api_tenants__slug__config_templates_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Members */
+        get: operations["list_members_api_tenants__slug__members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Cases */
+        get: operations["list_cases_api_tenants__slug__cases_get"];
+        put?: never;
+        /** Create Case */
+        post: operations["create_case_api_tenants__slug__cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Case */
+        get: operations["get_case_api_tenants__slug__cases__number__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Case */
+        patch: operations["update_case_api_tenants__slug__cases__number__patch"];
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge Case */
+        post: operations["merge_case_api_tenants__slug__cases__number__merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Split Case */
+        post: operations["split_case_api_tenants__slug__cases__number__split_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link Asset */
+        post: operations["link_asset_api_tenants__slug__cases__number__assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink Asset */
+        delete: operations["unlink_asset_api_tenants__slug__cases__number__assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Assets */
+        get: operations["search_assets_api_tenants__slug__assets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Post Alert */
+        post: operations["post_alert_api_tenants__slug__alerts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/webhooks/{source}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Webhook
+         * @description Accept any JSON object; query parameters name the top-level keys to map.
+         */
+        post: operations["post_webhook_api_tenants__slug__webhooks__source__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -248,6 +457,244 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlertIn */
+        AlertIn: {
+            /** Template */
+            template: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Source */
+            source: string;
+            /** External Id */
+            external_id?: string | null;
+            /** Group Key */
+            group_key?: string | null;
+            /** Detected At */
+            detected_at?: string | null;
+            /**
+             * Payload
+             * @default {}
+             */
+            payload: {
+                [key: string]: unknown;
+            };
+        };
+        /** AlertOut */
+        AlertOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Source */
+            source: string;
+            /** External Id */
+            external_id: string | null;
+            /** Group Key */
+            group_key: string | null;
+            /** Title */
+            title: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+        };
+        /** AssetIn */
+        AssetIn: {
+            kind: components["schemas"]["AssetKind"];
+            /** Name */
+            name: string;
+            /** External Id */
+            external_id?: string | null;
+        };
+        /**
+         * AssetKind
+         * @enum {string}
+         */
+        AssetKind: "host" | "account" | "application" | "data_set";
+        /** AssetOut */
+        AssetOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["AssetKind"];
+            /** Name */
+            name: string;
+            /** External Id */
+            external_id: string | null;
+        };
+        /** CaseCreate */
+        CaseCreate: {
+            /** Template */
+            template: string;
+            /** Title */
+            title: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Impact */
+            impact?: string | null;
+            /** Urgency */
+            urgency?: string | null;
+            /** Detected At */
+            detected_at?: string | null;
+        };
+        /** CaseOut */
+        CaseOut: {
+            /** Number */
+            number: number;
+            /** Title */
+            title: string;
+            /** State */
+            state: string;
+            /** Category */
+            category: string;
+            /** Severity */
+            severity: string;
+            /** Priority */
+            priority: string;
+            /** Team */
+            team: string | null;
+            /** Owner Id */
+            owner_id: string | null;
+            /** Restricted */
+            restricted: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Description */
+            description: string;
+            /** Impact */
+            impact: string;
+            /** Urgency */
+            urgency: string;
+            /** Override Justification */
+            override_justification: string | null;
+            /** Source */
+            source: string;
+            tlp: components["schemas"]["Tlp"];
+            pap: components["schemas"]["Pap"];
+            /** Regulated Data */
+            regulated_data: components["schemas"]["Regulated"][];
+            /** Data Regions */
+            data_regions: string[];
+            /** Business Units */
+            business_units: string[];
+            /** Attack Techniques */
+            attack_techniques: string[];
+            /** Custom */
+            custom: {
+                [key: string]: unknown;
+            };
+            resolution: components["schemas"]["Resolution"] | null;
+            /** Detected At */
+            detected_at: string | null;
+            /** Closed At */
+            closed_at: string | null;
+            /** Merged Into */
+            merged_into: number | null;
+            /** Alerts */
+            alerts: components["schemas"]["AlertOut"][];
+            /** Assets */
+            assets: components["schemas"]["AssetOut"][];
+        };
+        /** CaseSummary */
+        CaseSummary: {
+            /** Number */
+            number: number;
+            /** Title */
+            title: string;
+            /** State */
+            state: string;
+            /** Category */
+            category: string;
+            /** Severity */
+            severity: string;
+            /** Priority */
+            priority: string;
+            /** Team */
+            team: string | null;
+            /** Owner Id */
+            owner_id: string | null;
+            /** Restricted */
+            restricted: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * CaseUpdate
+         * @description Fields to change; omitted fields stay as they are.
+         */
+        CaseUpdate: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** State */
+            state?: string | null;
+            /** Impact */
+            impact?: string | null;
+            /** Urgency */
+            urgency?: string | null;
+            override?: components["schemas"]["Override"] | null;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Team */
+            team?: string | null;
+            tlp?: components["schemas"]["Tlp"] | null;
+            pap?: components["schemas"]["Pap"] | null;
+            /** Restricted */
+            restricted?: boolean | null;
+            /** Regulated Data */
+            regulated_data?: components["schemas"]["Regulated"][] | null;
+            /** Data Regions */
+            data_regions?: string[] | null;
+            /** Business Units */
+            business_units?: string[] | null;
+            /** Attack Techniques */
+            attack_techniques?: string[] | null;
+            /** Custom */
+            custom?: {
+                [key: string]: unknown;
+            } | null;
+            resolution?: components["schemas"]["Resolution"] | null;
+            /** Detected At */
+            detected_at?: string | null;
+        };
         /** CustomField */
         CustomField: {
             /** Key */
@@ -291,6 +738,20 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** IntakeOut */
+        IntakeOut: {
+            /**
+             * Alert Id
+             * Format: uuid
+             */
+            alert_id: string;
+            /** Case Number */
+            case_number: number;
+            /** New Case */
+            new_case: boolean;
+            /** Duplicate */
+            duplicate: boolean;
+        };
         /** LogoutOut */
         LogoutOut: {
             /** Logout Url */
@@ -314,6 +775,45 @@ export interface components {
             /** Tenants */
             tenants: components["schemas"]["TenantAccess"][];
         };
+        /** MemberOut */
+        MemberOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Username */
+            username: string;
+            /** Display Name */
+            display_name: string;
+        };
+        /** MergeIn */
+        MergeIn: {
+            /** Into */
+            into: number;
+        };
+        /** Override */
+        Override: {
+            /** Severity */
+            severity: string;
+            /** Justification */
+            justification: string;
+        };
+        /**
+         * Pap
+         * @enum {string}
+         */
+        Pap: "clear" | "green" | "amber" | "red";
+        /**
+         * Regulated
+         * @enum {string}
+         */
+        Regulated: "pii" | "phi" | "pci" | "cui";
+        /**
+         * Resolution
+         * @enum {string}
+         */
+        Resolution: "true_positive" | "false_positive" | "benign" | "duplicate" | "merged";
         /**
          * Severity
          * @description Severity comes from impact x urgency; priority P1 is the most severe level.
@@ -345,6 +845,21 @@ export interface components {
             /** Resolve Minutes */
             resolve_minutes: number;
         };
+        /** SplitIn */
+        SplitIn: {
+            /** Title */
+            title: string;
+            /**
+             * Alert Ids
+             * @default []
+             */
+            alert_ids: string[];
+            /**
+             * Asset Ids
+             * @default []
+             */
+            asset_ids: string[];
+        };
         /** State */
         State: {
             /** Key */
@@ -356,6 +871,35 @@ export interface components {
              * @default false
              */
             terminal: boolean;
+        };
+        /** Team */
+        Team: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** On Call */
+            on_call?: string | null;
+        };
+        /**
+         * Template
+         * @description An incident type: the defaults a new case of this category starts with.
+         */
+        Template: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Impact */
+            impact: string;
+            /** Urgency */
+            urgency: string;
+            /** @default amber */
+            tlp: components["schemas"]["Tlp"];
+            /** @default amber */
+            pap: components["schemas"]["Pap"];
+            /** Team */
+            team?: string | null;
         };
         /** TenantAccess */
         TenantAccess: {
@@ -375,6 +919,73 @@ export interface components {
             severity: components["schemas"]["Severity"];
             /** Escalation Rules */
             escalation_rules: components["schemas"]["EscalationRule"][];
+            /**
+             * Teams
+             * @default []
+             */
+            teams: components["schemas"]["Team"][];
+            /**
+             * Templates
+             * @default [
+             *       {
+             *         "key": "phishing",
+             *         "name": "Phishing",
+             *         "impact": "medium",
+             *         "urgency": "high",
+             *         "tlp": "amber",
+             *         "pap": "amber"
+             *       },
+             *       {
+             *         "key": "ransomware",
+             *         "name": "Ransomware",
+             *         "impact": "high",
+             *         "urgency": "high",
+             *         "tlp": "amber",
+             *         "pap": "amber"
+             *       },
+             *       {
+             *         "key": "bec",
+             *         "name": "Business email compromise",
+             *         "impact": "high",
+             *         "urgency": "medium",
+             *         "tlp": "amber",
+             *         "pap": "amber"
+             *       },
+             *       {
+             *         "key": "insider",
+             *         "name": "Insider threat",
+             *         "impact": "high",
+             *         "urgency": "medium",
+             *         "tlp": "red",
+             *         "pap": "red"
+             *       },
+             *       {
+             *         "key": "ddos",
+             *         "name": "DDoS",
+             *         "impact": "medium",
+             *         "urgency": "high",
+             *         "tlp": "amber",
+             *         "pap": "amber"
+             *       },
+             *       {
+             *         "key": "data_exposure",
+             *         "name": "Data exposure",
+             *         "impact": "high",
+             *         "urgency": "medium",
+             *         "tlp": "amber",
+             *         "pap": "amber"
+             *       },
+             *       {
+             *         "key": "vulnerability_exploitation",
+             *         "name": "Vulnerability exploitation",
+             *         "impact": "high",
+             *         "urgency": "high",
+             *         "tlp": "amber",
+             *         "pap": "amber"
+             *       }
+             *     ]
+             */
+            templates: components["schemas"]["Template"][];
         };
         /** TenantIn */
         TenantIn: {
@@ -395,6 +1006,11 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * Tlp
+         * @enum {string}
+         */
+        Tlp: "clear" | "green" | "amber" | "amber+strict" | "red";
         /** TokenCreated */
         TokenCreated: {
             /**
@@ -428,7 +1044,7 @@ export interface components {
             /** Name */
             name: string;
             /** Scopes */
-            scopes: ("cases:read" | "cases:write")[];
+            scopes: ("alerts:write" | "cases:read" | "cases:write")[];
             /** Expires In Days */
             expires_in_days: number;
         };
@@ -872,6 +1488,494 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_teams_api_tenants__slug__config_teams_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Team"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_templates_api_tenants__slug__config_templates_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Template"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_members_api_tenants__slug__members_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_cases_api_tenants__slug__cases_get: {
+        parameters: {
+            query?: {
+                state?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_case_api_tenants__slug__cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_case_api_tenants__slug__cases__number__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_case_api_tenants__slug__cases__number__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_case_api_tenants__slug__cases__number__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    split_case_api_tenants__slug__cases__number__split_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_asset_api_tenants__slug__cases__number__assets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_asset_api_tenants__slug__cases__number__assets__asset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                asset_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_assets_api_tenants__slug__assets_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_alert_api_tenants__slug__alerts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_webhook_api_tenants__slug__webhooks__source__post: {
+        parameters: {
+            query: {
+                template: string;
+                title_field?: string;
+                id_field?: string | null;
+                group_field?: string | null;
+            };
+            header?: never;
+            path: {
+                source: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeOut"];
                 };
             };
             /** @description Validation Error */

@@ -79,6 +79,9 @@ export async function signIn(page: Page, user: TestUser) {
     digits: 6,
     period: 30,
   })
+  // A code generated just before the 30 s step rolls over can expire before Keycloak checks it.
+  const secondsLeft = 30 - (Math.floor(Date.now() / 1000) % 30)
+  if (secondsLeft < 5) await page.waitForTimeout(secondsLeft * 1000 + 250)
   await page.locator('#totp').fill(totp.generate())
   await page.locator('#saveTOTPBtn').click()
   await expect(page.getByText(user.displayName)).toBeVisible()

@@ -5,7 +5,7 @@ test('tenant admin edits lifecycle states and the change persists', async ({ pag
   // insider-threat keeps the change away from the tenant other tests use.
   const user = await createUser(request, ['casemgr-insider-threat-admin'])
   await signIn(page, user)
-  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('link', { name: 'Settings' }).click()
 
   const states = page.locator('form', { has: page.getByRole('heading', { name: 'Lifecycle states' }) })
   const name = `Triage ${Date.now()}`
@@ -19,7 +19,7 @@ test('tenant admin edits lifecycle states and the change persists', async ({ pag
   await expect(states.getByRole('alert')).toContainText('at least one state must be terminal')
 
   await page.reload()
-  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('link', { name: 'Settings' }).click()
   await expect(page.getByLabel('State 2 name')).toHaveValue(name)
   await expect(page.getByLabel('State 8 terminal')).toBeChecked()
 })
@@ -28,5 +28,5 @@ test('analysts do not see settings', async ({ page, request }) => {
   const user = await createUser(request, ['casemgr-insider-threat-analyst'])
   await signIn(page, user)
   await expect(page.getByRole('heading', { name: 'Cases' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Settings' })).toBeHidden()
+  await expect(page.getByRole('link', { name: 'Settings' })).toBeHidden()
 })
