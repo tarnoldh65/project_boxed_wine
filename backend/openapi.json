@@ -290,6 +290,268 @@
         }
       }
     },
+    "/api/tenants/{slug}/config": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Get Config",
+        "operationId": "get_config_api_tenants__slug__config_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/config/states": {
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put States",
+        "operationId": "put_states_api_tenants__slug__config_states_put",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/State"
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/config/custom-fields": {
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put Custom Fields",
+        "operationId": "put_custom_fields_api_tenants__slug__config_custom_fields_put",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CustomField"
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/config/severity": {
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put Severity",
+        "operationId": "put_severity_api_tenants__slug__config_severity_put",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Severity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/config/escalation-rules": {
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put Escalation Rules",
+        "operationId": "put_escalation_rules_api_tenants__slug__config_escalation_rules_put",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EscalationRule"
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -337,6 +599,118 @@
   },
   "components": {
     "schemas": {
+      "CustomField": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FieldType"
+          },
+          "options": {
+            "items": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "type": "array",
+            "title": "Options",
+            "default": []
+          },
+          "required_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required From"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "type"
+        ],
+        "title": "CustomField"
+      },
+      "EscalationRule": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/Trigger"
+          },
+          "severities": {
+            "items": {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "type": "array",
+            "title": "Severities",
+            "default": []
+          },
+          "notify_emails": {
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "type": "array",
+            "title": "Notify Emails",
+            "default": []
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "trigger"
+        ],
+        "title": "EscalationRule"
+      },
+      "FieldType": {
+        "type": "string",
+        "enum": [
+          "text",
+          "picklist",
+          "date",
+          "user",
+          "number"
+        ],
+        "title": "FieldType"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -412,6 +786,137 @@
         ],
         "title": "MeOut"
       },
+      "Severity": {
+        "properties": {
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/SeverityLevel"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Levels"
+          },
+          "impacts": {
+            "items": {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Impacts"
+          },
+          "urgencies": {
+            "items": {
+              "type": "string",
+              "maxLength": 40,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Urgencies"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "string",
+                "maxLength": 40,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Matrix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "levels",
+          "impacts",
+          "urgencies",
+          "matrix"
+        ],
+        "title": "Severity",
+        "description": "Severity comes from impact x urgency; priority P1 is the most severe level."
+      },
+      "SeverityLevel": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Key"
+          },
+          "sla": {
+            "$ref": "#/components/schemas/SlaTarget"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "sla"
+        ],
+        "title": "SeverityLevel"
+      },
+      "SlaTarget": {
+        "properties": {
+          "acknowledge_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Acknowledge Minutes"
+          },
+          "triage_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Triage Minutes"
+          },
+          "contain_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Contain Minutes"
+          },
+          "resolve_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Resolve Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "acknowledge_minutes",
+          "triage_minutes",
+          "contain_minutes",
+          "resolve_minutes"
+        ],
+        "title": "SlaTarget"
+      },
+      "State": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "terminal": {
+            "type": "boolean",
+            "title": "Terminal",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "State"
+      },
       "TenantAccess": {
         "properties": {
           "slug": {
@@ -437,6 +942,43 @@
           "permissions"
         ],
         "title": "TenantAccess"
+      },
+      "TenantConfig": {
+        "properties": {
+          "states": {
+            "items": {
+              "$ref": "#/components/schemas/State"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "States"
+          },
+          "custom_fields": {
+            "items": {
+              "$ref": "#/components/schemas/CustomField"
+            },
+            "type": "array",
+            "title": "Custom Fields"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "escalation_rules": {
+            "items": {
+              "$ref": "#/components/schemas/EscalationRule"
+            },
+            "type": "array",
+            "title": "Escalation Rules"
+          }
+        },
+        "type": "object",
+        "required": [
+          "states",
+          "custom_fields",
+          "severity",
+          "escalation_rules"
+        ],
+        "title": "TenantConfig"
       },
       "TenantIn": {
         "properties": {
@@ -637,6 +1179,16 @@
           "revoked_at"
         ],
         "title": "TokenOut"
+      },
+      "Trigger": {
+        "type": "string",
+        "enum": [
+          "case_created",
+          "sla_warning",
+          "sla_breach",
+          "major_incident"
+        ],
+        "title": "Trigger"
       },
       "ValidationError": {
         "properties": {

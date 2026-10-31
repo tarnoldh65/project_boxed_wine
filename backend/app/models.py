@@ -83,3 +83,12 @@ class AuditEntry(Base):
     detail: Mapped[dict[str, Any]] = mapped_column(JSONB)
     prev_hash: Mapped[str]
     hash: Mapped[str]
+
+
+class TenantConfigRow(Base):
+    __tablename__ = "tenant_config"
+
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"), primary_key=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_by: Mapped[str]

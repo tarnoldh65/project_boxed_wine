@@ -125,6 +125,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Config */
+        get: operations["get_config_api_tenants__slug__config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put States */
+        put: operations["put_states_api_tenants__slug__config_states_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/custom-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Custom Fields */
+        put: operations["put_custom_fields_api_tenants__slug__config_custom_fields_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/severity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Severity */
+        put: operations["put_severity_api_tenants__slug__config_severity_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/escalation-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Escalation Rules */
+        put: operations["put_escalation_rules_api_tenants__slug__config_escalation_rules_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -163,6 +248,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CustomField */
+        CustomField: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            type: components["schemas"]["FieldType"];
+            /**
+             * Options
+             * @default []
+             */
+            options: string[];
+            /** Required From */
+            required_from?: string | null;
+        };
+        /** EscalationRule */
+        EscalationRule: {
+            /** Name */
+            name: string;
+            trigger: components["schemas"]["Trigger"];
+            /**
+             * Severities
+             * @default []
+             */
+            severities: string[];
+            /**
+             * Notify Emails
+             * @default []
+             */
+            notify_emails: string[];
+            /** Webhook Url */
+            webhook_url?: string | null;
+        };
+        /**
+         * FieldType
+         * @enum {string}
+         */
+        FieldType: "text" | "picklist" | "date" | "user" | "number";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -191,6 +314,49 @@ export interface components {
             /** Tenants */
             tenants: components["schemas"]["TenantAccess"][];
         };
+        /**
+         * Severity
+         * @description Severity comes from impact x urgency; priority P1 is the most severe level.
+         */
+        Severity: {
+            /** Levels */
+            levels: components["schemas"]["SeverityLevel"][];
+            /** Impacts */
+            impacts: string[];
+            /** Urgencies */
+            urgencies: string[];
+            /** Matrix */
+            matrix: string[][];
+        };
+        /** SeverityLevel */
+        SeverityLevel: {
+            /** Key */
+            key: string;
+            sla: components["schemas"]["SlaTarget"];
+        };
+        /** SlaTarget */
+        SlaTarget: {
+            /** Acknowledge Minutes */
+            acknowledge_minutes: number;
+            /** Triage Minutes */
+            triage_minutes: number;
+            /** Contain Minutes */
+            contain_minutes: number;
+            /** Resolve Minutes */
+            resolve_minutes: number;
+        };
+        /** State */
+        State: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Terminal
+             * @default false
+             */
+            terminal: boolean;
+        };
         /** TenantAccess */
         TenantAccess: {
             /** Slug */
@@ -199,6 +365,16 @@ export interface components {
             name: string;
             /** Permissions */
             permissions: string[];
+        };
+        /** TenantConfig */
+        TenantConfig: {
+            /** States */
+            states: components["schemas"]["State"][];
+            /** Custom Fields */
+            custom_fields: components["schemas"]["CustomField"][];
+            severity: components["schemas"]["Severity"];
+            /** Escalation Rules */
+            escalation_rules: components["schemas"]["EscalationRule"][];
         };
         /** TenantIn */
         TenantIn: {
@@ -282,6 +458,11 @@ export interface components {
             /** Revoked At */
             revoked_at: string | null;
         };
+        /**
+         * Trigger
+         * @enum {string}
+         */
+        Trigger: "case_created" | "sla_warning" | "sla_breach" | "major_incident";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -521,6 +702,177 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_config_api_tenants__slug__config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_states_api_tenants__slug__config_states_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["State"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_custom_fields_api_tenants__slug__config_custom_fields_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomField"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_severity_api_tenants__slug__config_severity_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Severity"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_escalation_rules_api_tenants__slug__config_escalation_rules_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EscalationRule"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
             };
             /** @description Validation Error */
             422: {
