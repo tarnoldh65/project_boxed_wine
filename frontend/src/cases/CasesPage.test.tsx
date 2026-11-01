@@ -6,9 +6,8 @@ import { CASE, CONFIG, MEMBERS, TENANT } from './fixtures'
 
 afterEach(() => vi.unstubAllGlobals())
 
-function api(cases = [CASE], clocks: unknown[] = []) {
+function api(cases = [CASE]) {
   return mockApi({
-    'GET /api/tenants/dr/clocks': () => json(clocks),
     'GET /api/tenants/dr/config': () => json(CONFIG),
     'GET /api/tenants/dr/members': () => json(MEMBERS),
     'GET /api/tenants/dr/cases': (request) => {
@@ -29,23 +28,6 @@ test('lists cases with state, severity, and owner names', async () => {
     ['8', 'Ransom note (restricted)', 'New', 'P1 high', 'pending', 'Unassigned', expect.any(String)],
   ])
   expect(screen.getByRole('link', { name: 'Suspicious email' })).toHaveAttribute('href', '/t/dr/cases/7')
-})
-
-test('lists notification deadlines across cases', async () => {
-  api([CASE], [{ ...CASE.clocks[0], status: 'warning', case_number: 7 }])
-  renderInTenant(<CasesPage />, TENANT)
-  const table = (await screen.findByRole('heading', { name: 'Notification deadlines' })).nextElementSibling as HTMLElement
-  const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell')
-  expect(cells.map((c) => c.textContent)).toEqual(['#7', 'GDPR Art. 33', expect.any(String), 'warning'])
-  expect(cells[3]).toHaveClass('sla-warning')
-  expect(within(table).getByRole('link', { name: '#7' })).toHaveAttribute('href', '/t/dr/cases/7')
-})
-
-test('hides the deadlines section when no clock is running', async () => {
-  api()
-  renderInTenant(<CasesPage />, TENANT)
-  await screen.findByRole('link', { name: 'Suspicious email' })
-  expect(screen.queryByRole('heading', { name: 'Notification deadlines' })).not.toBeInTheDocument()
 })
 
 test('filters by state', async () => {
@@ -82,7 +64,6 @@ test('reports a failed load', async () => {
     'GET /api/tenants/dr/config': () => json(CONFIG),
     'GET /api/tenants/dr/members': () => json(MEMBERS),
     'GET /api/tenants/dr/cases': () => json({}, 500),
-    'GET /api/tenants/dr/clocks': () => json([]),
   })
   renderInTenant(<CasesPage />, TENANT)
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not load cases (500)')

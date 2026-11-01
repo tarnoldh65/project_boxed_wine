@@ -19,12 +19,23 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit, escalation, evidence, journal, observable_store, regulatory, sla, tasks
+from app import (
+    audit,
+    escalation,
+    evidence,
+    journal,
+    observable_store,
+    pir,
+    regulatory,
+    sla,
+    tasks,
+)  # fmt: skip
 from app.auth import TenantContext, deny
 from app.evidence import EvidenceOut
 from app.journal import CommentOut, NoteOut, TimelineOut
 from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, Task, User
 from app.observable_store import ObservableOut
+from app.pir import PirOut
 from app.regulatory import ClockOut, DecisionOut, DisclosureOut
 from app.tasks import TaskOut
 from app.tenant_config import (
@@ -150,6 +161,7 @@ class CaseOut(CaseFields):
     clocks: list[ClockOut]
     materiality: list[DecisionOut]
     disclosures: list[DisclosureOut]
+    pir: PirOut
 
 
 class MarkingIn(BaseModel):
@@ -329,6 +341,7 @@ async def case_out(
         clocks=await regulatory.clocks(db, case, now),
         materiality=await regulatory.decisions(db, case),
         disclosures=await regulatory.disclosures(db, case),
+        pir=await pir.for_case(db, case),
     )
 
 
@@ -536,6 +549,16 @@ async def _check_gate(db: AsyncSession, config: TenantConfig, case: Case) -> Non
         ]
         if unfinished:
             invalid(f"finish or waive every task first: {'; '.join(unfinished)}", "state")
+    if (
+        state.require_pir
+        and case.resolution == Resolution.TRUE_POSITIVE
+        and not pir.complete(await pir.get(db, case))
+    ):
+        invalid(
+            "complete the post-incident review first: root cause, contributing factors, "
+            "what went well, and what did not",
+            "state",
+        )
 
 
 def _record_milestones(case: Case, config: TenantConfig) -> None:

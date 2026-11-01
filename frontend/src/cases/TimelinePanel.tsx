@@ -96,8 +96,14 @@ export function TimelinePanel({
         ))}
         {at.first_compromise && at.detection && (
           <div>
-            <dt>Dwell time</dt>
+            <dt>Time to detect</dt>
             <dd>{duration(at.first_compromise, at.detection)}</dd>
+          </div>
+        )}
+        {at.first_compromise && at.eradication && (
+          <div>
+            <dt>Dwell time</dt>
+            <dd>{duration(at.first_compromise, at.eradication)}</dd>
           </div>
         )}
       </dl>

@@ -234,3 +234,23 @@ pre {
   margin: 0.25rem 0 0.75rem;
   white-space: pre-wrap;
 }
+
+.panels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.panels caption {
+  font-weight: 600;
+  text-align: left;
+}
+
+.report-link {
+  margin-right: 1rem;
+}
+
+.results p {
+  margin: 0.25rem 0 0.75rem;
+}

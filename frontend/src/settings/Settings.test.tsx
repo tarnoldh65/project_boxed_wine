@@ -8,8 +8,8 @@ const BASE = '/api/tenants/dr/config'
 const SLA = { acknowledge_minutes: 15, triage_minutes: 60, contain_minutes: 240, resolve_minutes: 1440 }
 const CONFIG: TenantConfig = {
   states: [
-    { key: 'new', name: 'New', terminal: false, require_tasks_done: false },
-    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true },
+    { key: 'new', name: 'New', terminal: false, require_tasks_done: false, require_pir: false },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true, require_pir: true },
   ],
   custom_fields: [],
   severity: {
@@ -120,9 +120,9 @@ test('edits, reorders, and saves lifecycle states', async () => {
   fireEvent.click(states.getByRole('button', { name: 'Save' }))
 
   expect(await lastBody(requests, '/states')).toEqual([
-    { key: 'new', name: 'Open', terminal: false, require_tasks_done: false },
-    { key: 'triage', name: 'Triage', terminal: false, require_tasks_done: false },
-    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true },
+    { key: 'new', name: 'Open', terminal: false, require_tasks_done: false, require_pir: false },
+    { key: 'triage', name: 'Triage', terminal: false, require_tasks_done: false, require_pir: false },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true, require_pir: true },
   ])
   expect(await states.findByRole('status')).toHaveTextContent('Saved')
 })
@@ -264,25 +264,29 @@ test('edits case templates', async () => {
   fireEvent.click(templates.getByRole('button', { name: 'Add template' }))
   fireEvent.change(templates.getByLabelText('Template 2 key'), { target: { value: 'ddos' } })
   fireEvent.change(templates.getByLabelText('Template 2 name'), { target: { value: 'DDoS' } })
+  fireEvent.change(templates.getByLabelText('Template 2 retention days'), { target: { value: '365' } })
+  fireEvent.change(templates.getByLabelText('Template 2 retention days'), { target: { value: '' } })
+  fireEvent.change(templates.getByLabelText('Template 1 retention days'), { target: { value: '730' } })
   fireEvent.click(templates.getByRole('button', { name: 'Save' }))
 
   expect(await lastBody(requests, '/templates')).toEqual([
-    { key: 'phishing', name: 'Phishing', impact: 'narrow', urgency: 'now', tlp: 'red', pap: 'amber', team: null, tasks: [] },
-    { key: 'ddos', name: 'DDoS', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null, tasks: [] },
+    { key: 'phishing', name: 'Phishing', impact: 'narrow', urgency: 'now', tlp: 'red', pap: 'amber', team: null, tasks: [], retention_days: 730 },
+    { key: 'ddos', name: 'DDoS', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null, tasks: [], retention_days: null },
   ])
 })
 
-test('sets SLA milestones and the tasks gate on states', async () => {
+test('sets SLA milestones and the task and PIR gates on states', async () => {
   const requests = mockConfig()
   renderInTenant(<Settings />, ADMIN)
   await screen.findByRole('heading', { name: 'Lifecycle states' })
   const states = section('Lifecycle states')
   fireEvent.change(states.getByLabelText('State 1 SLA milestone'), { target: { value: 'triage' } })
   fireEvent.click(states.getByLabelText('State 2 tasks done gate'))
+  fireEvent.click(states.getByLabelText('State 2 PIR gate'))
   fireEvent.click(states.getByRole('button', { name: 'Save' }))
   expect(await lastBody(requests, '/states')).toEqual([
-    { key: 'new', name: 'New', terminal: false, require_tasks_done: false, sla_milestone: 'triage' },
-    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: false },
+    { key: 'new', name: 'New', terminal: false, require_tasks_done: false, require_pir: false, sla_milestone: 'triage' },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: false, require_pir: false },
   ])
 })
 

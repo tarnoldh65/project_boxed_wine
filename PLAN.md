@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 8 complete.**
+Status: **Phase 9 complete.**
 
 ---
 
@@ -152,13 +152,13 @@ README.md
 
 ### Phase 9 - Search, dashboards, metrics, reports, PIR, retention (FR-90 to FR-94, FR-102)
 
-- [ ] Full-text search across cases, notes, observables, and attachment metadata via Postgres FTS; saved searches; results filtered through `visible_cases`
-- [ ] Dashboard: open cases by severity/status, SLA compliance, analyst workload, aging, active clocks
-- [ ] Metrics: MTTD, MTTA, MTTC, MTTR, dwell time, false-positive rate, volume by category and ATT&CK technique, recurrence (new case sharing an observable with a closed case)
-- [ ] PIR module: root cause, contributing factors, what went well / didn't, action items tracked to closure; a case cannot close until its PIR is complete (FR-21 gate deferred from Phase 4)
-- [ ] Reports (executive summary, technical, PIR) to PDF and DOCX, stamped with the privilege marking when the case or a note is privileged; note Markdown is sanitized when rendered; layouts are fixed in code for MVP
-- [ ] Retention policies per case type; `retention` job purges expired cases and evidence, skipping legal holds, and audits each purge
-- [ ] Tests: metric calculations on fixed fixtures; restricted content never appears in search for unauthorized users; purge respects legal hold
+- [x] Full-text search across cases, notes, observables, and attachment metadata via Postgres FTS (generated `tsvector` columns with GIN indexes); per-user saved searches; results filtered through `visible_cases`
+- [x] Dashboard: open cases by severity/status, SLA compliance, analyst workload, aging, active clocks, open PIR actions
+- [x] Metrics: MTTD, MTTA, MTTC, MTTR, dwell time, false-positive rate, volume by category and ATT&CK technique, recurrence (new case sharing an observable with a closed case). Definitions are in `backend/app/analytics.py`
+- [x] PIR module: root cause, contributing factors, what went well / didn't, action items tracked to closure; a true-positive case cannot enter a state with the PIR gate (on for Closed, including saved configurations) until its PIR is complete
+- [x] Reports (executive summary, technical, PIR) to PDF (fpdf2, bundled DejaVu font) and DOCX, stamped with TLP and with the privilege marking when the case or a note is privileged; note Markdown is reproduced as plain source text; layouts are fixed in code for MVP
+- [x] Retention days per case type; `retention` job purges expired cases and evidence objects, skipping legal holds, and audits each purge. The purge runs in a `SECURITY DEFINER` database function that itself refuses open cases and cases under legal hold
+- [x] Tests: metric calculations on fixed fixtures; restricted content never appears in search for unauthorized users; purge respects legal hold
 
 ### Phase 10 - Deployment, hardening, documentation (SR-04, SR-08, NFR-01, NFR-02, NFR-06, NFR-07)
 

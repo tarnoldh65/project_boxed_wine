@@ -5,6 +5,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.db import engine
 from app.routers import (
+    analytics,
     auth,
     cases,
     config,
@@ -13,7 +14,10 @@ from app.routers import (
     journal,
     me,
     observables,
+    pir,
     regulatory,
+    reports,
+    search,
     tenants,
     tokens,
 )
@@ -29,7 +33,8 @@ app.add_middleware(
     https_only=True,
 )
 for module in (
-    auth, me, tenants, tokens, config, cases, intake, observables, evidence, journal, regulatory
+    auth, me, tenants, tokens, config, cases, intake, observables, evidence, journal, regulatory,
+    pir, search, analytics, reports,
 ):  # fmt: skip
     app.include_router(module.router)
 

@@ -22,17 +22,6 @@ export function CasesPage() {
     },
   })
 
-  const clocks = useQuery({
-    queryKey: ['clocks', slug],
-    queryFn: async () => {
-      const { data, response } = await api.GET('/api/tenants/{slug}/clocks', {
-        params: { path: { slug } },
-      })
-      if (!data) throw new Error(`Could not load notification clocks (${response.status})`)
-      return data
-    },
-  })
-
   const create = useMutation({
     mutationFn: async (body: { template: string; title: string; description: string }) => {
       const { data, error, response } = await api.POST('/api/tenants/{slug}/cases', {
@@ -89,35 +78,6 @@ export function CasesPage() {
             {create.isError && <p role="alert">{create.error.message}</p>}
           </form>
         </details>
-      )}
-
-      {clocks.isError && <p role="alert">{clocks.error.message}</p>}
-      {!!clocks.data?.length && (
-        <section>
-          <h2>Notification deadlines</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Case</th>
-                <th>Obligation</th>
-                <th>Due</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clocks.data.map((clock) => (
-                <tr key={clock.id}>
-                  <td>
-                    <Link to={`/t/${slug}/cases/${clock.case_number}`}>#{clock.case_number}</Link>
-                  </td>
-                  <td>{clock.name}</td>
-                  <td>{new Date(clock.due_at).toLocaleString()}</td>
-                  <td className={`sla-${clock.status}`}>{clock.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
       )}
 
       <section>

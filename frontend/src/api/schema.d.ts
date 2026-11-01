@@ -927,6 +927,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/pir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Pir */
+        put: operations["save_pir_api_tenants__slug__cases__number__pir_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/pir/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Action */
+        post: operations["add_action_api_tenants__slug__cases__number__pir_actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/pir/actions/{action_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Action */
+        patch: operations["update_action_api_tenants__slug__cases__number__pir_actions__action_id__patch"];
+        trace?: never;
+    };
+    "/api/tenants/{slug}/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Run Search */
+        get: operations["run_search_api_tenants__slug__search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/searches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Saved */
+        get: operations["list_saved_api_tenants__slug__searches_get"];
+        put?: never;
+        /** Save Search */
+        post: operations["save_search_api_tenants__slug__searches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/searches/{search_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Saved */
+        delete: operations["delete_saved_api_tenants__slug__searches__search_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dashboard
+         * @description Open work now, and SLA compliance of cases closed in the last `days` days.
+         */
+        get: operations["dashboard_api_tenants__slug__dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Metrics
+         * @description Metrics over the cases opened in the last `days` days.
+         */
+        get: operations["metrics_api_tenants__slug__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/reports/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Report */
+        get: operations["report_api_tenants__slug__cases__number__reports__kind__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -965,6 +1125,43 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionIn */
+        ActionIn: {
+            /** Title */
+            title: string;
+            /** Owner Id */
+            owner_id?: string | null;
+            /** Due At */
+            due_at?: string | null;
+        };
+        /** ActionOut */
+        ActionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Owner Id */
+            owner_id: string | null;
+            /** Due At */
+            due_at: string | null;
+            /** Done At */
+            done_at: string | null;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ActionUpdate */
+        ActionUpdate: {
+            /** Done */
+            done: boolean;
+        };
         /** ActiveClockOut */
         ActiveClockOut: {
             /**
@@ -1231,6 +1428,7 @@ export interface components {
             materiality: components["schemas"]["DecisionOut"][];
             /** Disclosures */
             disclosures: components["schemas"]["DisclosureOut"][];
+            pir: components["schemas"]["PirOut"];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -1452,6 +1650,31 @@ export interface components {
             /** Required From */
             required_from?: string | null;
         };
+        /** DashboardOut */
+        DashboardOut: {
+            /** Open By Severity */
+            open_by_severity: {
+                [key: string]: number;
+            };
+            /** Open By State */
+            open_by_state: {
+                [key: string]: number;
+            };
+            /** Sla Status */
+            sla_status: {
+                [key: string]: number;
+            };
+            /** Sla Compliance */
+            sla_compliance: number | null;
+            /** Workload */
+            workload: components["schemas"]["Workload"][];
+            /** Aging */
+            aging: {
+                [key: string]: number;
+            };
+            /** Open Pir Actions */
+            open_pir_actions: number;
+        };
         /** DecisionIn */
         DecisionIn: {
             /** Material */
@@ -1611,10 +1834,29 @@ export interface components {
          * @enum {string}
          */
         FieldType: "text" | "picklist" | "date" | "user" | "number";
+        /**
+         * Format
+         * @enum {string}
+         */
+        Format: "pdf" | "docx";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** Hit */
+        Hit: {
+            /** Case Number */
+            case_number: number;
+            /** Case Title */
+            case_title: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "case" | "note" | "observable" | "evidence";
+            /** Excerpt */
+            excerpt: string;
         };
         /** IntakeOut */
         IntakeOut: {
@@ -1630,6 +1872,11 @@ export interface components {
             /** Duplicate */
             duplicate: boolean;
         };
+        /**
+         * Kind
+         * @enum {string}
+         */
+        Kind: "executive" | "technical" | "pir";
         /** LinkIn */
         LinkIn: {
             /** Observables */
@@ -1689,6 +1936,49 @@ export interface components {
         MergeIn: {
             /** Into */
             into: number;
+        };
+        /** Metric */
+        Metric: {
+            /** Hours */
+            hours: number | null;
+            /** Cases */
+            cases: number;
+        };
+        /** MetricsOut */
+        MetricsOut: {
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+            /** Cases */
+            cases: number;
+            mttd: components["schemas"]["Metric"];
+            mtta: components["schemas"]["Metric"];
+            mttc: components["schemas"]["Metric"];
+            mttr: components["schemas"]["Metric"];
+            dwell_time: components["schemas"]["Metric"];
+            /** Closed */
+            closed: number;
+            /** False Positive Rate */
+            false_positive_rate: number | null;
+            /** By Category */
+            by_category: {
+                [key: string]: number;
+            };
+            /** By Technique */
+            by_technique: {
+                [key: string]: number;
+            };
+            /** Recurring */
+            recurring: number;
+            /** Recurrence Rate */
+            recurrence_rate: number | null;
         };
         /**
          * Milestone
@@ -1803,6 +2093,60 @@ export interface components {
          * @enum {string}
          */
         Pap: "clear" | "green" | "amber" | "red";
+        /** PirIn */
+        PirIn: {
+            /**
+             * Root Cause
+             * @default
+             */
+            root_cause: string;
+            /**
+             * Contributing Factors
+             * @default
+             */
+            contributing_factors: string;
+            /**
+             * Went Well
+             * @default
+             */
+            went_well: string;
+            /**
+             * Went Poorly
+             * @default
+             */
+            went_poorly: string;
+        };
+        /** PirOut */
+        PirOut: {
+            /**
+             * Root Cause
+             * @default
+             */
+            root_cause: string;
+            /**
+             * Contributing Factors
+             * @default
+             */
+            contributing_factors: string;
+            /**
+             * Went Well
+             * @default
+             */
+            went_well: string;
+            /**
+             * Went Poorly
+             * @default
+             */
+            went_poorly: string;
+            /** Complete */
+            complete: boolean;
+            /** Updated By */
+            updated_by: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Actions */
+            actions: components["schemas"]["ActionOut"][];
+        };
         /** PlaybookTask */
         PlaybookTask: {
             /** Key */
@@ -1901,6 +2245,25 @@ export interface components {
              */
             edited_at: string;
         };
+        /** SavedSearchIn */
+        SavedSearchIn: {
+            /** Name */
+            name: string;
+            /** Query */
+            query: string;
+        };
+        /** SavedSearchOut */
+        SavedSearchOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Query */
+            query: string;
+        };
         /**
          * Severity
          * @description Severity comes from impact x urgency; priority P1 is the most severe level.
@@ -1990,6 +2353,11 @@ export interface components {
              * @default false
              */
             require_tasks_done: boolean;
+            /**
+             * Require Pir
+             * @default false
+             */
+            require_pir: boolean;
         };
         /** TaskIn */
         TaskIn: {
@@ -2111,6 +2479,8 @@ export interface components {
              * @default []
              */
             tasks: components["schemas"]["PlaybookTask"][];
+            /** Retention Days */
+            retention_days?: number | null;
         };
         /** TenantAccess */
         TenantAccess: {
@@ -2661,6 +3031,13 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** Workload */
+        Workload: {
+            /** Owner Id */
+            owner_id: string | null;
+            /** Open */
+            open: number;
         };
     };
     responses: never;
@@ -4549,6 +4926,347 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_pir_api_tenants__slug__cases__number__pir_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PirIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_action_api_tenants__slug__cases__number__pir_actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_action_api_tenants__slug__cases__number__pir_actions__action_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                action_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_search_api_tenants__slug__search_get: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hit"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_saved_api_tenants__slug__searches_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedSearchOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_search_api_tenants__slug__searches_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedSearchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedSearchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_saved_api_tenants__slug__searches__search_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dashboard_api_tenants__slug__dashboard_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    metrics_api_tenants__slug__metrics_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_api_tenants__slug__cases__number__reports__kind__get: {
+        parameters: {
+            query?: {
+                format?: components["schemas"]["Format"];
+            };
+            header?: never;
+            path: {
+                number: number;
+                kind: components["schemas"]["Kind"];
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
                 };
             };
             /** @description Validation Error */

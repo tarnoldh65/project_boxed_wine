@@ -53,6 +53,9 @@ export type ActiveClock = Schemas['ActiveClockOut']
 export type Recipient = Schemas['Recipient']
 export type Regime = Schemas['Regime']
 export type ClockTrigger = Schemas['ClockTrigger']
+export type Metric = Schemas['Metric']
+export type SearchHit = Schemas['Hit']
+export type SavedSearch = Schemas['SavedSearchOut']
 
 export const api = createClient<paths>({
   baseUrl: window.location.origin,

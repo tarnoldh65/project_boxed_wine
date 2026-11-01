@@ -380,3 +380,45 @@ class Disclosure(Base):
     evidence_ids: Mapped[list[UUID]] = mapped_column(ARRAY(Uuid))  # attachments
     recorded_by: Mapped[str]
     recorded_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class SavedSearch(Base):
+    __tablename__ = "saved_searches"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    name: Mapped[str]
+    query: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Pir(Base):
+    """A case's post-incident review."""
+
+    __tablename__ = "pirs"
+
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    root_cause: Mapped[str]
+    contributing_factors: Mapped[str]
+    went_well: Mapped[str]
+    went_poorly: Mapped[str]
+    updated_by: Mapped[str]
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class PirAction(Base):
+    """An improvement agreed in a post-incident review, tracked until done."""
+
+    __tablename__ = "pir_actions"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    title: Mapped[str]
+    owner_id: Mapped[UUID | None] = mapped_column(ForeignKey("users.id"))
+    due_at: Mapped[datetime | None]
+    done_at: Mapped[datetime | None]
+    created_by: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

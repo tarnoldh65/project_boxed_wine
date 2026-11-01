@@ -43,7 +43,10 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
       }}
     >
       <h3>Case templates</h3>
-      <p>Each incident type sets a new case's category and starting defaults.</p>
+      <p>
+        Each incident type sets a new case's category and starting defaults. Closed cases are purged
+        after their retention period unless under legal hold; leave it empty to keep them.
+      </p>
       <table>
         <thead>
           <tr>
@@ -54,6 +57,7 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
             <th>TLP</th>
             <th>PAP</th>
             <th>Team</th>
+            <th>Retention days</th>
             <th />
           </tr>
         </thead>
@@ -80,6 +84,21 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
               <td>{select(i, 'pap', 'PAP', PAPS)}</td>
               <td>{select(i, 'team', 'team', config.teams.map((t) => t.key))}</td>
               <td>
+                <input
+                  type="number"
+                  min={1}
+                  aria-label={`Template ${i + 1} retention days`}
+                  value={template.retention_days ?? ''}
+                  onChange={(e) =>
+                    setDraft(
+                      updateAt(draft, i, {
+                        retention_days: e.target.value ? Number(e.target.value) : null,
+                      }),
+                    )
+                  }
+                />
+              </td>
+              <td>
                 <button type="button" onClick={() => setDraft(removeAt(draft, i))}>
                   Remove
                 </button>
@@ -102,6 +121,7 @@ export function TemplatesEditor({ slug, config }: { slug: string; config: Tenant
               pap: 'amber',
               team: null,
               tasks: [],
+              retention_days: null,
             },
           ])
         }

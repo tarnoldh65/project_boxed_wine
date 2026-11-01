@@ -46,6 +46,9 @@ class State(BaseModel):
     sla_milestone: Literal["triage", "contain"] | None = None
     # Gate: a case can only enter this state once every task is done or waived.
     require_tasks_done: bool = False
+    # Gate: a true-positive case can only enter this state once its post-incident review
+    # is filled in.
+    require_pir: bool = False
 
 
 class FieldType(StrEnum):
@@ -227,6 +230,8 @@ class Template(BaseModel):
     pap: Pap = Pap.AMBER
     team: Key | None = None
     tasks: list[PlaybookTask] = []
+    # Closed cases of this type are purged this many days after closing; None keeps them.
+    retention_days: PositiveInt | None = None
 
     @model_validator(mode="after")
     def check_playbook(self) -> Self:
@@ -541,7 +546,9 @@ DEFAULT_CONFIG = TenantConfig(
         State(key="eradication", name="Eradication", sla_milestone="contain"),
         State(key="recovery", name="Recovery"),
         State(key="post_incident", name="Post-Incident"),
-        State(key="closed", name="Closed", terminal=True, require_tasks_done=True),
+        State(
+            key="closed", name="Closed", terminal=True, require_tasks_done=True, require_pir=True
+        ),
     ],
     custom_fields=[],
     severity=Severity(

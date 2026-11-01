@@ -51,6 +51,12 @@ The `clocks` job does the same for breach-notification deadlines (regimes are se
 docker compose -f deploy/compose.yaml exec backend python -m app.jobs clocks
 ```
 
+The `retention` job purges closed cases whose type's retention period (Settings, case templates) has passed, skipping cases under legal hold:
+
+```sh
+docker compose -f deploy/compose.yaml exec backend python -m app.jobs retention
+```
+
 After changing API routes or models, run the backend tests (they regenerate `backend/openapi.json`), then `npm run gen:api` in `frontend/`.
 
 ## Tests

@@ -38,7 +38,7 @@ test('regulatory clocks, materiality decision, and notification log', async ({ p
   await expect(gdpr).toContainText('met')
   await expect(page.getByText('Irish DPC (regulator)')).toBeVisible()
 
-  await page.getByRole('link', { name: 'Cases', exact: true }).click()
+  await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
   const deadlines = page.locator('section', { has: page.getByRole('heading', { name: 'Notification deadlines' }) })
   await expect(deadlines.getByRole('row', { name: new RegExp(`#${number} SEC Form 8-K`) })).toBeVisible()
   await expect(deadlines.getByRole('row', { name: new RegExp(`#${number} GDPR`) })).toHaveCount(0)

@@ -3164,6 +3164,594 @@
         }
       }
     },
+    "/api/tenants/{slug}/cases/{number}/pir": {
+      "put": {
+        "tags": [
+          "pir"
+        ],
+        "summary": "Save Pir",
+        "operationId": "save_pir_api_tenants__slug__cases__number__pir_put",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PirIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/pir/actions": {
+      "post": {
+        "tags": [
+          "pir"
+        ],
+        "summary": "Add Action",
+        "operationId": "add_action_api_tenants__slug__cases__number__pir_actions_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/pir/actions/{action_id}": {
+      "patch": {
+        "tags": [
+          "pir"
+        ],
+        "summary": "Update Action",
+        "operationId": "update_action_api_tenants__slug__cases__number__pir_actions__action_id__patch",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Action Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Run Search",
+        "operationId": "run_search_api_tenants__slug__search_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Hit"
+                  },
+                  "title": "Response Run Search Api Tenants  Slug  Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/searches": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "List Saved",
+        "operationId": "list_saved_api_tenants__slug__searches_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedSearchOut"
+                  },
+                  "title": "Response List Saved Api Tenants  Slug  Searches Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Save Search",
+        "operationId": "save_search_api_tenants__slug__searches_post",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedSearchIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedSearchOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/searches/{search_id}": {
+      "delete": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Delete Saved",
+        "operationId": "delete_saved_api_tenants__slug__searches__search_id__delete",
+        "parameters": [
+          {
+            "name": "search_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Search Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/dashboard": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Dashboard",
+        "description": "Open work now, and SLA compliance of cases closed in the last `days` days.",
+        "operationId": "dashboard_api_tenants__slug__dashboard_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 3650,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/metrics": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Metrics",
+        "description": "Metrics over the cases opened in the last `days` days.",
+        "operationId": "metrics_api_tenants__slug__metrics_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 3650,
+              "minimum": 1,
+              "default": 90,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/reports/{kind}": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Report",
+        "operationId": "report_api_tenants__slug__cases__number__reports__kind__get",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Kind"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Format",
+              "default": "pdf"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -3211,6 +3799,127 @@
   },
   "components": {
     "schemas": {
+      "ActionIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "ActionIn"
+      },
+      "ActionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "done_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Done At"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "owner_id",
+          "due_at",
+          "done_at",
+          "created_by",
+          "created_at"
+        ],
+        "title": "ActionOut"
+      },
+      "ActionUpdate": {
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          }
+        },
+        "type": "object",
+        "required": [
+          "done"
+        ],
+        "title": "ActionUpdate"
+      },
       "ActiveClockOut": {
         "properties": {
           "id": {
@@ -3989,6 +4698,9 @@
             },
             "type": "array",
             "title": "Disclosures"
+          },
+          "pir": {
+            "$ref": "#/components/schemas/PirOut"
           }
         },
         "type": "object",
@@ -4039,7 +4751,8 @@
           "comments",
           "clocks",
           "materiality",
-          "disclosures"
+          "disclosures",
+          "pir"
         ],
         "title": "CaseOut"
       },
@@ -4724,6 +5437,71 @@
         ],
         "title": "CustomField"
       },
+      "DashboardOut": {
+        "properties": {
+          "open_by_severity": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Open By Severity"
+          },
+          "open_by_state": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Open By State"
+          },
+          "sla_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Sla Status"
+          },
+          "sla_compliance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sla Compliance"
+          },
+          "workload": {
+            "items": {
+              "$ref": "#/components/schemas/Workload"
+            },
+            "type": "array",
+            "title": "Workload"
+          },
+          "aging": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Aging"
+          },
+          "open_pir_actions": {
+            "type": "integer",
+            "title": "Open Pir Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "open_by_severity",
+          "open_by_state",
+          "sla_status",
+          "sla_compliance",
+          "workload",
+          "aging",
+          "open_pir_actions"
+        ],
+        "title": "DashboardOut"
+      },
       "DecisionIn": {
         "properties": {
           "material": {
@@ -5118,6 +5896,14 @@
         ],
         "title": "FieldType"
       },
+      "Format": {
+        "type": "string",
+        "enum": [
+          "pdf",
+          "docx"
+        ],
+        "title": "Format"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -5130,6 +5916,40 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "Hit": {
+        "properties": {
+          "case_number": {
+            "type": "integer",
+            "title": "Case Number"
+          },
+          "case_title": {
+            "type": "string",
+            "title": "Case Title"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "case",
+              "note",
+              "observable",
+              "evidence"
+            ],
+            "title": "Kind"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_number",
+          "case_title",
+          "kind",
+          "excerpt"
+        ],
+        "title": "Hit"
       },
       "IntakeOut": {
         "properties": {
@@ -5159,6 +5979,15 @@
           "duplicate"
         ],
         "title": "IntakeOut"
+      },
+      "Kind": {
+        "type": "string",
+        "enum": [
+          "executive",
+          "technical",
+          "pir"
+        ],
+        "title": "Kind"
       },
       "LinkIn": {
         "properties": {
@@ -5312,6 +6141,126 @@
           "into"
         ],
         "title": "MergeIn"
+      },
+      "Metric": {
+        "properties": {
+          "hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hours",
+          "cases"
+        ],
+        "title": "Metric"
+      },
+      "MetricsOut": {
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Until"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          },
+          "mttd": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "mtta": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "mttc": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "mttr": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "dwell_time": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "closed": {
+            "type": "integer",
+            "title": "Closed"
+          },
+          "false_positive_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "False Positive Rate"
+          },
+          "by_category": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Category"
+          },
+          "by_technique": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Technique"
+          },
+          "recurring": {
+            "type": "integer",
+            "title": "Recurring"
+          },
+          "recurrence_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrence Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "since",
+          "until",
+          "cases",
+          "mttd",
+          "mtta",
+          "mttc",
+          "mttr",
+          "dwell_time",
+          "closed",
+          "false_positive_rate",
+          "by_category",
+          "by_technique",
+          "recurring",
+          "recurrence_rate"
+        ],
+        "title": "MetricsOut"
       },
       "Milestone": {
         "type": "string",
@@ -5568,6 +6517,106 @@
         ],
         "title": "Pap"
       },
+      "PirIn": {
+        "properties": {
+          "root_cause": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Root Cause",
+            "default": ""
+          },
+          "contributing_factors": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Contributing Factors",
+            "default": ""
+          },
+          "went_well": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Went Well",
+            "default": ""
+          },
+          "went_poorly": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Went Poorly",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "PirIn"
+      },
+      "PirOut": {
+        "properties": {
+          "root_cause": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Root Cause",
+            "default": ""
+          },
+          "contributing_factors": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Contributing Factors",
+            "default": ""
+          },
+          "went_well": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Went Well",
+            "default": ""
+          },
+          "went_poorly": {
+            "type": "string",
+            "maxLength": 10000,
+            "title": "Went Poorly",
+            "default": ""
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ActionOut"
+            },
+            "type": "array",
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "complete",
+          "updated_by",
+          "updated_at",
+          "actions"
+        ],
+        "title": "PirOut"
+      },
       "PlaybookTask": {
         "properties": {
           "key": {
@@ -5815,6 +6864,52 @@
         ],
         "title": "RevisionOut"
       },
+      "SavedSearchIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Query"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "query"
+        ],
+        "title": "SavedSearchIn"
+      },
+      "SavedSearchOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "query"
+        ],
+        "title": "SavedSearchOut"
+      },
       "Severity": {
         "properties": {
           "levels": {
@@ -6048,6 +7143,11 @@
           "require_tasks_done": {
             "type": "boolean",
             "title": "Require Tasks Done",
+            "default": false
+          },
+          "require_pir": {
+            "type": "boolean",
+            "title": "Require Pir",
             "default": false
           }
         },
@@ -6447,6 +7547,18 @@
             "type": "array",
             "title": "Tasks",
             "default": []
+          },
+          "retention_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Days"
           }
         },
         "type": "object",
@@ -7398,6 +8510,32 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Workload": {
+        "properties": {
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "open": {
+            "type": "integer",
+            "title": "Open"
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner_id",
+          "open"
+        ],
+        "title": "Workload"
       }
     }
   }
