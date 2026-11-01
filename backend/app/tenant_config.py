@@ -1,12 +1,14 @@
 """Per-tenant configuration: lifecycle, fields, severity and SLAs, escalation, teams, templates."""
 
-from datetime import date
+from datetime import UTC, date
 from enum import StrEnum
 from math import isfinite
 from typing import Annotated, Any, Literal, Self
 from uuid import UUID
 
 from pydantic import (
+    AfterValidator,
+    AwareDatetime,
     BaseModel,
     EmailStr,
     Field,
@@ -22,6 +24,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import TenantConfigRow
 
 Key = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$", max_length=40)]
+# Timestamps are accepted with any offset and kept in UTC (NFR-09).
+UtcDatetime = Annotated[AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 MAX_TEXT = 10_000
 

@@ -12,14 +12,14 @@ from urllib.parse import quote
 from uuid import UUID
 
 import pyzipper
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import storage
 from app.custody import CustodyAction, record
 from app.models import Case, Evidence
-from app.tenant_config import MAX_TEXT
+from app.tenant_config import MAX_TEXT, UtcDatetime
 
 Short = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 FileName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
@@ -48,7 +48,7 @@ class Collection(BaseModel):
     """Who collected the evidence, when, where, and how."""
 
     collected_by: Short
-    collected_at: AwareDatetime
+    collected_at: UtcDatetime
     collected_from: Short | None = None
     method: Short | None = None
 

@@ -41,9 +41,9 @@ def test_parse_groups(groups: list[str], expected: set[tuple[object, str]]) -> N
         (["analyst"], {"cases:read", "cases:write"}),
         (
             ["admin"],
-            {"cases:read", "cases:write", "config:manage", "legal_hold:manage", "tokens:manage"},
+            {"cases:read", "cases:write", "config:manage", "legal:manage", "tokens:manage"},
         ),
-        (["legal", "malware:read"], {"cases:read", "legal_hold:manage", "malware:read"}),
+        (["legal", "malware:read"], {"cases:read", "legal:manage", "malware:read"}),
         (["cases:read"], {"cases:read"}),
     ],
 )

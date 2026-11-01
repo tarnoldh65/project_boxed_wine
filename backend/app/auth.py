@@ -21,11 +21,11 @@ PLATFORM_ADMIN_GROUP = "casemgr-platform_admin"
 
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "admin": frozenset(
-        {"cases:read", "cases:write", "config:manage", "legal_hold:manage", "tokens:manage"}
+        {"cases:read", "cases:write", "config:manage", "legal:manage", "tokens:manage"}
     ),
-    "ir_lead": frozenset({"cases:read", "cases:write", "legal_hold:manage"}),
+    "ir_lead": frozenset({"cases:read", "cases:write", "legal:manage"}),
     "analyst": frozenset({"cases:read", "cases:write"}),
-    "legal": frozenset({"cases:read", "legal_hold:manage"}),
+    "legal": frozenset({"cases:read", "legal:manage"}),
     "executive": frozenset({"cases:read"}),
     "auditor": frozenset({"cases:read"}),
 }

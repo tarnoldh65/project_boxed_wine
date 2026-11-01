@@ -47,7 +47,7 @@ test('analyst opens a case from a template, edits it, and links an asset', async
 
   await page.getByLabel('Asset name').fill('cfo-laptop')
   await page.getByRole('button', { name: 'Link asset' }).click()
-  await expect(page.getByText('host: cfo-laptop')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Remove cfo-laptop' })).toBeVisible()
 
   await page.reload()
   await expect(page.getByLabel('State')).toHaveValue('triage')

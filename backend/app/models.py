@@ -143,6 +143,7 @@ class Case(Base):
     major_incident_at: Mapped[datetime | None]
     major_incident_reason: Mapped[str | None]
     legal_hold: Mapped[bool] = mapped_column(server_default="false")
+    privileged: Mapped[bool] = mapped_column(server_default="false")
 
 
 class Alert(Base):
@@ -271,3 +272,61 @@ class CustodyEntry(Base):
     detail: Mapped[dict[str, Any]] = mapped_column(JSONB)
     prev_hash: Mapped[str]
     hash: Mapped[str]
+
+
+class TimelineEvent(Base):
+    __tablename__ = "timeline_events"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    occurred_at: Mapped[datetime]  # when it happened, not when it was recorded
+    source: Mapped[str]
+    description: Mapped[str]
+    milestone: Mapped[str | None]
+    observable_id: Mapped[UUID | None] = mapped_column(ForeignKey("observables.id"))
+    asset_id: Mapped[UUID | None] = mapped_column(ForeignKey("assets.id"))
+    evidence_id: Mapped[UUID | None] = mapped_column(ForeignKey("evidence.id"))
+    recorded_by: Mapped[str]
+    recorded_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    body: Mapped[str]  # Markdown, never rendered as raw HTML
+    privileged: Mapped[bool]
+    revision: Mapped[int]
+    created_by: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_by: Mapped[str]
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class NoteRevision(Base):
+    """Every version of a note, append-only."""
+
+    __tablename__ = "note_revisions"
+
+    id: Mapped[int] = mapped_column(Identity(always=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    note_id: Mapped[UUID] = mapped_column(ForeignKey("notes.id"))
+    revision: Mapped[int]
+    body: Mapped[str]
+    privileged: Mapped[bool]
+    edited_by: Mapped[str]
+    edited_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    body: Mapped[str]
+    author: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())

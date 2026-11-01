@@ -128,6 +128,48 @@ export const CASE: Case = {
   ],
   assets: [{ id: 'h1', kind: 'host', name: 'web-01', external_id: 'CI-1' }],
   legal_hold: false,
+  privileged: false,
+  timeline: [
+    {
+      id: 'tl1',
+      occurred_at: '2026-10-28T06:15:00Z',
+      source: 'Proxy log',
+      description: 'First phish click',
+      milestone: 'first_compromise',
+      observable_id: 'o1',
+      asset_id: null,
+      evidence_id: null,
+      recorded_by: 'user:u1',
+      recorded_at: '2026-10-31T10:00:00Z',
+    },
+    {
+      id: 'tl2',
+      occurred_at: '2026-10-30T12:15:00Z',
+      source: 'EDR',
+      description: 'Beacon observed',
+      milestone: 'detection',
+      observable_id: null,
+      asset_id: 'h1',
+      evidence_id: null,
+      recorded_by: 'token:x',
+      recorded_at: '2026-10-31T10:05:00Z',
+    },
+  ],
+  notes: [
+    {
+      id: 'n1',
+      body: '## Findings\n\nUser **clicked** the link.',
+      privileged: false,
+      revision: 2,
+      created_by: 'user:u1',
+      created_at: '2026-10-31T10:00:00Z',
+      updated_by: 'user:u2',
+      updated_at: '2026-10-31T11:00:00Z',
+    },
+  ],
+  comments: [
+    { id: 'c1', body: 'Isolating web-01', author: 'user:u2', created_at: '2026-10-31T10:10:00Z' },
+  ],
   evidence: [
     {
       id: 'e1',

@@ -5,9 +5,13 @@ import { api, describeError, type AssetKind, type Case, type Me } from '../api/c
 import { useMembers, useTenantConfig } from '../api/queries'
 import { useTenant } from '../tenant'
 import { CaseForm } from './CaseForm'
+import { CommentsPanel } from './CommentsPanel'
 import { EvidencePanel } from './EvidencePanel'
+import { PRIVILEGE_NOTICE } from './journal'
+import { NotesPanel } from './NotesPanel'
 import { ObservablesPanel } from './ObservablesPanel'
 import { TasksPanel } from './TasksPanel'
+import { TimelinePanel } from './TimelinePanel'
 
 const ASSET_KINDS: AssetKind[] = ['host', 'account', 'application', 'data_set']
 
@@ -86,6 +90,18 @@ export function CasePage() {
     )
   }
 
+  function setPrivilege(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const reason = String(new FormData(event.currentTarget).get('reason'))
+    event.currentTarget.reset()
+    action.mutate(() =>
+      api.PUT('/api/tenants/{slug}/cases/{number}/privilege', {
+        ...path,
+        body: { on: !current.privileged, reason },
+      }),
+    )
+  }
+
   function setLegalHold(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const reason = String(new FormData(event.currentTarget).get('reason'))
@@ -145,6 +161,7 @@ export function CasePage() {
           Merged into <Link to={`/t/${slug}/cases/${current.merged_into}`}>#{current.merged_into}</Link>
         </p>
       )}
+      {current.privileged && <p className="banner">{PRIVILEGE_NOTICE}</p>}
       {current.legal_hold && (
         <p className="banner">Legal hold: evidence on this case cannot be deleted.</p>
       )}
@@ -235,12 +252,27 @@ export function CasePage() {
         ))}
       </section>
 
-      {permissions.includes('legal_hold:manage') && (
+      {permissions.includes('legal:manage') && (
+        <form className="inline-form" onSubmit={setPrivilege}>
+          <input name="reason" required maxLength={1000} aria-label="Privilege reason" placeholder="Reason" />
+          <button type="submit">{current.privileged ? 'Remove privilege marking' : 'Mark privileged'}</button>
+        </form>
+      )}
+      {permissions.includes('legal:manage') && (
         <form className="inline-form" onSubmit={setLegalHold}>
           <input name="reason" required maxLength={1000} aria-label="Legal hold reason" placeholder="Reason" />
           <button type="submit">{current.legal_hold ? 'Lift legal hold' : 'Place legal hold'}</button>
         </form>
       )}
+
+      <TimelinePanel
+        slug={slug}
+        current={current}
+        members={members.data}
+        editable={canWrite}
+      />
+
+      <NotesPanel slug={slug} current={current} members={members.data} canWrite={canWrite} />
 
       <EvidencePanel
         slug={slug}
@@ -308,6 +340,8 @@ export function CasePage() {
         )}
         {assets.error && <p role="alert">{assets.error.message}</p>}
       </section>
+
+      <CommentsPanel slug={slug} current={current} members={members.data} canWrite={canWrite} />
 
       {canWrite && !state?.terminal && (
         <section>

@@ -237,7 +237,7 @@ test('places a legal hold with a reason', async () => {
   const requests = api(CASE, {
     [`PUT ${BASE}/legal-hold`]: () => json({ ...CASE, legal_hold: true }),
   })
-  open([...TENANT.permissions, 'legal_hold:manage'])
+  open([...TENANT.permissions, 'legal:manage'])
   fireEvent.change(await screen.findByLabelText('Legal hold reason'), { target: { value: 'Litigation' } })
   fireEvent.click(screen.getByRole('button', { name: 'Place legal hold' }))
   expect(await body(requests, 'PUT', `${BASE}/legal-hold`)).toEqual({ on: true, reason: 'Litigation' })
@@ -250,4 +250,16 @@ test('only legal hold managers see the control', async () => {
   open()
   await screen.findByRole('heading', { name: '#7 Suspicious email' })
   expect(screen.queryByLabelText('Legal hold reason')).not.toBeInTheDocument()
+})
+
+test('legal marks the case privileged', async () => {
+  const requests = api(CASE, {
+    [`PUT ${BASE}/privilege`]: () => json({ ...CASE, privileged: true }),
+  })
+  open([...TENANT.permissions, 'legal:manage'])
+  fireEvent.change(await screen.findByLabelText('Privilege reason'), { target: { value: 'Counsel directed' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Mark privileged' }))
+  expect(await body(requests, 'PUT', `${BASE}/privilege`)).toEqual({ on: true, reason: 'Counsel directed' })
+  expect(await screen.findByText('Attorney-Client Privileged / Prepared at Direction of Counsel')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Remove privilege marking' })).toBeInTheDocument()
 })

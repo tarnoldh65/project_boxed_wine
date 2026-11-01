@@ -1030,7 +1030,69 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LegalHoldIn"
+                "$ref": "#/components/schemas/MarkingIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/privilege": {
+      "put": {
+        "tags": [
+          "cases"
+        ],
+        "summary": "Set Privilege",
+        "description": "Mark the case Attorney-Client Privileged / Prepared at Direction of Counsel.",
+        "operationId": "set_privilege_api_tenants__slug__cases__number__privilege_put",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkingIn"
               }
             }
           }
@@ -2504,6 +2566,379 @@
         }
       }
     },
+    "/api/tenants/{slug}/cases/{number}/timeline": {
+      "post": {
+        "tags": [
+          "journal"
+        ],
+        "summary": "Add Event",
+        "operationId": "add_event_api_tenants__slug__cases__number__timeline_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimelineIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/timeline/{event_id}": {
+      "delete": {
+        "tags": [
+          "journal"
+        ],
+        "summary": "Delete Event",
+        "operationId": "delete_event_api_tenants__slug__cases__number__timeline__event_id__delete",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/notes": {
+      "post": {
+        "tags": [
+          "journal"
+        ],
+        "summary": "Add Note",
+        "operationId": "add_note_api_tenants__slug__cases__number__notes_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/notes/{note_id}": {
+      "patch": {
+        "tags": [
+          "journal"
+        ],
+        "summary": "Edit Note",
+        "operationId": "edit_note_api_tenants__slug__cases__number__notes__note_id__patch",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Note Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/notes/{note_id}/revisions": {
+      "get": {
+        "tags": [
+          "journal"
+        ],
+        "summary": "Note Revisions",
+        "operationId": "note_revisions_api_tenants__slug__cases__number__notes__note_id__revisions_get",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Note Id"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RevisionOut"
+                  },
+                  "title": "Response Note Revisions Api Tenants  Slug  Cases  Number  Notes  Note Id  Revisions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/comments": {
+      "post": {
+        "tags": [
+          "journal"
+        ],
+        "summary": "Add Comment",
+        "operationId": "add_comment_api_tenants__slug__cases__number__comments_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -3159,6 +3594,10 @@
             "type": "boolean",
             "title": "Legal Hold"
           },
+          "privileged": {
+            "type": "boolean",
+            "title": "Privileged"
+          },
           "merged_into": {
             "anyOf": [
               {
@@ -3211,6 +3650,27 @@
             },
             "type": "array",
             "title": "Evidence"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineOut"
+            },
+            "type": "array",
+            "title": "Timeline"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/NoteOut"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "comments": {
+            "items": {
+              "$ref": "#/components/schemas/CommentOut"
+            },
+            "type": "array",
+            "title": "Comments"
           }
         },
         "type": "object",
@@ -3248,13 +3708,17 @@
           "contained_at",
           "major_incident_reason",
           "legal_hold",
+          "privileged",
           "merged_into",
           "alerts",
           "assets",
           "tasks",
           "sla",
           "observables",
-          "evidence"
+          "evidence",
+          "timeline",
+          "notes",
+          "comments"
         ],
         "title": "CaseOut"
       },
@@ -3668,6 +4132,51 @@
         "title": "Collection",
         "description": "Who collected the evidence, when, where, and how."
       },
+      "CommentIn": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "CommentIn"
+      },
+      "CommentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "body",
+          "author",
+          "created_at"
+        ],
+        "title": "CommentOut"
+      },
       "Condition": {
         "properties": {
           "field": {
@@ -4056,26 +4565,6 @@
         ],
         "title": "IntakeOut"
       },
-      "LegalHoldIn": {
-        "properties": {
-          "on": {
-            "type": "boolean",
-            "title": "On"
-          },
-          "reason": {
-            "type": "string",
-            "maxLength": 1000,
-            "minLength": 1,
-            "title": "Reason"
-          }
-        },
-        "type": "object",
-        "required": [
-          "on",
-          "reason"
-        ],
-        "title": "LegalHoldIn"
-      },
       "LinkIn": {
         "properties": {
           "observables": {
@@ -4121,6 +4610,27 @@
           "reason"
         ],
         "title": "MajorIncidentIn"
+      },
+      "MarkingIn": {
+        "properties": {
+          "on": {
+            "type": "boolean",
+            "title": "On"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "on",
+          "reason"
+        ],
+        "title": "MarkingIn",
+        "description": "Turn a legal marking (hold or privilege) on or off, with the reason recorded."
       },
       "MeOut": {
         "properties": {
@@ -4207,6 +4717,88 @@
           "into"
         ],
         "title": "MergeIn"
+      },
+      "Milestone": {
+        "type": "string",
+        "enum": [
+          "first_compromise",
+          "detection",
+          "containment",
+          "eradication"
+        ],
+        "title": "Milestone",
+        "description": "Key incident moments, used for dwell time and other metrics."
+      },
+      "NoteIn": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Body"
+          },
+          "privileged": {
+            "type": "boolean",
+            "title": "Privileged",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "NoteIn"
+      },
+      "NoteOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "privileged": {
+            "type": "boolean",
+            "title": "Privileged"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "created_by": {
+            "type": "string",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_by": {
+            "type": "string",
+            "title": "Updated By"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "body",
+          "privileged",
+          "revision",
+          "created_by",
+          "created_at",
+          "updated_by",
+          "updated_at"
+        ],
+        "title": "NoteOut"
       },
       "ObservableCase": {
         "properties": {
@@ -4517,6 +5109,40 @@
           "merged"
         ],
         "title": "Resolution"
+      },
+      "RevisionOut": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "privileged": {
+            "type": "boolean",
+            "title": "Privileged"
+          },
+          "edited_by": {
+            "type": "string",
+            "title": "Edited By"
+          },
+          "edited_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Edited At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "body",
+          "privileged",
+          "edited_by",
+          "edited_at"
+        ],
+        "title": "RevisionOut"
       },
       "Severity": {
         "properties": {
@@ -5527,6 +6153,171 @@
           "name"
         ],
         "title": "TenantOut"
+      },
+      "TimelineIn": {
+        "properties": {
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Source"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Milestone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observable_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observable Id"
+          },
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "occurred_at",
+          "source",
+          "description"
+        ],
+        "title": "TimelineIn"
+      },
+      "TimelineOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "milestone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Milestone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observable_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observable Id"
+          },
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "recorded_by": {
+            "type": "string",
+            "title": "Recorded By"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "occurred_at",
+          "source",
+          "description",
+          "milestone",
+          "observable_id",
+          "asset_id",
+          "evidence_id",
+          "recorded_by",
+          "recorded_at"
+        ],
+        "title": "TimelineOut"
       },
       "Tlp": {
         "type": "string",
