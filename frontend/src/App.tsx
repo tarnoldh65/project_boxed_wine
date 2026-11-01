@@ -13,6 +13,8 @@ import { api, type Me } from './api/client'
 import { CasePage } from './cases/CasePage'
 import { CasesPage } from './cases/CasesPage'
 import { ObservablePage } from './cases/ObservablePage'
+import { DashboardPage } from './DashboardPage'
+import { SearchPage } from './SearchPage'
 import { Settings } from './settings/Settings'
 
 const TENANT_KEY = 'casemgr.tenant'
@@ -48,6 +50,8 @@ export default function App() {
     <Routes>
       <Route path="/t/:slug" element={<TenantLayout me={me.data} />}>
         <Route index element={<CasesPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="search" element={<SearchPage />} />
         <Route path="cases/:number" element={<CasePage />} />
         <Route path="observables/:observableId" element={<ObservablePage />} />
         <Route path="settings" element={<Settings />} />
@@ -143,6 +147,8 @@ function TenantLayout({ me }: { me: Me }) {
         <NavLink to={`/t/${tenant.slug}`} end>
           Cases
         </NavLink>
+        <NavLink to={`/t/${tenant.slug}/dashboard`}>Dashboard</NavLink>
+        <NavLink to={`/t/${tenant.slug}/search`}>Search</NavLink>
         {isAdmin && <NavLink to={`/t/${tenant.slug}/settings`}>Settings</NavLink>}
       </nav>
       <Outlet key={tenant.slug} context={tenant} />

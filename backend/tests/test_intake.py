@@ -97,7 +97,7 @@ async def test_grouped_alerts_share_an_open_case(
     assert len(case["alerts"]) == 2
 
     analyst = await make_user({tenant: ["analyst"]})
-    await close_case(analyst.client, tenant, first["case_number"], "true_positive")
+    await close_case(analyst.client, tenant, first["case_number"], "benign")
     after_close = (await post_alert(client, tenant, token, group_key="incident-7")).json()
     assert after_close["new_case"] is True
 

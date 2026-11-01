@@ -25,7 +25,8 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
       <h3>Lifecycle states</h3>
       <p>
         Cases start in the first state. Terminal states close a case. Entering a milestone state
-        meets that SLA; a gated state needs every task done or waived.
+        meets that SLA; a gated state needs every task done or waived, and the PIR gate needs a
+        completed post-incident review before a true positive enters the state.
       </p>
       <table>
         <thead>
@@ -35,6 +36,7 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
             <th>Terminal</th>
             <th>SLA milestone</th>
             <th>Tasks done gate</th>
+            <th>PIR gate</th>
             <th />
           </tr>
         </thead>
@@ -91,6 +93,14 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
                 />
               </td>
               <td>
+                <input
+                  type="checkbox"
+                  aria-label={`State ${i + 1} PIR gate`}
+                  checked={state.require_pir}
+                  onChange={(e) => setDraft(updateAt(draft, i, { require_pir: e.target.checked }))}
+                />
+              </td>
+              <td>
                 <button type="button" disabled={i === 0} onClick={() => move(i, -1)}>
                   Up
                 </button>
@@ -105,7 +115,7 @@ export function StatesEditor({ slug, states }: { slug: string; states: State[] }
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={() => setDraft([...draft, { key: '', name: '', terminal: false, require_tasks_done: false }])}>
+      <button type="button" onClick={() => setDraft([...draft, { key: '', name: '', terminal: false, require_tasks_done: false, require_pir: false }])}>
         Add state
       </button>
       <SaveBar save={save} />

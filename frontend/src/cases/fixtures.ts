@@ -15,9 +15,9 @@ export const MEMBERS: Member[] = [
 
 export const CONFIG: TenantConfig = {
   states: [
-    { key: 'new', name: 'New', terminal: false, require_tasks_done: false },
-    { key: 'triage', name: 'Triage', terminal: false, sla_milestone: 'triage', require_tasks_done: false },
-    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true },
+    { key: 'new', name: 'New', terminal: false, require_tasks_done: false, require_pir: false },
+    { key: 'triage', name: 'Triage', terminal: false, sla_milestone: 'triage', require_tasks_done: false, require_pir: false },
+    { key: 'closed', name: 'Closed', terminal: true, require_tasks_done: true, require_pir: true },
   ],
   custom_fields: [
     { key: 'vector', label: 'Vector', type: 'picklist', options: ['email', 'web'] },
@@ -204,6 +204,26 @@ export const CASE: Case = {
       status: 'met',
     },
   ],
+  pir: {
+    root_cause: 'Mail filter allowed the lookalike domain',
+    contributing_factors: '',
+    went_well: 'Fast purge',
+    went_poorly: '',
+    complete: false,
+    updated_by: 'user:u1',
+    updated_at: '2026-10-31T12:00:00Z',
+    actions: [
+      {
+        id: 'p1',
+        title: 'Block lookalike domains',
+        owner_id: 'u2',
+        due_at: '2026-11-15T12:00:00Z',
+        done_at: null,
+        created_by: 'user:u1',
+        created_at: '2026-10-31T12:00:00Z',
+      },
+    ],
+  },
   materiality: [
     {
       id: 'm1',

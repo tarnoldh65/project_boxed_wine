@@ -103,3 +103,10 @@ test('a case with nothing to link sends no links', async () => {
     evidence_id: null,
   })
 })
+
+test('dwell time runs from first compromise to eradication', () => {
+  const eradicated = { ...CASE.timeline[1], id: 'tl3', milestone: 'eradication' as const, occurred_at: '2026-11-01T06:15:00Z' }
+  render({ ...CASE, timeline: [...CASE.timeline, eradicated] })
+  expect(screen.getByText('Time to detect').nextElementSibling).toHaveTextContent('2.3 days')
+  expect(screen.getByText('Dwell time').nextElementSibling).toHaveTextContent('4.0 days')
+})

@@ -10,11 +10,17 @@ import { EvidencePanel } from './EvidencePanel'
 import { PRIVILEGE_NOTICE } from './journal'
 import { NotesPanel } from './NotesPanel'
 import { ObservablesPanel } from './ObservablesPanel'
+import { PirPanel } from './PirPanel'
 import { RegulatoryPanel } from './RegulatoryPanel'
 import { TasksPanel } from './TasksPanel'
 import { TimelinePanel } from './TimelinePanel'
 
 const ASSET_KINDS: AssetKind[] = ['host', 'account', 'application', 'data_set']
+const REPORTS = [
+  ['executive', 'Executive summary'],
+  ['technical', 'Technical report'],
+  ['pir', 'Post-incident review'],
+] as const
 
 function toggle(list: string[], id: string, on: boolean): string[] {
   return on ? [...list, id] : list.filter((x) => x !== id)
@@ -351,6 +357,29 @@ export function CasePage() {
       </section>
 
       <CommentsPanel slug={slug} current={current} members={members.data} canWrite={canWrite} />
+
+      <PirPanel slug={slug} current={current} members={members.data} canWrite={canWrite} />
+
+      <section>
+        <h3>Reports</h3>
+        <ul>
+          {REPORTS.map(([kind, label]) => (
+            <li key={kind}>
+              {label}:{' '}
+              {(['pdf', 'docx'] as const).map((format) => (
+                <a
+                  key={format}
+                  className="report-link"
+                  href={`/api/tenants/${slug}/cases/${current.number}/reports/${kind}?format=${format}`}
+                  download
+                >
+                  {label} ({format.toUpperCase()})
+                </a>
+              ))}
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {canWrite && !state?.terminal && (
         <section>

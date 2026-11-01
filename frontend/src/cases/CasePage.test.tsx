@@ -263,3 +263,16 @@ test('legal marks the case privileged', async () => {
   expect(await screen.findByText('Attorney-Client Privileged / Prepared at Direction of Counsel')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Remove privilege marking' })).toBeInTheDocument()
 })
+
+test('offers each report as PDF and DOCX', async () => {
+  api()
+  open(['cases:read'])
+  const pdf = await screen.findByRole('link', { name: 'Executive summary (PDF)' })
+  expect(pdf).toHaveAttribute('href', `${BASE}/reports/executive?format=pdf`)
+  expect(pdf).toHaveAttribute('download')
+  expect(screen.getByRole('link', { name: 'Post-incident review (DOCX)' })).toHaveAttribute(
+    'href',
+    `${BASE}/reports/pir?format=docx`,
+  )
+  expect(screen.getAllByRole('link', { name: /\((PDF|DOCX)\)$/ })).toHaveLength(6)
+})

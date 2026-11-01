@@ -12,7 +12,7 @@ function runJob(name: string): string {
   })
 }
 
-test('playbook tasks gate closing a case', async ({ page, request }) => {
+test('tasks and the post-incident review gate closing a case', async ({ page, request }) => {
   const user = await createUser(request, ['casemgr-detect-respond-analyst'])
   await signIn(page, user)
   const title = `Flood ${Date.now()}`
@@ -36,6 +36,19 @@ test('playbook tasks gate closing a case', async ({ page, request }) => {
   await page.getByLabel('Reason to waive Monitor service availability until stable').fill('Provider confirmed')
   await page.getByRole('button', { name: 'Confirm waive' }).click()
   await expect(page.getByText('Waived: Provider confirmed')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Save case' }).click()
+  await expect(page.getByRole('alert')).toContainText('complete the post-incident review first')
+  for (const [label, text] of [
+    ['Root cause', 'Upstream provider capacity'],
+    ['Contributing factors', 'No rate limiting at the edge'],
+    ['What went well', 'Provider engaged within the hour'],
+    ['What did not go well', 'Status page updated late'],
+  ]) {
+    await page.getByLabel(label, { exact: true }).fill(text)
+  }
+  await page.getByRole('button', { name: 'Save review' }).click()
+  await expect(page.getByText('Complete.')).toBeVisible()
 
   await page.getByRole('button', { name: 'Save case' }).click()
   await expect(page.getByRole('status')).toHaveText('Saved')
