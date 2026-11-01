@@ -24,6 +24,18 @@ const CONFIG: TenantConfig = {
   escalation_rules: [],
   teams: [],
   templates: [{ key: 'phishing', name: 'Phishing', impact: 'wide', urgency: 'now', tlp: 'amber', pap: 'amber', team: null, tasks: [] }],
+  regimes: [
+    {
+      key: 'gdpr',
+      name: 'GDPR',
+      trigger: 'regulated_data',
+      regulated_data: ['pii'],
+      regions: ['EU'],
+      duration: 72,
+      unit: 'hours',
+      warn_hours_before: 24,
+    },
+  ],
 }
 const MEMBERS = [{ id: 'u1', username: 'jdoe', display_name: 'J Doe' }]
 const ADMIN: TenantAccess = { slug: 'dr', name: 'DR', permissions: ['cases:read', 'config:manage'] }
@@ -39,6 +51,7 @@ function mockConfig() {
     'escalation-rules': 'escalation_rules',
     teams: 'teams',
     templates: 'templates',
+    regimes: 'regimes',
   }
   let config = CONFIG
   const routes = Object.fromEntries(
@@ -76,6 +89,7 @@ test('loads every section for configuration admins', async () => {
     'Escalation rules',
     'Teams',
     'Case templates',
+    'Notification regimes',
   ]) {
     expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument()
   }
@@ -334,4 +348,36 @@ test('edits a template playbook without touching other template settings', async
       ],
     },
   ])
+})
+
+test('edits notification regimes', async () => {
+  const requests = mockConfig()
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Notification regimes' })
+  const regimes = section('Notification regimes')
+  fireEvent.click(regimes.getByLabelText('Regime 1 phi'))
+  fireEvent.change(regimes.getByLabelText('Regime 1 regions'), { target: { value: 'EU, GB' } })
+  fireEvent.click(regimes.getByRole('button', { name: 'Add regime' }))
+  fireEvent.change(regimes.getByLabelText('Regime 2 key'), { target: { value: 'sec_8k' } })
+  fireEvent.change(regimes.getByLabelText('Regime 2 name'), { target: { value: 'SEC 8-K' } })
+  fireEvent.change(regimes.getByLabelText('Regime 2 trigger'), { target: { value: 'materiality' } })
+  expect(regimes.queryByLabelText('Regime 2 pii')).not.toBeInTheDocument()
+  fireEvent.change(regimes.getByLabelText('Regime 2 duration'), { target: { value: '4' } })
+  fireEvent.change(regimes.getByLabelText('Regime 2 unit'), { target: { value: 'business_days' } })
+  fireEvent.click(regimes.getByRole('button', { name: 'Save' }))
+
+  expect(await lastBody(requests, '/config/regimes')).toEqual([
+    { ...CONFIG.regimes[0], regulated_data: ['pii', 'phi'], regions: ['EU', 'GB'] },
+    {
+      key: 'sec_8k',
+      name: 'SEC 8-K',
+      trigger: 'materiality',
+      regulated_data: [],
+      regions: [],
+      duration: 4,
+      unit: 'business_days',
+      warn_hours_before: 24,
+    },
+  ])
+  expect(await regimes.findByRole('status')).toHaveTextContent('Saved')
 })

@@ -330,3 +330,53 @@ class Comment(Base):
     body: Mapped[str]
     author: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class RegulatoryClock(Base):
+    """A breach-notification deadline running for a case; met by a logged notification."""
+
+    __tablename__ = "regulatory_clocks"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    regime: Mapped[str]  # regime key
+    name: Mapped[str]  # regime name when the clock started
+    started_at: Mapped[datetime]
+    due_at: Mapped[datetime]
+    warn_at: Mapped[datetime]
+    met_at: Mapped[datetime | None]
+
+
+class MaterialityDecision(Base):
+    """Whether an incident is material or reportable; append-only."""
+
+    __tablename__ = "materiality_decisions"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    material: Mapped[bool]
+    decided_by: Mapped[str]  # the person or body that made the decision
+    decided_at: Mapped[datetime]
+    rationale: Mapped[str]
+    recorded_by: Mapped[str]
+    recorded_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Disclosure(Base):
+    """A notification sent outside the organization, such as to a regulator; append-only."""
+
+    __tablename__ = "disclosures"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, server_default=func.gen_random_uuid())
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"))
+    recipient_type: Mapped[str]
+    recipient: Mapped[str]
+    sent_at: Mapped[datetime]
+    summary: Mapped[str]
+    clock_id: Mapped[UUID | None] = mapped_column(ForeignKey("regulatory_clocks.id"))
+    evidence_ids: Mapped[list[UUID]] = mapped_column(ARRAY(Uuid))  # attachments
+    recorded_by: Mapped[str]
+    recorded_at: Mapped[datetime] = mapped_column(server_default=func.now())

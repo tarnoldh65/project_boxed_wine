@@ -664,6 +664,62 @@
         }
       }
     },
+    "/api/tenants/{slug}/config/regimes": {
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put Regimes",
+        "operationId": "put_regimes_api_tenants__slug__config_regimes_put",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Regime"
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tenants/{slug}/members": {
       "get": {
         "tags": [
@@ -2939,6 +2995,175 @@
         }
       }
     },
+    "/api/tenants/{slug}/clocks": {
+      "get": {
+        "tags": [
+          "regulatory"
+        ],
+        "summary": "Active Clocks",
+        "description": "Unmet notification deadlines of the cases the caller can see, soonest first.",
+        "operationId": "active_clocks_api_tenants__slug__clocks_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActiveClockOut"
+                  },
+                  "title": "Response Active Clocks Api Tenants  Slug  Clocks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/materiality": {
+      "post": {
+        "tags": [
+          "regulatory"
+        ],
+        "summary": "Decide",
+        "operationId": "decide_api_tenants__slug__cases__number__materiality_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{slug}/cases/{number}/disclosures": {
+      "post": {
+        "tags": [
+          "regulatory"
+        ],
+        "summary": "Disclose",
+        "operationId": "disclose_api_tenants__slug__cases__number__disclosures_post",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisclosureIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "summary": "Healthz",
@@ -2986,6 +3211,78 @@
   },
   "components": {
     "schemas": {
+      "ActiveClockOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "regime": {
+            "type": "string",
+            "title": "Regime"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due At"
+          },
+          "warn_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Warn At"
+          },
+          "met_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Met At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "met",
+              "late",
+              "pending",
+              "warning",
+              "breached"
+            ],
+            "title": "Status"
+          },
+          "case_number": {
+            "type": "integer",
+            "title": "Case Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "regime",
+          "name",
+          "started_at",
+          "due_at",
+          "warn_at",
+          "met_at",
+          "status",
+          "case_number"
+        ],
+        "title": "ActiveClockOut"
+      },
       "AlertIn": {
         "properties": {
           "template": {
@@ -3671,6 +3968,27 @@
             },
             "type": "array",
             "title": "Comments"
+          },
+          "clocks": {
+            "items": {
+              "$ref": "#/components/schemas/ClockOut"
+            },
+            "type": "array",
+            "title": "Clocks"
+          },
+          "materiality": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionOut"
+            },
+            "type": "array",
+            "title": "Materiality"
+          },
+          "disclosures": {
+            "items": {
+              "$ref": "#/components/schemas/DisclosureOut"
+            },
+            "type": "array",
+            "title": "Disclosures"
           }
         },
         "type": "object",
@@ -3718,7 +4036,10 @@
           "evidence",
           "timeline",
           "notes",
-          "comments"
+          "comments",
+          "clocks",
+          "materiality",
+          "disclosures"
         ],
         "title": "CaseOut"
       },
@@ -4084,6 +4405,81 @@
         ],
         "title": "ChecklistItem"
       },
+      "ClockOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "regime": {
+            "type": "string",
+            "title": "Regime"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due At"
+          },
+          "warn_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Warn At"
+          },
+          "met_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Met At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "met",
+              "late",
+              "pending",
+              "warning",
+              "breached"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "regime",
+          "name",
+          "started_at",
+          "due_at",
+          "warn_at",
+          "met_at",
+          "status"
+        ],
+        "title": "ClockOut"
+      },
+      "ClockTrigger": {
+        "type": "string",
+        "enum": [
+          "regulated_data",
+          "materiality"
+        ],
+        "title": "ClockTrigger"
+      },
       "Collection": {
         "properties": {
           "collected_by": {
@@ -4327,6 +4723,205 @@
           "type"
         ],
         "title": "CustomField"
+      },
+      "DecisionIn": {
+        "properties": {
+          "material": {
+            "type": "boolean",
+            "title": "Material"
+          },
+          "decided_by": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Decided By"
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Decided At"
+          },
+          "rationale": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Rationale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material",
+          "decided_by",
+          "decided_at",
+          "rationale"
+        ],
+        "title": "DecisionIn"
+      },
+      "DecisionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "material": {
+            "type": "boolean",
+            "title": "Material"
+          },
+          "decided_by": {
+            "type": "string",
+            "title": "Decided By"
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Decided At"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "recorded_by": {
+            "type": "string",
+            "title": "Recorded By"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "material",
+          "decided_by",
+          "decided_at",
+          "rationale",
+          "recorded_by",
+          "recorded_at"
+        ],
+        "title": "DecisionOut"
+      },
+      "DisclosureIn": {
+        "properties": {
+          "recipient_type": {
+            "$ref": "#/components/schemas/Recipient"
+          },
+          "recipient": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Recipient"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Sent At"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Summary"
+          },
+          "clock_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clock Id"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Evidence Ids",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "recipient_type",
+          "recipient",
+          "sent_at",
+          "summary"
+        ],
+        "title": "DisclosureIn"
+      },
+      "DisclosureOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "recipient_type": {
+            "$ref": "#/components/schemas/Recipient"
+          },
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          },
+          "sent_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Sent At"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "clock_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clock Id"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "recorded_by": {
+            "type": "string",
+            "title": "Recorded By"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "recipient_type",
+          "recipient",
+          "sent_at",
+          "summary",
+          "clock_id",
+          "evidence_ids",
+          "recorded_by",
+          "recorded_at"
+        ],
+        "title": "DisclosureOut"
       },
       "EscalationRule": {
         "properties": {
@@ -5033,6 +5628,16 @@
         ],
         "title": "PlaybookTask"
       },
+      "Recipient": {
+        "type": "string",
+        "enum": [
+          "regulator",
+          "law_enforcement",
+          "insurer",
+          "customer"
+        ],
+        "title": "Recipient"
+      },
       "ReferenceIn": {
         "properties": {
           "name": {
@@ -5088,6 +5693,72 @@
           "collection"
         ],
         "title": "ReferenceIn"
+      },
+      "Regime": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/ClockTrigger"
+          },
+          "regulated_data": {
+            "items": {
+              "$ref": "#/components/schemas/Regulated"
+            },
+            "type": "array",
+            "title": "Regulated Data",
+            "default": []
+          },
+          "regions": {
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9-]{1,9}$"
+            },
+            "type": "array",
+            "title": "Regions",
+            "default": []
+          },
+          "duration": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Duration"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "hours",
+              "days",
+              "business_days"
+            ],
+            "title": "Unit"
+          },
+          "warn_hours_before": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Warn Hours Before"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "trigger",
+          "duration",
+          "unit",
+          "warn_hours_before"
+        ],
+        "title": "Regime",
+        "description": "A breach-notification obligation: when its clock starts and how long it runs."
       },
       "Regulated": {
         "type": "string",
@@ -6097,6 +6768,105 @@
                 ]
               }
             ]
+          },
+          "regimes": {
+            "items": {
+              "$ref": "#/components/schemas/Regime"
+            },
+            "type": "array",
+            "title": "Regimes",
+            "default": [
+              {
+                "key": "gdpr",
+                "name": "GDPR Art. 33 (supervisory authority)",
+                "trigger": "regulated_data",
+                "regulated_data": [
+                  "pii"
+                ],
+                "regions": [
+                  "EU",
+                  "EEA",
+                  "GB"
+                ],
+                "duration": 72,
+                "unit": "hours",
+                "warn_hours_before": 24
+              },
+              {
+                "key": "sec_8k",
+                "name": "SEC Form 8-K Item 1.05",
+                "trigger": "materiality",
+                "regulated_data": [],
+                "regions": [],
+                "duration": 4,
+                "unit": "business_days",
+                "warn_hours_before": 24
+              },
+              {
+                "key": "hipaa",
+                "name": "HIPAA breach notification",
+                "trigger": "regulated_data",
+                "regulated_data": [
+                  "phi"
+                ],
+                "regions": [
+                  "US"
+                ],
+                "duration": 60,
+                "unit": "days",
+                "warn_hours_before": 168
+              },
+              {
+                "key": "us_state",
+                "name": "US state breach law (shortest deadline)",
+                "trigger": "regulated_data",
+                "regulated_data": [
+                  "pii"
+                ],
+                "regions": [
+                  "US"
+                ],
+                "duration": 30,
+                "unit": "days",
+                "warn_hours_before": 168
+              },
+              {
+                "key": "nis2",
+                "name": "NIS2 early warning",
+                "trigger": "materiality",
+                "regulated_data": [],
+                "regions": [
+                  "EU"
+                ],
+                "duration": 24,
+                "unit": "hours",
+                "warn_hours_before": 6
+              },
+              {
+                "key": "dora",
+                "name": "DORA initial notification",
+                "trigger": "materiality",
+                "regulated_data": [],
+                "regions": [
+                  "EU"
+                ],
+                "duration": 4,
+                "unit": "hours",
+                "warn_hours_before": 1
+              },
+              {
+                "key": "circia",
+                "name": "CIRCIA covered incident report",
+                "trigger": "materiality",
+                "regulated_data": [],
+                "regions": [
+                  "US"
+                ],
+                "duration": 72,
+                "unit": "hours",
+                "warn_hours_before": 24
+              }
+            ]
           }
         },
         "type": "object",
@@ -6526,7 +7296,9 @@
           "case_created",
           "sla_warning",
           "sla_breach",
-          "major_incident"
+          "major_incident",
+          "clock_warning",
+          "clock_breach"
         ],
         "title": "Trigger"
       },

@@ -45,6 +45,12 @@ The `sla` job fires SLA escalations and sends pending notifications (delivered t
 docker compose -f deploy/compose.yaml exec backend python -m app.jobs sla
 ```
 
+The `clocks` job does the same for breach-notification deadlines (regimes are set per tenant in Settings):
+
+```sh
+docker compose -f deploy/compose.yaml exec backend python -m app.jobs clocks
+```
+
 After changing API routes or models, run the backend tests (they regenerate `backend/openapi.json`), then `npm run gen:api` in `frontend/`.
 
 ## Tests

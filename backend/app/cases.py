@@ -19,19 +19,23 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit, escalation, evidence, journal, observable_store, sla, tasks
+from app import audit, escalation, evidence, journal, observable_store, regulatory, sla, tasks
 from app.auth import TenantContext, deny
 from app.evidence import EvidenceOut
 from app.journal import CommentOut, NoteOut, TimelineOut
 from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, Task, User
 from app.observable_store import ObservableOut
+from app.regulatory import ClockOut, DecisionOut, DisclosureOut
 from app.tasks import TaskOut
 from app.tenant_config import (
     MAX_TEXT,
+    ClockTrigger,
     FieldType,
     Key,
     Label,
     Pap,
+    Region,
+    Regulated,
     TenantConfig,
     Tlp,
     Trigger,
@@ -40,17 +44,9 @@ from app.tenant_config import (
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
 LongText = Annotated[str, StringConstraints(max_length=MAX_TEXT)]
-Region = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9-]{1,9}$")]
 Technique = Annotated[str, StringConstraints(pattern=r"^T\d{4}(\.\d{3})?$")]
 Source = Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9_.-]{0,39}$")]
 Ref = Annotated[str, StringConstraints(min_length=1, max_length=200)]
-
-
-class Regulated(StrEnum):
-    PII = "pii"
-    PHI = "phi"
-    PCI = "pci"
-    CUI = "cui"
 
 
 class Resolution(StrEnum):
@@ -151,6 +147,9 @@ class CaseOut(CaseFields):
     timeline: list[TimelineOut]
     notes: list[NoteOut]
     comments: list[CommentOut]
+    clocks: list[ClockOut]
+    materiality: list[DecisionOut]
+    disclosures: list[DisclosureOut]
 
 
 class MarkingIn(BaseModel):
@@ -312,7 +311,8 @@ async def case_out(
     merged_into = None
     if case.merged_into_id is not None:
         merged_into = await db.scalar(select(Case.number).where(Case.id == case.merged_into_id))
-    case_clocks = clocks(case, config, datetime.now(UTC))
+    now = datetime.now(UTC)
+    case_clocks = clocks(case, config, now)
     return CaseOut(
         **CaseFields.model_validate(case).model_dump(exclude={"sla_status"}),
         sla_status=sla.worst(case_clocks),
@@ -326,6 +326,9 @@ async def case_out(
         timeline=await journal.timeline(db, case),
         notes=await journal.notes(db, case),
         comments=await journal.comments(db, case),
+        clocks=await regulatory.clocks(db, case, now),
+        materiality=await regulatory.decisions(db, case),
+        disclosures=await regulatory.disclosures(db, case),
     )
 
 
@@ -515,6 +518,12 @@ async def update_case(
         f"case:{case.number}",
         changes=change.model_dump(mode="json", include=fields),
     )
+    if fields & {"regulated_data", "data_regions"}:
+        started = await regulatory.start(
+            db, config, case, ClockTrigger.REGULATED_DATA, case.updated_at
+        )
+        if started:
+            await ctx.audit(db, "clock.start", f"case:{case.number}", regimes=started)
     if not terminal:
         await tasks.sync_playbook(db, case, config, ctx.principal.actor)
 
@@ -627,6 +636,7 @@ async def merge(
     moved_observables = await observable_store.move(db, source, target, None)
     moved_evidence = await evidence.move(db, source, target)
     moved_journal = await journal.move(db, source, target)
+    moved_regulatory = await regulatory.move(db, source, target)
     source.state = config.terminal_states[0]
     source.resolution = Resolution.MERGED
     source.merged_into_id = target.id
@@ -642,6 +652,7 @@ async def merge(
         observables=moved_observables,
         evidence=moved_evidence,
         **moved_journal,
+        **moved_regulatory,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
 

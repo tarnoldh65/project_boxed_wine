@@ -1,4 +1,5 @@
-"""Per-tenant configuration: lifecycle, fields, severity and SLAs, escalation, teams, templates."""
+"""Per-tenant configuration: lifecycle, fields, severity and SLAs, escalation, teams, templates,
+and breach-notification regimes."""
 
 from datetime import UTC, date
 from enum import StrEnum
@@ -27,6 +28,8 @@ Key = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$", max_length=
 # Timestamps are accepted with any offset and kept in UTC (NFR-09).
 UtcDatetime = Annotated[AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
+# A country or region code, optionally with a subdivision: EU, US, US-CA.
+Region = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9-]{1,9}$")]
 MAX_TEXT = 10_000
 
 
@@ -152,6 +155,8 @@ class Trigger(StrEnum):
     SLA_WARNING = "sla_warning"
     SLA_BREACH = "sla_breach"
     MAJOR_INCIDENT = "major_incident"
+    CLOCK_WARNING = "clock_warning"
+    CLOCK_BREACH = "clock_breach"
 
 
 class EscalationRule(BaseModel):
@@ -328,6 +333,115 @@ DEFAULT_TEMPLATES = [
 ]
 
 
+class Regulated(StrEnum):
+    PII = "pii"
+    PHI = "phi"
+    PCI = "pci"
+    CUI = "cui"
+
+
+class ClockTrigger(StrEnum):
+    REGULATED_DATA = "regulated_data"  # the case is flagged as involving regulated data
+    MATERIALITY = "materiality"  # a decision finds the incident material or reportable
+
+
+class Regime(BaseModel):
+    """A breach-notification obligation: when its clock starts and how long it runs."""
+
+    key: Key
+    name: Label
+    trigger: ClockTrigger
+    regulated_data: list[Regulated] = []  # any of these; empty means any regulated data
+    regions: list[Region] = []  # any of these or their subdivisions; empty means anywhere
+    duration: PositiveInt
+    unit: Literal["hours", "days", "business_days"]
+    warn_hours_before: PositiveInt
+
+    @model_validator(mode="after")
+    def check_trigger(self) -> Self:
+        if self.trigger is ClockTrigger.MATERIALITY and self.regulated_data:
+            raise ValueError(f"regime {self.key} starts on materiality, not regulated data")
+        return self
+
+    def applies(self, regulated: list[str], regions: list[str]) -> bool:
+        if self.trigger is ClockTrigger.REGULATED_DATA and not (
+            regulated and (not self.regulated_data or set(self.regulated_data) & set(regulated))
+        ):
+            return False
+        return not self.regions or any(
+            region == r or region.startswith(f"{r}-") for region in regions for r in self.regions
+        )
+
+
+DEFAULT_REGIMES = [
+    Regime(
+        key="gdpr",
+        name="GDPR Art. 33 (supervisory authority)",
+        trigger=ClockTrigger.REGULATED_DATA,
+        regulated_data=[Regulated.PII],
+        regions=["EU", "EEA", "GB"],
+        duration=72,
+        unit="hours",
+        warn_hours_before=24,
+    ),
+    Regime(
+        key="sec_8k",
+        name="SEC Form 8-K Item 1.05",
+        trigger=ClockTrigger.MATERIALITY,
+        duration=4,
+        unit="business_days",
+        warn_hours_before=24,
+    ),
+    Regime(
+        key="hipaa",
+        name="HIPAA breach notification",
+        trigger=ClockTrigger.REGULATED_DATA,
+        regulated_data=[Regulated.PHI],
+        regions=["US"],
+        duration=60,
+        unit="days",
+        warn_hours_before=7 * 24,
+    ),
+    Regime(
+        key="us_state",
+        name="US state breach law (shortest deadline)",
+        trigger=ClockTrigger.REGULATED_DATA,
+        regulated_data=[Regulated.PII],
+        regions=["US"],
+        duration=30,
+        unit="days",
+        warn_hours_before=7 * 24,
+    ),
+    Regime(
+        key="nis2",
+        name="NIS2 early warning",
+        trigger=ClockTrigger.MATERIALITY,
+        regions=["EU"],
+        duration=24,
+        unit="hours",
+        warn_hours_before=6,
+    ),
+    Regime(
+        key="dora",
+        name="DORA initial notification",
+        trigger=ClockTrigger.MATERIALITY,
+        regions=["EU"],
+        duration=4,
+        unit="hours",
+        warn_hours_before=1,
+    ),
+    Regime(
+        key="circia",
+        name="CIRCIA covered incident report",
+        trigger=ClockTrigger.MATERIALITY,
+        regions=["US"],
+        duration=72,
+        unit="hours",
+        warn_hours_before=24,
+    ),
+]
+
+
 class TenantConfig(BaseModel):
     states: list[State] = Field(min_length=2)
     custom_fields: list[CustomField]
@@ -336,6 +450,7 @@ class TenantConfig(BaseModel):
     # Defaults let configurations saved before these sections existed still load.
     teams: list[Team] = []
     templates: list[Template] = Field(default=DEFAULT_TEMPLATES, min_length=1)
+    regimes: list[Regime] = DEFAULT_REGIMES
 
     @model_validator(mode="after")
     def check_references(self) -> Self:
@@ -374,6 +489,7 @@ class TenantConfig(BaseModel):
             for task in template.tasks:
                 if task.when is not None and task.when.field not in condition_fields:
                     raise ValueError(f"task {task.key} has a condition on an unknown field")
+        _unique([r.key for r in self.regimes], "regime keys")
         return self
 
     def template(self, key: str) -> Template | None:

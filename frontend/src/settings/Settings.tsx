@@ -4,6 +4,7 @@ import { TokensPanel } from '../TokensPanel'
 import { EscalationEditor } from './EscalationEditor'
 import { FieldsEditor } from './FieldsEditor'
 import { PlaybookEditor } from './PlaybookEditor'
+import { RegimesEditor } from './RegimesEditor'
 import { SeverityEditor } from './SeverityEditor'
 import { StatesEditor } from './StatesEditor'
 import { TeamsEditor } from './TeamsEditor'
@@ -37,6 +38,7 @@ export function Settings() {
           <TeamsEditor slug={slug} teams={config.data.teams} members={members.data} />
           <TemplatesEditor slug={slug} config={config.data} />
           <PlaybookEditor slug={slug} config={config.data} />
+          <RegimesEditor slug={slug} regimes={config.data.regimes} />
         </section>
       )}
       {permissions.includes('tokens:manage') && <TokensPanel slug={slug} />}

@@ -244,6 +244,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/config/regimes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Regimes */
+        put: operations["put_regimes_api_tenants__slug__config_regimes_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tenants/{slug}/members": {
         parameters: {
             query?: never;
@@ -856,6 +873,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/clocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active Clocks
+         * @description Unmet notification deadlines of the cases the caller can see, soonest first.
+         */
+        get: operations["active_clocks_api_tenants__slug__clocks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/materiality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide */
+        post: operations["decide_api_tenants__slug__cases__number__materiality_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/disclosures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disclose */
+        post: operations["disclose_api_tenants__slug__cases__number__disclosures_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -894,6 +965,42 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActiveClockOut */
+        ActiveClockOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Regime */
+            regime: string;
+            /** Name */
+            name: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /**
+             * Warn At
+             * Format: date-time
+             */
+            warn_at: string;
+            /** Met At */
+            met_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "met" | "late" | "pending" | "warning" | "breached";
+            /** Case Number */
+            case_number: number;
+        };
         /** AlertIn */
         AlertIn: {
             /** Template */
@@ -1118,6 +1225,12 @@ export interface components {
             notes: components["schemas"]["NoteOut"][];
             /** Comments */
             comments: components["schemas"]["CommentOut"][];
+            /** Clocks */
+            clocks: components["schemas"]["ClockOut"][];
+            /** Materiality */
+            materiality: components["schemas"]["DecisionOut"][];
+            /** Disclosures */
+            disclosures: components["schemas"]["DisclosureOut"][];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -1204,6 +1317,45 @@ export interface components {
              */
             done: boolean;
         };
+        /** ClockOut */
+        ClockOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Regime */
+            regime: string;
+            /** Name */
+            name: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
+            /**
+             * Warn At
+             * Format: date-time
+             */
+            warn_at: string;
+            /** Met At */
+            met_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "met" | "late" | "pending" | "warning" | "breached";
+        };
+        /**
+         * ClockTrigger
+         * @enum {string}
+         */
+        ClockTrigger: "regulated_data" | "materiality";
         /**
          * Collection
          * @description Who collected the evidence, when, where, and how.
@@ -1299,6 +1451,95 @@ export interface components {
             options: string[];
             /** Required From */
             required_from?: string | null;
+        };
+        /** DecisionIn */
+        DecisionIn: {
+            /** Material */
+            material: boolean;
+            /** Decided By */
+            decided_by: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** Rationale */
+            rationale: string;
+        };
+        /** DecisionOut */
+        DecisionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Material */
+            material: boolean;
+            /** Decided By */
+            decided_by: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** Rationale */
+            rationale: string;
+            /** Recorded By */
+            recorded_by: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+        };
+        /** DisclosureIn */
+        DisclosureIn: {
+            recipient_type: components["schemas"]["Recipient"];
+            /** Recipient */
+            recipient: string;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /** Summary */
+            summary: string;
+            /** Clock Id */
+            clock_id?: string | null;
+            /**
+             * Evidence Ids
+             * @default []
+             */
+            evidence_ids: string[];
+        };
+        /** DisclosureOut */
+        DisclosureOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            recipient_type: components["schemas"]["Recipient"];
+            /** Recipient */
+            recipient: string;
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            /** Summary */
+            summary: string;
+            /** Clock Id */
+            clock_id: string | null;
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Recorded By */
+            recorded_by: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
         };
         /** EscalationRule */
         EscalationRule: {
@@ -1582,6 +1823,11 @@ export interface components {
             depends_on: string[];
             when?: components["schemas"]["Condition"] | null;
         };
+        /**
+         * Recipient
+         * @enum {string}
+         */
+        Recipient: "regulator" | "law_enforcement" | "insurer" | "customer";
         /** ReferenceIn */
         ReferenceIn: {
             /** Name */
@@ -1598,6 +1844,36 @@ export interface components {
             /** Size */
             size?: number | null;
             collection: components["schemas"]["Collection"];
+        };
+        /**
+         * Regime
+         * @description A breach-notification obligation: when its clock starts and how long it runs.
+         */
+        Regime: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            trigger: components["schemas"]["ClockTrigger"];
+            /**
+             * Regulated Data
+             * @default []
+             */
+            regulated_data: components["schemas"]["Regulated"][];
+            /**
+             * Regions
+             * @default []
+             */
+            regions: string[];
+            /** Duration */
+            duration: number;
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "hours" | "days" | "business_days";
+            /** Warn Hours Before */
+            warn_hours_before: number;
         };
         /**
          * Regulated
@@ -2104,6 +2380,102 @@ export interface components {
              *     ]
              */
             templates: components["schemas"]["Template"][];
+            /**
+             * Regimes
+             * @default [
+             *       {
+             *         "key": "gdpr",
+             *         "name": "GDPR Art. 33 (supervisory authority)",
+             *         "trigger": "regulated_data",
+             *         "regulated_data": [
+             *           "pii"
+             *         ],
+             *         "regions": [
+             *           "EU",
+             *           "EEA",
+             *           "GB"
+             *         ],
+             *         "duration": 72,
+             *         "unit": "hours",
+             *         "warn_hours_before": 24
+             *       },
+             *       {
+             *         "key": "sec_8k",
+             *         "name": "SEC Form 8-K Item 1.05",
+             *         "trigger": "materiality",
+             *         "regulated_data": [],
+             *         "regions": [],
+             *         "duration": 4,
+             *         "unit": "business_days",
+             *         "warn_hours_before": 24
+             *       },
+             *       {
+             *         "key": "hipaa",
+             *         "name": "HIPAA breach notification",
+             *         "trigger": "regulated_data",
+             *         "regulated_data": [
+             *           "phi"
+             *         ],
+             *         "regions": [
+             *           "US"
+             *         ],
+             *         "duration": 60,
+             *         "unit": "days",
+             *         "warn_hours_before": 168
+             *       },
+             *       {
+             *         "key": "us_state",
+             *         "name": "US state breach law (shortest deadline)",
+             *         "trigger": "regulated_data",
+             *         "regulated_data": [
+             *           "pii"
+             *         ],
+             *         "regions": [
+             *           "US"
+             *         ],
+             *         "duration": 30,
+             *         "unit": "days",
+             *         "warn_hours_before": 168
+             *       },
+             *       {
+             *         "key": "nis2",
+             *         "name": "NIS2 early warning",
+             *         "trigger": "materiality",
+             *         "regulated_data": [],
+             *         "regions": [
+             *           "EU"
+             *         ],
+             *         "duration": 24,
+             *         "unit": "hours",
+             *         "warn_hours_before": 6
+             *       },
+             *       {
+             *         "key": "dora",
+             *         "name": "DORA initial notification",
+             *         "trigger": "materiality",
+             *         "regulated_data": [],
+             *         "regions": [
+             *           "EU"
+             *         ],
+             *         "duration": 4,
+             *         "unit": "hours",
+             *         "warn_hours_before": 1
+             *       },
+             *       {
+             *         "key": "circia",
+             *         "name": "CIRCIA covered incident report",
+             *         "trigger": "materiality",
+             *         "regulated_data": [],
+             *         "regions": [
+             *           "US"
+             *         ],
+             *         "duration": 72,
+             *         "unit": "hours",
+             *         "warn_hours_before": 24
+             *       }
+             *     ]
+             */
+            regimes: components["schemas"]["Regime"][];
         };
         /** TenantIn */
         TenantIn: {
@@ -2255,7 +2627,7 @@ export interface components {
          * Trigger
          * @enum {string}
          */
-        Trigger: "case_created" | "sla_warning" | "sla_breach" | "major_incident";
+        Trigger: "case_created" | "sla_warning" | "sla_breach" | "major_incident" | "clock_warning" | "clock_breach";
         /** UploadIn */
         UploadIn: {
             /** Name */
@@ -2746,6 +3118,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Template"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_regimes_api_tenants__slug__config_regimes_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Regime"][];
             };
         };
         responses: {
@@ -4029,6 +4436,109 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CommentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    active_clocks_api_tenants__slug__clocks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveClockOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_api_tenants__slug__cases__number__materiality_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disclose_api_tenants__slug__cases__number__disclosures_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisclosureIn"];
             };
         };
         responses: {
