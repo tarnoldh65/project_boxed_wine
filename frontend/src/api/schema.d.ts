@@ -334,6 +334,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/privilege": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Privilege
+         * @description Mark the case Attorney-Client Privileged / Prepared at Direction of Counsel.
+         */
+        put: operations["set_privilege_api_tenants__slug__cases__number__privilege_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tenants/{slug}/cases/{number}/major-incident": {
         parameters: {
             query?: never;
@@ -734,6 +754,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Event */
+        post: operations["add_event_api_tenants__slug__cases__number__timeline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/timeline/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Event */
+        delete: operations["delete_event_api_tenants__slug__cases__number__timeline__event_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Note */
+        post: operations["add_note_api_tenants__slug__cases__number__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit Note */
+        patch: operations["edit_note_api_tenants__slug__cases__number__notes__note_id__patch"];
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/notes/{note_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Note Revisions */
+        get: operations["note_revisions_api_tenants__slug__cases__number__notes__note_id__revisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Comment */
+        post: operations["add_comment_api_tenants__slug__cases__number__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -974,6 +1096,8 @@ export interface components {
             major_incident_reason: string | null;
             /** Legal Hold */
             legal_hold: boolean;
+            /** Privileged */
+            privileged: boolean;
             /** Merged Into */
             merged_into: number | null;
             /** Alerts */
@@ -988,6 +1112,12 @@ export interface components {
             observables: components["schemas"]["ObservableOut"][];
             /** Evidence */
             evidence: components["schemas"]["EvidenceOut"][];
+            /** Timeline */
+            timeline: components["schemas"]["TimelineOut"][];
+            /** Notes */
+            notes: components["schemas"]["NoteOut"][];
+            /** Comments */
+            comments: components["schemas"]["CommentOut"][];
         };
         /** CaseSummary */
         CaseSummary: {
@@ -1090,6 +1220,28 @@ export interface components {
             collected_from?: string | null;
             /** Method */
             method?: string | null;
+        };
+        /** CommentIn */
+        CommentIn: {
+            /** Body */
+            body: string;
+        };
+        /** CommentOut */
+        CommentOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Body */
+            body: string;
+            /** Author */
+            author: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** Condition */
         Condition: {
@@ -1237,13 +1389,6 @@ export interface components {
             /** Duplicate */
             duplicate: boolean;
         };
-        /** LegalHoldIn */
-        LegalHoldIn: {
-            /** On */
-            on: boolean;
-            /** Reason */
-            reason: string;
-        };
         /** LinkIn */
         LinkIn: {
             /** Observables */
@@ -1256,6 +1401,16 @@ export interface components {
         };
         /** MajorIncidentIn */
         MajorIncidentIn: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * MarkingIn
+         * @description Turn a legal marking (hold or privilege) on or off, with the reason recorded.
+         */
+        MarkingIn: {
+            /** On */
+            on: boolean;
             /** Reason */
             reason: string;
         };
@@ -1293,6 +1448,50 @@ export interface components {
         MergeIn: {
             /** Into */
             into: number;
+        };
+        /**
+         * Milestone
+         * @description Key incident moments, used for dwell time and other metrics.
+         * @enum {string}
+         */
+        Milestone: "first_compromise" | "detection" | "containment" | "eradication";
+        /** NoteIn */
+        NoteIn: {
+            /** Body */
+            body: string;
+            /**
+             * Privileged
+             * @default false
+             */
+            privileged: boolean;
+        };
+        /** NoteOut */
+        NoteOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Body */
+            body: string;
+            /** Privileged */
+            privileged: boolean;
+            /** Revision */
+            revision: number;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated By */
+            updated_by: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** ObservableCase */
         ObservableCase: {
@@ -1410,6 +1609,22 @@ export interface components {
          * @enum {string}
          */
         Resolution: "true_positive" | "false_positive" | "benign" | "duplicate" | "merged";
+        /** RevisionOut */
+        RevisionOut: {
+            /** Revision */
+            revision: number;
+            /** Body */
+            body: string;
+            /** Privileged */
+            privileged: boolean;
+            /** Edited By */
+            edited_by: string;
+            /**
+             * Edited At
+             * Format: date-time
+             */
+            edited_at: string;
+        };
         /**
          * Severity
          * @description Severity comes from impact x urgency; priority P1 is the most severe level.
@@ -1908,6 +2123,56 @@ export interface components {
             slug: string;
             /** Name */
             name: string;
+        };
+        /** TimelineIn */
+        TimelineIn: {
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Source */
+            source: string;
+            /** Description */
+            description: string;
+            milestone?: components["schemas"]["Milestone"] | null;
+            /** Observable Id */
+            observable_id?: string | null;
+            /** Asset Id */
+            asset_id?: string | null;
+            /** Evidence Id */
+            evidence_id?: string | null;
+        };
+        /** TimelineOut */
+        TimelineOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Source */
+            source: string;
+            /** Description */
+            description: string;
+            milestone: components["schemas"]["Milestone"] | null;
+            /** Observable Id */
+            observable_id: string | null;
+            /** Asset Id */
+            asset_id: string | null;
+            /** Evidence Id */
+            evidence_id: string | null;
+            /** Recorded By */
+            recorded_by: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
         };
         /**
          * Tlp
@@ -2716,7 +2981,43 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LegalHoldIn"];
+                "application/json": components["schemas"]["MarkingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_privilege_api_tenants__slug__cases__number__privilege_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkingIn"];
             };
         };
         responses: {
@@ -3530,6 +3831,215 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_event_api_tenants__slug__cases__number__timeline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimelineIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_event_api_tenants__slug__cases__number__timeline__event_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                event_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_note_api_tenants__slug__cases__number__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_note_api_tenants__slug__cases__number__notes__note_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                note_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    note_revisions_api_tenants__slug__cases__number__notes__note_id__revisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                note_id: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_comment_api_tenants__slug__cases__number__comments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
             };
             /** @description Validation Error */
             422: {

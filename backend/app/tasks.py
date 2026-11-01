@@ -6,13 +6,13 @@ from enum import StrEnum
 from typing import Annotated, Self
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import audit
 from app.models import Case, Task
-from app.tenant_config import CONDITION_FIELDS, MAX_TEXT, TenantConfig
+from app.tenant_config import CONDITION_FIELDS, MAX_TEXT, TenantConfig, UtcDatetime
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
 LongText = Annotated[str, StringConstraints(max_length=MAX_TEXT)]
@@ -38,7 +38,7 @@ class TaskIn(BaseModel):
     title: Title
     description: LongText = ""
     assignee_id: UUID | None = None
-    due_at: AwareDatetime | None = None
+    due_at: UtcDatetime | None = None
     depends_on: list[UUID] = []
     checklist: list[ChecklistItem] = Field(default=[], max_length=50)
 
@@ -49,7 +49,7 @@ class TaskUpdate(BaseModel):
     title: Title | None = None
     description: LongText | None = None
     assignee_id: UUID | None = None
-    due_at: AwareDatetime | None = None
+    due_at: UtcDatetime | None = None
     status: TaskStatus | None = None
     waive_reason: Reason | None = None
     depends_on: list[UUID] | None = None

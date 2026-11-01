@@ -16,7 +16,7 @@ ADMIN_PERMISSIONS = [
     "cases:read",
     "cases:write",
     "config:manage",
-    "legal_hold:manage",
+    "legal:manage",
     "tokens:manage",
 ]
 

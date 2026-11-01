@@ -107,15 +107,25 @@ async def make_user(owner: AsyncEngine) -> AsyncIterator[MakeUser]:
 
     clients: list[AsyncClient] = []
 
-    async def make(grants: dict[str, list[str]] | None = None, platform_admin: bool = False):
+    async def make(
+        grants: dict[str, list[str]] | None = None,
+        platform_admin: bool = False,
+        username: str = "tester",
+        email: str | None = None,
+    ):
         token = secrets.token_urlsafe(16)
         async with owner.begin() as conn:
             user_id = await conn.scalar(
                 text(
-                    "INSERT INTO users (subject, username, display_name, is_platform_admin) "
-                    "VALUES (:sub, 'tester', 'Test User', :admin) RETURNING id"
+                    "INSERT INTO users (subject, username, email, display_name, is_platform_admin) "
+                    "VALUES (:sub, :username, :email, 'Test User', :admin) RETURNING id"
                 ),
-                {"sub": secrets.token_hex(8), "admin": platform_admin},
+                {
+                    "sub": secrets.token_hex(8),
+                    "username": username,
+                    "email": email,
+                    "admin": platform_admin,
+                },
             )
             for slug, names in (grants or {}).items():
                 for name in names:

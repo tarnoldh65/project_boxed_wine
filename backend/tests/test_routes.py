@@ -26,6 +26,9 @@ def fill(path: str) -> str:
         "number": "1",
         "source": "siem",
         "observable_id": str(uuid4()),
+        "event_id": str(uuid4()),
+        "note_id": str(uuid4()),
+        "evidence_id": str(uuid4()),
     }
     for name, value in params.items():
         path = path.replace(f"{{{name}}}", value)

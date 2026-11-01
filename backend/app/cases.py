@@ -10,7 +10,6 @@ from uuid import UUID
 from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from pydantic import (
-    AwareDatetime,
     BaseModel,
     ConfigDict,
     StringConstraints,
@@ -20,13 +19,24 @@ from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit, escalation, evidence, observable_store, sla, tasks
+from app import audit, escalation, evidence, journal, observable_store, sla, tasks
 from app.auth import TenantContext, deny
 from app.evidence import EvidenceOut
+from app.journal import CommentOut, NoteOut, TimelineOut
 from app.models import Alert, Asset, Case, CaseAsset, CaseNumber, Membership, Task, User
 from app.observable_store import ObservableOut
 from app.tasks import TaskOut
-from app.tenant_config import MAX_TEXT, FieldType, Key, Label, Pap, TenantConfig, Tlp, Trigger
+from app.tenant_config import (
+    MAX_TEXT,
+    FieldType,
+    Key,
+    Label,
+    Pap,
+    TenantConfig,
+    Tlp,
+    Trigger,
+    UtcDatetime,
+)
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
 LongText = Annotated[str, StringConstraints(max_length=MAX_TEXT)]
@@ -106,6 +116,7 @@ class CaseFields(CaseSummary):
     contained_at: datetime | None
     major_incident_reason: str | None
     legal_hold: bool
+    privileged: bool
 
 
 class AlertOut(BaseModel):
@@ -137,9 +148,14 @@ class CaseOut(CaseFields):
     sla: list[sla.SlaClock]
     observables: list[ObservableOut]
     evidence: list[EvidenceOut]
+    timeline: list[TimelineOut]
+    notes: list[NoteOut]
+    comments: list[CommentOut]
 
 
-class LegalHoldIn(BaseModel):
+class MarkingIn(BaseModel):
+    """Turn a legal marking (hold or privilege) on or off, with the reason recorded."""
+
     on: bool
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
 
@@ -154,7 +170,7 @@ class CaseCreate(BaseModel):
     description: LongText = ""
     impact: Key | None = None
     urgency: Key | None = None
-    detected_at: AwareDatetime | None = None
+    detected_at: UtcDatetime | None = None
 
 
 class Override(BaseModel):
@@ -187,7 +203,7 @@ class CaseUpdate(BaseModel):
     attack_techniques: list[Technique] | None = None
     custom: dict[str, Any] | None = None
     resolution: Resolution | None = None
-    detected_at: AwareDatetime | None = None
+    detected_at: UtcDatetime | None = None
 
     @model_validator(mode="after")
     def check_nulls(self) -> Self:
@@ -204,7 +220,7 @@ class AlertIn(BaseModel):
     external_id: Ref | None = None
     # Alerts sharing a group key join the same open case.
     group_key: Ref | None = None
-    detected_at: AwareDatetime | None = None
+    detected_at: UtcDatetime | None = None
     payload: dict[str, Any] = {}
 
 
@@ -307,6 +323,9 @@ async def case_out(
         sla=case_clocks,
         observables=await observable_store.for_case(db, case, "restricted_case" in ctx.permissions),
         evidence=await evidence.for_case(db, case),
+        timeline=await journal.timeline(db, case),
+        notes=await journal.notes(db, case),
+        comments=await journal.comments(db, case),
     )
 
 
@@ -607,6 +626,7 @@ async def merge(
     moved_tasks = await _move_tasks(db, source, target)
     moved_observables = await observable_store.move(db, source, target, None)
     moved_evidence = await evidence.move(db, source, target)
+    moved_journal = await journal.move(db, source, target)
     source.state = config.terminal_states[0]
     source.resolution = Resolution.MERGED
     source.merged_into_id = target.id
@@ -621,6 +641,7 @@ async def merge(
         tasks=moved_tasks,
         observables=moved_observables,
         evidence=moved_evidence,
+        **moved_journal,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
 

@@ -42,6 +42,12 @@ export type Evidence = Schemas['EvidenceOut']
 export type UploadStart = Schemas['UploadStart']
 export type CustodyReport = Schemas['CustodyReport']
 export type Collection = Schemas['Collection']
+export type TimelineEvent = Schemas['TimelineOut']
+export type TimelineIn = Schemas['TimelineIn']
+export type Milestone = Schemas['Milestone']
+export type Note = Schemas['NoteOut']
+export type NoteRevision = Schemas['RevisionOut']
+export type Comment = Schemas['CommentOut']
 
 export const api = createClient<paths>({
   baseUrl: window.location.origin,

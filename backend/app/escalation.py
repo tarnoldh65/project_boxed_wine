@@ -62,7 +62,12 @@ async def fire(
 
 def describe(slug: str, number: int, severity: str, trigger: str, step: str) -> dict[str, Any]:
     """Notification content. Case titles and details stay in the system; only a link leaves it."""
-    event = f"{step} SLA {trigger.removeprefix('sla_')}" if step else trigger.replace("_", " ")
+    if trigger == "mention":
+        event = "you were mentioned in a note"
+    elif step:
+        event = f"{step} SLA {trigger.removeprefix('sla_')}"
+    else:
+        event = trigger.replace("_", " ")
     return {
         "tenant": slug,
         "case_number": number,

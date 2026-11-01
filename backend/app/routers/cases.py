@@ -15,8 +15,8 @@ from app.cases import (
     CaseOut,
     CaseSummary,
     CaseUpdate,
-    LegalHoldIn,
     MajorIncidentIn,
+    MarkingIn,
     MergeIn,
     SplitIn,
 )
@@ -94,8 +94,8 @@ async def acknowledge_case(number: int, ctx: Writer, db: Db) -> CaseOut:
 @router.put("/cases/{number}/legal-hold")
 async def set_legal_hold(
     number: int,
-    body: LegalHoldIn,
-    ctx: Annotated[TenantContext, require("legal_hold:manage")],
+    body: MarkingIn,
+    ctx: Annotated[TenantContext, require("legal:manage")],
     db: Db,
 ) -> CaseOut:
     """Place or lift a legal hold; while held, the case's evidence cannot be deleted."""
@@ -103,6 +103,21 @@ async def set_legal_hold(
     case.legal_hold = body.on
     case.updated_at = datetime.now(UTC)
     await ctx.audit(db, "case.legal_hold", f"case:{number}", on=body.on, reason=body.reason)
+    return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
+
+
+@router.put("/cases/{number}/privilege")
+async def set_privilege(
+    number: int,
+    body: MarkingIn,
+    ctx: Annotated[TenantContext, require("legal:manage")],
+    db: Db,
+) -> CaseOut:
+    """Mark the case Attorney-Client Privileged / Prepared at Direction of Counsel."""
+    case = await cases.get_case(db, ctx, number)
+    case.privileged = body.on
+    case.updated_at = datetime.now(UTC)
+    await ctx.audit(db, "case.privilege", f"case:{number}", on=body.on, reason=body.reason)
     return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
 

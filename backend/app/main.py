@@ -10,6 +10,7 @@ from app.routers import (
     config,
     evidence,
     intake,
+    journal,
     me,
     observables,
     tenants,
@@ -26,7 +27,7 @@ app.add_middleware(
     same_site="lax",
     https_only=True,
 )
-for module in (auth, me, tenants, tokens, config, cases, intake, observables, evidence):
+for module in (auth, me, tenants, tokens, config, cases, intake, observables, evidence, journal):
     app.include_router(module.router)
 
 

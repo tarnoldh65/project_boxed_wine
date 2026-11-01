@@ -194,3 +194,43 @@ pre {
   list-style: none;
   padding-left: 1rem;
 }
+
+.milestones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.milestones dt {
+  font-weight: 600;
+}
+
+.milestones dd {
+  margin: 0;
+}
+
+.note {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--muted);
+}
+
+.note-meta {
+  font-size: 0.9em;
+}
+
+.markdown pre,
+.history pre {
+  padding: 0.5rem;
+  background: var(--muted);
+  white-space: pre-wrap;
+}
+
+.comments {
+  list-style: none;
+  padding: 0;
+}
+
+.comment-body {
+  margin: 0.25rem 0 0.75rem;
+  white-space: pre-wrap;
+}

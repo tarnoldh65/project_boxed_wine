@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 6 complete.**
+Status: **Phase 7 complete.**
 
 ---
 
@@ -130,17 +130,17 @@ README.md
 - [x] Chain-of-custody entries (collected by/when/where/how, upload, hashing, transfers, every access, verification, deletion) in an append-only table, hash-chained per evidence item; custody report with chain verification, savable as JSON
 - [x] Malware samples: direct upload through the API (size-capped, 100 MB by default), wrapped server-side in an AES zip (password `infected`) before storage; download requires `malware:read`
 - [x] All downloads served as `Content-Disposition: attachment` and `application/octet-stream`, never rendered inline
-- [x] Legal hold on a case (set through its own endpoint with a reason, by holders of `legal_hold:manage`: legal, IR leads, admins) blocks evidence deletion; deletion otherwise requires a reason and keeps the custody record
+- [x] Legal hold on a case (set through its own endpoint with a reason, by holders of `legal:manage`: legal, IR leads, admins) blocks evidence deletion; deletion otherwise requires a reason and keeps the custody record
 - [x] Tests: hash mismatch is detected and logged; custody table rejects UPDATE/DELETE; user without `malware:read` gets 403; delete under legal hold fails
 
 ### Phase 7 - Timeline, notes, comments, privilege (FR-50, FR-52, FR-54, FR-70, FR-74)
 
-- [ ] Timeline events with real event time (distinct from entry time), source, and links to observable/asset/evidence; sorted chronologically
-- [ ] Milestones: first compromise, detection, containment, eradication
-- [ ] Markdown notes (sanitized rendering, no raw HTML) with code blocks, revision history, and @mentions that email the mentioned user
-- [ ] Per-case comment stream
-- [ ] Privilege marking on cases and notes; shown as a banner and stamped on reports
-- [ ] Tests: XSS payloads in notes are neutralized; revision history is complete; mentions notify only users who can see the case
+- [x] Timeline events with real event time (distinct from entry time, stored in UTC), source, and links to an observable, asset, or evidence item of the same case; sorted chronologically
+- [x] Milestones: first compromise, detection, containment, eradication, as flags on timeline events (one each per case); dwell time shown from first compromise to detection
+- [x] Markdown notes (raw HTML never rendered, unsafe link targets dropped) with code blocks, append-only revision history, and @mentions that email the mentioned user once per note through the notifications outbox (the email carries only a link)
+- [x] Per-case comment stream (append-only, plain text)
+- [x] Privilege marking on cases (set by holders of `legal:manage`, with a reason) and on notes (by their authors); shown as a banner. Report stamping is part of Phase 9 reports. Merge moves the timeline, notes, and comments
+- [x] Tests: XSS payloads in notes are neutralized; revision history is complete; mentions notify only users who can see the case
 
 ### Phase 8 - Regulatory clocks and notifications (FR-80, FR-81, FR-82)
 
@@ -156,7 +156,7 @@ README.md
 - [ ] Dashboard: open cases by severity/status, SLA compliance, analyst workload, aging, active clocks
 - [ ] Metrics: MTTD, MTTA, MTTC, MTTR, dwell time, false-positive rate, volume by category and ATT&CK technique, recurrence (new case sharing an observable with a closed case)
 - [ ] PIR module: root cause, contributing factors, what went well / didn't, action items tracked to closure; a case cannot close until its PIR is complete (FR-21 gate deferred from Phase 4)
-- [ ] Reports (executive summary, technical, PIR) to PDF and DOCX, with privilege marking when set; layouts are fixed in code for MVP
+- [ ] Reports (executive summary, technical, PIR) to PDF and DOCX, stamped with the privilege marking when the case or a note is privileged; note Markdown is sanitized when rendered; layouts are fixed in code for MVP
 - [ ] Retention policies per case type; `retention` job purges expired cases and evidence, skipping legal holds, and audits each purge
 - [ ] Tests: metric calculations on fixed fixtures; restricted content never appears in search for unauthorized users; purge respects legal hold
 
