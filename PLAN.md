@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 7 complete.**
+Status: **Phase 8 complete.**
 
 ---
 
@@ -144,11 +144,11 @@ README.md
 
 ### Phase 8 - Regulatory clocks and notifications (FR-80, FR-81, FR-82)
 
-- [ ] Configurable regimes: name, trigger (regulated-data flag + region, or materiality decision), duration, calendar vs business days, warning threshold; seeded with GDPR 72h, SEC 8-K 4 business days, HIPAA, and an editable state-law/NIS2/DORA/CIRCIA set
-- [ ] Clocks shown on the case and the dashboard; `clocks` job sends warning notifications
-- [ ] Materiality decision record: decision maker, date, rationale; starts dependent clocks
-- [ ] Notification log (regulator, law enforcement, insurer, customer) with attachments; append-only
-- [ ] Tests: deadline math for each regime including weekends and US federal holidays; GDPR clock warns at 48h
+- [x] Configurable regimes: name, trigger (regulated-data flag + region, or materiality decision), duration, calendar vs business days, warning threshold; seeded with GDPR 72h, SEC 8-K 4 business days, HIPAA, and an editable state-law/NIS2/DORA/CIRCIA set. A clock's deadline is fixed when it starts, so later configuration edits do not move it
+- [x] Clocks shown on the case and on the cases page (the Phase 9 dashboard reuses `GET /clocks`); `clocks` job fires `clock_warning` and `clock_breach` escalation rules
+- [x] Materiality decision record: decision maker, date, rationale; a material decision starts dependent clocks from the decision date
+- [x] Notification log (regulator, law enforcement, insurer, customer) with case evidence as attachments; append-only, and logging a notification against a clock meets it. Merge moves clocks, decisions, and the log; where both cases run the same regime, the earlier deadline is kept
+- [x] Tests: deadline math for each regime including weekends and US federal holidays; GDPR clock warns at 48h
 
 ### Phase 9 - Search, dashboards, metrics, reports, PIR, retention (FR-90 to FR-94, FR-102)
 

@@ -10,6 +10,7 @@ from app.db import Db
 from app.tenant_config import (
     CustomField,
     EscalationRule,
+    Regime,
     Severity,
     State,
     Team,
@@ -74,3 +75,8 @@ async def put_teams(body: list[Team], ctx: Manager, db: Db) -> TenantConfig:
 @router.put("/templates")
 async def put_templates(body: list[Template], ctx: Manager, db: Db) -> TenantConfig:
     return await _replace(db, ctx, "templates", body)
+
+
+@router.put("/regimes")
+async def put_regimes(body: list[Regime], ctx: Manager, db: Db) -> TenantConfig:
+    return await _replace(db, ctx, "regimes", body)

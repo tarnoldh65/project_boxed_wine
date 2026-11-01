@@ -10,6 +10,7 @@ import { EvidencePanel } from './EvidencePanel'
 import { PRIVILEGE_NOTICE } from './journal'
 import { NotesPanel } from './NotesPanel'
 import { ObservablesPanel } from './ObservablesPanel'
+import { RegulatoryPanel } from './RegulatoryPanel'
 import { TasksPanel } from './TasksPanel'
 import { TimelinePanel } from './TimelinePanel'
 
@@ -264,6 +265,14 @@ export function CasePage() {
           <button type="submit">{current.legal_hold ? 'Lift legal hold' : 'Place legal hold'}</button>
         </form>
       )}
+
+      <RegulatoryPanel
+        slug={slug}
+        current={current}
+        members={members.data}
+        canWrite={canWrite}
+        canDecide={permissions.includes('legal:manage')}
+      />
 
       <TimelinePanel
         slug={slug}

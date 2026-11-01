@@ -64,6 +64,9 @@ def describe(slug: str, number: int, severity: str, trigger: str, step: str) -> 
     """Notification content. Case titles and details stay in the system; only a link leaves it."""
     if trigger == "mention":
         event = "you were mentioned in a note"
+    elif trigger in (Trigger.CLOCK_WARNING, Trigger.CLOCK_BREACH):
+        due = "approaching" if trigger == Trigger.CLOCK_WARNING else "missed"
+        event = f"{step} notification deadline {due}"
     elif step:
         event = f"{step} SLA {trigger.removeprefix('sla_')}"
     else:

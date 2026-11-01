@@ -48,6 +48,11 @@ export type Milestone = Schemas['Milestone']
 export type Note = Schemas['NoteOut']
 export type NoteRevision = Schemas['RevisionOut']
 export type Comment = Schemas['CommentOut']
+export type RegulatoryClock = Schemas['ClockOut']
+export type ActiveClock = Schemas['ActiveClockOut']
+export type Recipient = Schemas['Recipient']
+export type Regime = Schemas['Regime']
+export type ClockTrigger = Schemas['ClockTrigger']
 
 export const api = createClient<paths>({
   baseUrl: window.location.origin,

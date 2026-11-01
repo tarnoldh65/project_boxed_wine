@@ -8,6 +8,8 @@ const TRIGGERS: [Trigger, string][] = [
   ['sla_warning', 'SLA warning'],
   ['sla_breach', 'SLA breach'],
   ['major_incident', 'Major incident declared'],
+  ['clock_warning', 'Notification deadline approaching'],
+  ['clock_breach', 'Notification deadline missed'],
 ]
 
 type Row = Omit<EscalationRule, 'notify_emails' | 'webhook_url'> & {

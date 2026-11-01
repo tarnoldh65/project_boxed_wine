@@ -38,6 +38,18 @@ export const CONFIG: TenantConfig = {
   },
   escalation_rules: [],
   teams: [{ key: 'soc', name: 'SOC', on_call: 'u1' }],
+  regimes: [
+    {
+      key: 'gdpr',
+      name: 'GDPR Art. 33',
+      trigger: 'regulated_data',
+      regulated_data: ['pii'],
+      regions: ['EU', 'GB'],
+      duration: 72,
+      unit: 'hours',
+      warn_hours_before: 24,
+    },
+  ],
   templates: [
     { key: 'phishing', name: 'Phishing', impact: 'low', urgency: 'high', tlp: 'amber', pap: 'amber', team: 'soc', tasks: [] },
     { key: 'bec', name: 'BEC', impact: 'high', urgency: 'low', tlp: 'amber', pap: 'amber', team: null, tasks: [] },
@@ -169,6 +181,52 @@ export const CASE: Case = {
   ],
   comments: [
     { id: 'c1', body: 'Isolating web-01', author: 'user:u2', created_at: '2026-10-31T10:10:00Z' },
+  ],
+  clocks: [
+    {
+      id: 'k1',
+      regime: 'gdpr',
+      name: 'GDPR Art. 33',
+      started_at: '2026-10-31T10:00:00Z',
+      due_at: '2026-11-03T10:00:00Z',
+      warn_at: '2026-11-02T10:00:00Z',
+      met_at: null,
+      status: 'pending',
+    },
+    {
+      id: 'k2',
+      regime: 'us_state',
+      name: 'US state breach law',
+      started_at: '2026-10-31T10:00:00Z',
+      due_at: '2026-11-30T10:00:00Z',
+      warn_at: '2026-11-23T10:00:00Z',
+      met_at: '2026-11-01T09:00:00Z',
+      status: 'met',
+    },
+  ],
+  materiality: [
+    {
+      id: 'm1',
+      material: false,
+      decided_by: 'General counsel',
+      decided_at: '2026-10-31T12:00:00Z',
+      rationale: 'No customer data involved',
+      recorded_by: 'user:u2',
+      recorded_at: '2026-10-31T12:05:00Z',
+    },
+  ],
+  disclosures: [
+    {
+      id: 'd1',
+      recipient_type: 'law_enforcement',
+      recipient: 'FBI IC3',
+      sent_at: '2026-11-01T09:00:00Z',
+      summary: 'Complaint I3-42',
+      clock_id: 'k2',
+      evidence_ids: ['e1'],
+      recorded_by: 'user:u1',
+      recorded_at: '2026-11-01T09:10:00Z',
+    },
   ],
   evidence: [
     {

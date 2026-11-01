@@ -45,6 +45,20 @@ async def test_tenant_starts_with_defaults(make_user: MakeUser, tenant: str) -> 
             "escalation_rules",
             [{"name": "Page", "trigger": "major_incident", "notify_emails": ["ir@example.com"]}],
         ),
+        (
+            "/regimes",
+            "regimes",
+            [
+                {
+                    "key": "contract",
+                    "name": "Customer contract",
+                    "trigger": "materiality",
+                    "duration": 48,
+                    "unit": "hours",
+                    "warn_hours_before": 12,
+                }
+            ],
+        ),
     ],
 )
 async def test_admin_replaces_a_section(
