@@ -36,3 +36,6 @@ data/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local tool binaries (kind, helm)
+.tools/

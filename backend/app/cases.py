@@ -269,7 +269,10 @@ class AssetIn(BaseModel):
 
 
 def visible(ctx: TenantContext) -> Select[Case]:
-    """Cases the principal may see; restricted cases are hidden without the permission."""
+    """Cases the principal may see; restricted cases are hidden without the permission.
+
+    The search_hits database function (migration 0011) applies the same rule.
+    """
     query = select(Case)
     if "restricted_case" not in ctx.permissions:
         query = query.where(Case.restricted.is_(False))

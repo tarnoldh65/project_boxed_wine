@@ -366,5 +366,11 @@ def test_content_disposition_is_always_an_attachment() -> None:
     )
 
 
-async def test_create_bucket_job_is_idempotent() -> None:
+async def test_create_bucket_job_is_idempotent_and_sets_bucket_rules() -> None:
     assert await evidence_hash.create_bucket() == 0
+    s3 = storage.client()
+    [cors] = s3.get_bucket_cors(Bucket=settings.s3_bucket)["CORSRules"]
+    assert cors["AllowedOrigins"] == [settings.public_url]
+    assert cors["AllowedMethods"] == ["PUT"]
+    [rule] = s3.get_bucket_lifecycle_configuration(Bucket=settings.s3_bucket)["Rules"]
+    assert rule["AbortIncompleteMultipartUpload"] == {"DaysAfterInitiation": 7}

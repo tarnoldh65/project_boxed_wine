@@ -1,16 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { runJob } from './backend'
 import { createUser, signIn } from './identity'
 
-const COMPOSE = fileURLToPath(new URL('../../deploy/compose.yaml', import.meta.url))
 const MAILPIT = 'http://localhost:8025/api/v1'
-
-function runJob(name: string): string {
-  return execFileSync('docker', ['compose', '-f', COMPOSE, 'exec', '-T', 'backend', 'python', '-m', 'app.jobs', name], {
-    encoding: 'utf8',
-  })
-}
 
 test('tasks and the post-incident review gate closing a case', async ({ page, request }) => {
   const user = await createUser(request, ['casemgr-detect-respond-analyst'])

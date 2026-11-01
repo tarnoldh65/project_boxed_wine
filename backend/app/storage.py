@@ -14,6 +14,7 @@ from app.config import settings
 MB = 1024 * 1024
 MAX_PARTS = 10_000  # S3's limit per multipart upload
 URL_TTL_SECONDS = 6 * 3600
+ABANDON_DAYS = 7
 
 
 def _client(endpoint: str | None) -> Any:
@@ -104,7 +105,36 @@ def delete(key: str) -> None:
 
 
 def ensure_bucket() -> None:
+    """Create the evidence bucket if needed and apply its CORS and lifecycle rules."""
     try:
         client().head_bucket(Bucket=settings.s3_bucket)
     except ClientError:
         client().create_bucket(Bucket=settings.s3_bucket)
+    # Browsers upload parts straight to the bucket from the app's origin.
+    client().put_bucket_cors(
+        Bucket=settings.s3_bucket,
+        CORSConfiguration={
+            "CORSRules": [
+                {
+                    "AllowedOrigins": [settings.public_url],
+                    "AllowedMethods": ["PUT"],
+                    "AllowedHeaders": ["*"],
+                    "MaxAgeSeconds": 3600,
+                }
+            ]
+        },
+    )
+    # Uploads abandoned mid-way would otherwise keep their parts (and their cost) forever.
+    client().put_bucket_lifecycle_configuration(
+        Bucket=settings.s3_bucket,
+        LifecycleConfiguration={
+            "Rules": [
+                {
+                    "ID": "abort-incomplete-uploads",
+                    "Status": "Enabled",
+                    "Filter": {},
+                    "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": ABANDON_DAYS},
+                }
+            ]
+        },
+    )

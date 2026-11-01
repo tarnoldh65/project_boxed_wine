@@ -1,16 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
-import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { fileURLToPath } from 'node:url'
+import { runJob } from './backend'
 import { createUser, signIn } from './identity'
 
-const COMPOSE = fileURLToPath(new URL('../../deploy/compose.yaml', import.meta.url))
-
-function runJob(name: string): string {
-  return execFileSync('docker', ['compose', '-f', COMPOSE, 'exec', '-T', 'backend', 'python', '-m', 'app.jobs', name], {
-    encoding: 'utf8',
-  })
-}
 
 async function newCase(page: Page, title: string) {
   await page.getByText('New case').click()

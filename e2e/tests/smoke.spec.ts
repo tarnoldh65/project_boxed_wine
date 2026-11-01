@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { inBackend } from './backend'
 
 test('app offers sign in', async ({ page }) => {
   await page.goto('/')
@@ -6,9 +7,9 @@ test('app offers sign in', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
 })
 
-test('backend is ready', async ({ request }) => {
-  const response = await request.get('http://localhost:8000/readyz')
-  expect(response.ok()).toBe(true)
+test('backend is ready', () => {
+  const ready = "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/readyz').read().decode())"
+  expect(inBackend('python', '-c', ready)).toContain('ready')
 })
 
 test('API rejects unauthenticated requests', async ({ request }) => {

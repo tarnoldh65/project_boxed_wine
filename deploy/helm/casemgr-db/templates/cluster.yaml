@@ -1,0 +1,154 @@
+{{- $backup := .Values.backup -}}
+{{- $plugin := "barman-cloud.cloudnative-pg.io" -}}
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ .Release.Name }}-backup
+spec:
+  retentionPolicy: {{ $backup.retention | quote }}
+  configuration:
+    destinationPath: {{ $backup.destinationPath | quote }}
+    {{- with $backup.endpointURL }}
+    endpointURL: {{ . | quote }}
+    {{- end }}
+    s3Credentials:
+      {{- if $backup.credentialsSecret }}
+      accessKeyId:
+        name: {{ $backup.credentialsSecret }}
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: {{ $backup.credentialsSecret }}
+        key: ACCESS_SECRET_KEY
+      {{- else }}
+      inheritFromIAMRole: true
+      {{- end }}
+    wal:
+      compression: gzip
+      {{- with $backup.encryption }}
+      encryption: {{ . | quote }}
+      {{- end }}
+    data:
+      compression: gzip
+      {{- with $backup.encryption }}
+      encryption: {{ . | quote }}
+      {{- end }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}
+  annotations:
+    # Uninstalling the chart must never delete the database.
+    helm.sh/resource-policy: keep
+spec:
+  instances: {{ .Values.instances }}
+  {{- with .Values.imageName }}
+  imageName: {{ . }}
+  {{- end }}
+  # A commit returns only once a standby also has it, so a failover loses no data.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: required
+    parameters:
+      archive_timeout: 5min
+    # Clients must use TLS (CloudNativePG issues the server certificate and CA).
+    pg_hba:
+      - hostnossl all all all reject
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+  storage:
+    size: {{ .Values.storage.size }}
+    {{- with .Values.storage.storageClass }}
+    storageClass: {{ . }}
+    {{- end }}
+  resources:
+    {{- toYaml .Values.resources | nindent 4 }}
+  managed:
+    roles:
+      - name: casemgr_app
+        ensure: present
+        login: true
+        passwordSecret:
+          name: {{ .Values.runtimeSecret }}
+  bootstrap:
+    {{- if .Values.recovery.enabled }}
+    recovery:
+      source: origin
+      database: {{ .Values.database }}
+      owner: {{ .Values.owner }}
+      {{- with .Values.recovery.targetTime }}
+      recoveryTarget:
+        targetTime: {{ . | quote }}
+      {{- end }}
+    {{- else }}
+    initdb:
+      database: {{ .Values.database }}
+      owner: {{ .Values.owner }}
+      # Owner of the search_hits function (migration 0011), which reads the searched
+      # tables past row-level security so their full-text indexes can be used.
+      postInitApplicationSQL:
+        - CREATE ROLE casemgr_search NOLOGIN BYPASSRLS
+        - GRANT casemgr_search TO {{ .Values.owner }}
+    {{- end }}
+  {{- if .Values.recovery.enabled }}
+  externalClusters:
+    - name: origin
+      plugin:
+        name: {{ $plugin }}
+        parameters:
+          barmanObjectName: {{ .Release.Name }}-backup
+          serverName: {{ .Values.recovery.sourceServerName }}
+  {{- end }}
+  plugins:
+    - name: {{ $plugin }}
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: {{ .Release.Name }}-backup
+        serverName: {{ $backup.serverName }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  cluster:
+    name: {{ .Release.Name }}
+  schedule: {{ $backup.schedule | quote }}
+  # Take the first base backup right away, so recovery is possible from day one.
+  immediate: true
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: {{ $plugin }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: {{ .Release.Name }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # The application, its jobs, and replication between instances.
+    - from:
+        - podSelector:
+            matchLabels:
+              casemgr.io/database-client: "true"
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: {{ .Release.Name }}
+      ports:
+        - { protocol: TCP, port: 5432 }
+    # The operator's status checks.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.operatorNamespace }}
+  # Instances reach the Kubernetes API, the backup bucket, and each other.
+  egress:
+    - {}

@@ -1,21 +1,13 @@
 import { expect, test } from '@playwright/test'
-import { execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { runJob } from './backend'
 import { createUser, signIn } from './identity'
 
-const COMPOSE = fileURLToPath(new URL('../../deploy/compose.yaml', import.meta.url))
 const MAILPIT = 'http://localhost:8025/api/v1'
 
-function runJob(name: string): string {
-  return execFileSync('docker', ['compose', '-f', COMPOSE, 'exec', '-T', 'backend', 'python', '-m', 'app.jobs', name], {
-    encoding: 'utf8',
-  })
-}
-
-test('timeline, notes with mentions, and comments', async ({ page, browser, request }) => {
+test('timeline, notes with mentions, and comments', async ({ page, browser, request, baseURL }) => {
   // The mentioned teammate must have signed in once so the app knows them.
   const teammate = await createUser(request, ['casemgr-detect-respond-analyst'])
-  const other = await browser.newContext({ baseURL: 'http://localhost:8080' })
+  const other = await browser.newContext({ baseURL, ignoreHTTPSErrors: true })
   await signIn(await other.newPage(), teammate)
   await other.close()
 

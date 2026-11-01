@@ -44,7 +44,8 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     _postgres.start()
     _postgres.exec(
         ["psql", "-U", _postgres.username, "-d", _postgres.dbname, "-c",
-         f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD '{APP_ROLE}'"]
+         f"CREATE ROLE {APP_ROLE} LOGIN PASSWORD '{APP_ROLE}'; "
+         "CREATE ROLE casemgr_search NOLOGIN BYPASSRLS"]
     )  # fmt: skip
     owner_url = _postgres.get_connection_url()
     os.environ.update(

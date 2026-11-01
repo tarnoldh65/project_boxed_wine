@@ -1,0 +1,45 @@
+# casemgr chart values for the local kind cluster (deploy/kind/up.sh).
+publicUrl: https://localhost:8443
+
+images:
+  backend: casemgr-backend:kind
+  frontend: casemgr-frontend:kind
+  pullPolicy: Never
+
+backend:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+
+config:
+  OIDC_METADATA_URL: http://keycloak.casemgr-dev:8080/realms/casemgr/.well-known/openid-configuration
+  # Re-read IdP groups on every request so revocation is immediate (and testable).
+  GROUP_SYNC_MINUTES: "0"
+  IMAP_TENANT: detect-respond
+  SMTP_HOST: mailpit.casemgr-dev
+  SMTP_PORT: "1025"
+  SMTP_STARTTLS: "false"
+  MAIL_FROM: casemgr@example.test
+  S3_ENDPOINT_URL: http://seaweedfs.casemgr-dev:8333
+  S3_PUBLIC_ENDPOINT_URL: http://localhost:8333
+
+# The E2E tests run jobs on demand, so the schedules never fire (February 31).
+# Run one with: kubectl -n casemgr create job --from=cronjob/casemgr-sla sla-now
+jobs:
+  sla: "0 0 31 2 *"
+  clocks: "0 0 31 2 *"
+  evidence_hash: "0 0 31 2 *"
+  email_intake: "0 0 31 2 *"
+  retention: "0 0 31 2 *"
+  audit_verify: "0 0 31 2 *"
+
+gateway:
+  hostname: ""
+  clusterIssuer: ""
+  envoyProxy: nodeport
+  # The E2E suite runs two browsers against a single Envoy; keep the limit out of its way.
+  apiRateLimit: 500
+
+networkPolicy:
+  # Keycloak 8080, SeaweedFS 8333, Mailpit 1025, GreenMail 3025 and 3143.
+  egressPorts: [8080, 8333, 1025, 3025, 3143]
