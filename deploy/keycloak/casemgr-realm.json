@@ -118,14 +118,16 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "redirectUris": [
-        "http://localhost:8080/api/auth/callback"
+        "http://localhost:8080/api/auth/callback",
+        "https://localhost:8443/api/auth/callback"
       ],
       "webOrigins": [
-        "http://localhost:8080"
+        "http://localhost:8080",
+        "https://localhost:8443"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:8080"
+        "post.logout.redirect.uris": "http://localhost:8080##https://localhost:8443"
       },
       "protocolMappers": [
         {

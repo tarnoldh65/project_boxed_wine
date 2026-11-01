@@ -1,18 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { GREENMAIL, inBackend, runJob } from './backend'
 import { createUser, signIn } from './identity'
 
-const COMPOSE = fileURLToPath(new URL('../../deploy/compose.yaml', import.meta.url))
 const TENANT = '/api/tenants/detect-respond'
 
 /** An alert in the case page's alert list (titles can also appear as the case title). */
 function alertRow(page: Page, title: string) {
   return page.locator('summary', { hasText: title })
-}
-
-function compose(...args: string[]): string {
-  return execFileSync('docker', ['compose', '-f', COMPOSE, ...args], { encoding: 'utf8' })
 }
 
 /** An alerts:write token, created through the API with the signed-in admin's session. */
@@ -98,10 +92,10 @@ test('email to the intake mailbox becomes a case', async ({ page, request }) => 
     "m['To'] = 'intake@example.test'",
     `m['Subject'] = ${JSON.stringify(subject)}`,
     "m.set_content('Pay now')",
-    "smtplib.SMTP('greenmail', 3025).send_message(m)",
+    `smtplib.SMTP('${GREENMAIL}', 3025).send_message(m)`,
   ].join('\n')
-  compose('exec', '-T', 'backend', 'python', '-c', send)
-  expect(compose('exec', '-T', 'backend', 'python', '-m', 'app.jobs', 'email_intake')).toContain(
+  inBackend('python', '-c', send)
+  expect(runJob('email_intake')).toContain(
     '-> case',
   )
 

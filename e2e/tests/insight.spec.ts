@@ -15,7 +15,7 @@ async function search(page: Page, tenant: string, terms: string) {
   await page.getByRole('button', { name: 'Search', exact: true }).click()
 }
 
-test('restricted content never shows in search without the restricted grant', async ({ page, browser, request }) => {
+test('restricted content never shows in search without the restricted grant', async ({ page, browser, request, baseURL }) => {
   const word = `kestrel${Date.now()}`
   const insider = await createUser(request, ['casemgr-insider-threat-ir_lead', 'casemgr-insider-threat-restricted_case'])
   await signIn(page, insider)
@@ -37,7 +37,7 @@ test('restricted content never shows in search without the restricted grant', as
     [['casemgr-insider-threat-analyst'], 'insider-threat'],
     [['casemgr-detect-respond-admin', 'casemgr-detect-respond-restricted_case'], 'detect-respond'],
   ] as const) {
-    const context = await browser.newContext({ baseURL: 'http://localhost:8080' })
+    const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true })
     const other = await context.newPage()
     await signIn(other, await createUser(request, [...groups]))
     await search(other, tenant, word)

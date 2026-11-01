@@ -1,0 +1,43 @@
+# Primary plus synchronous standbys spread across nodes.
+instances: 3
+# Empty uses the CloudNativePG operator's default PostgreSQL image.
+imageName: ""
+database: casemgr
+owner: casemgr
+# basic-auth Secret (username casemgr_app) for the application's runtime role.
+runtimeSecret: casemgr-db-runtime
+
+storage:
+  size: 50Gi
+  # Use a StorageClass with encryption at rest (for example gp3 with a KMS key).
+  storageClass: ""
+
+resources:
+  requests: { cpu: "1", memory: 4Gi }
+  limits: { memory: 4Gi }
+
+backup:
+  # Bucket with Object Lock (compliance mode) and default encryption.
+  destinationPath: s3://casemgr-backups/
+  # Empty for AWS S3; set for S3-compatible stores.
+  endpointURL: ""
+  # Server-side encryption for base backups and WAL: "aws:kms", "AES256", or "" to rely on the bucket default.
+  encryption: aws:kms
+  # Secret with ACCESS_KEY_ID and ACCESS_SECRET_KEY. Leave empty to use the pod's IAM role.
+  credentialsSecret: ""
+  # Base backups (six-field cron, seconds first). WAL is archived continuously, at least every 5 minutes.
+  schedule: "0 0 2 * * *"
+  retention: 30d
+  # Folder in the bucket this cluster writes to. Give a restored cluster a new one.
+  serverName: casemgr-db
+
+# Bootstrap from a backup instead of an empty database (restore drills and disaster recovery).
+recovery:
+  enabled: false
+  # serverName the source cluster wrote its backups under.
+  sourceServerName: casemgr-db
+  # Point in time to recover to (RFC 3339); empty replays all archived WAL.
+  targetTime: ""
+
+# Namespace of the CloudNativePG operator, which polls each instance.
+operatorNamespace: cnpg-system

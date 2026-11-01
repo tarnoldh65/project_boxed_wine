@@ -1,0 +1,11 @@
+# casemgr-db chart values for the local kind cluster (deploy/kind/up.sh).
+storage:
+  size: 2Gi
+resources:
+  requests: { cpu: 100m, memory: 512Mi }
+  limits: { memory: 1Gi }
+backup:
+  destinationPath: s3://casemgr-backups/
+  endpointURL: http://seaweedfs.casemgr-dev:8333
+  encryption: ""
+  credentialsSecret: casemgr-backup-s3

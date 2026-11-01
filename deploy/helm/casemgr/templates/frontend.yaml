@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "casemgr.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "casemgr.selector" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "casemgr.selector" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+    spec:
+      {{- include "casemgr.podSecurity" . | nindent 6 }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "casemgr.selector" . | nindent 14 }}
+              app.kubernetes.io/component: frontend
+      containers:
+        - name: frontend
+          image: {{ .Values.images.frontend }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          {{- include "casemgr.containerSecurity" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          env:
+            # The Gateway routes /api to the backend; nginx's own /api proxy is for local compose only.
+            - name: CASEMGR_API_UPSTREAM
+              value: http://{{ .Release.Name }}-backend:8000
+            - name: CASEMGR_S3_PUBLIC_ORIGIN
+              value: {{ .Values.config.S3_PUBLIC_ENDPOINT_URL | quote }}
+          livenessProbe:
+            httpGet: { path: /, port: http }
+          readinessProbe:
+            httpGet: { path: /, port: http }
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            # nginx writes its config here from the template at startup.
+            - name: conf
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: conf
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "casemgr.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "casemgr.selector" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "casemgr.labels" . | nindent 4 }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "casemgr.selector" . | nindent 6 }}
+      app.kubernetes.io/component: frontend

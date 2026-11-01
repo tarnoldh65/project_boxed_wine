@@ -3,8 +3,10 @@ from typing import Any
 
 import pytest
 from httpx2 import AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.db import SessionLocal
 from tests.conftest import MakeToken, MakeUser, SignedIn, audit_actions, new_client, new_tenant
 
 
@@ -93,6 +95,17 @@ async def test_restricted_content_never_appears_for_unauthorized_users(
     other = await new_tenant(owner)
     outsider = await make_user({other: ["ir_lead", "restricted_case"]})
     assert await search(outsider.client, other, word) == []
+
+
+async def test_search_function_finds_nothing_outside_a_tenant(
+    insider: SignedIn, tenant: str
+) -> None:
+    # search_hits reads past row-level security, so it must apply the tenant filter itself.
+    word = f"heron{secrets.token_hex(3)}"
+    await seed(insider.client, tenant, word)
+    async with SessionLocal() as db:
+        hits = await db.execute(text("SELECT * FROM search_hits(:q, true, 50)"), {"q": word})
+        assert hits.all() == []
 
 
 async def test_rejects_empty_queries(analyst: SignedIn, tenant: str) -> None:

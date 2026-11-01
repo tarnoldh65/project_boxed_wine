@@ -1,0 +1,78 @@
+# URL users reach the app on. It must match the Gateway hostname and the IdP redirect URI.
+publicUrl: https://casemgr.example.com
+
+# Pin images by digest in production (the release workflow prints them).
+images:
+  backend: ghcr.io/tarnoldh65/casemgr-backend:0.1.0
+  frontend: ghcr.io/tarnoldh65/casemgr-frontend:0.1.0
+  pullPolicy: IfNotPresent
+
+backend:
+  replicas: 3
+  maxReplicas: 10
+  targetCPUUtilization: 70
+  resources:
+    requests: { cpu: 250m, memory: 384Mi }
+    limits: { memory: 1Gi }
+
+frontend:
+  replicas: 2
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 128Mi }
+
+jobResources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { memory: 1Gi }
+
+# Non-secret settings, passed to the backend and jobs as CASEMGR_<key>.
+config:
+  OIDC_METADATA_URL: https://idp.example.com/realms/casemgr/.well-known/openid-configuration
+  OIDC_CLIENT_ID: casemgr
+  SMTP_HOST: smtp.example.com
+  MAIL_FROM: casemgr@example.com
+  S3_REGION: us-east-1
+  S3_BUCKET: casemgr-evidence
+  # Browsers upload evidence here, so it is also allowed in the web app's CSP.
+  S3_PUBLIC_ENDPOINT_URL: https://s3.us-east-1.amazonaws.com
+
+# Existing Secret (for example from External Secrets) with the secret settings as
+# CASEMGR_* keys: OIDC_CLIENT_SECRET, SECRET_KEY, and as needed S3_ACCESS_KEY,
+# S3_SECRET_KEY, SMTP_USERNAME, SMTP_PASSWORD, IMAP_URL.
+secretName: casemgr
+
+# The CloudNativePG cluster from the casemgr-db chart, in the same namespace.
+database:
+  cluster: casemgr-db
+  name: casemgr
+  # basic-auth Secret for casemgr_app, the runtime role (no table ownership, so row-level security applies).
+  runtimeSecret: casemgr-db-runtime
+  # Created by CloudNativePG for the schema owner; only the migration job uses it.
+  ownerSecret: casemgr-db-app
+
+# Background jobs and their schedules. Set a job to null to disable it (email_intake needs CASEMGR_IMAP_URL).
+jobs:
+  sla: "* * * * *"
+  clocks: "*/5 * * * *"
+  evidence_hash: "* * * * *"
+  email_intake: "* * * * *"
+  retention: "17 3 * * *"
+  audit_verify: "47 3 * * *"
+
+gateway:
+  className: envoy
+  # Leave empty to accept any host name (local clusters).
+  hostname: casemgr.example.com
+  # Secret holding the TLS certificate. With clusterIssuer set, cert-manager issues it.
+  tlsSecret: casemgr-tls
+  clusterIssuer: letsencrypt
+  # Optional EnvoyProxy (same namespace) with settings for this Gateway's Envoy deployment and service.
+  envoyProxy: ""
+  # API requests per second each Envoy replica lets through before answering 429.
+  apiRateLimit: 200
+
+networkPolicy:
+  # Namespace of the Envoy proxies that forward traffic to the app.
+  gatewayNamespace: envoy-gateway-system
+  # Outbound TCP ports the backend and jobs may use, to any address: IdP, S3, and webhooks (443), SMTP (587), IMAP (993).
+  egressPorts: [443, 587, 993]

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: casemgr-db
+description: PostgreSQL for casemgr on CloudNativePG, with WAL archiving and scheduled backups
+type: application
+version: 0.1.0

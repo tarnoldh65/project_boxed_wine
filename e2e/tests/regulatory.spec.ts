@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test'
-import { execFileSync } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { runJob } from './backend'
 import { createUser, signIn } from './identity'
 
-const COMPOSE = fileURLToPath(new URL('../../deploy/compose.yaml', import.meta.url))
 
 test('regulatory clocks, materiality decision, and notification log', async ({ page, request }) => {
   const admin = await createUser(request, ['casemgr-detect-respond-admin'])
@@ -43,10 +41,6 @@ test('regulatory clocks, materiality decision, and notification log', async ({ p
   await expect(deadlines.getByRole('row', { name: new RegExp(`#${number} SEC Form 8-K`) })).toBeVisible()
   await expect(deadlines.getByRole('row', { name: new RegExp(`#${number} GDPR`) })).toHaveCount(0)
 
-  const output = execFileSync(
-    'docker',
-    ['compose', '-f', COMPOSE, 'exec', '-T', 'backend', 'python', '-m', 'app.jobs', 'clocks'],
-    { encoding: 'utf8' },
-  )
+  const output = runJob('clocks')
   expect(output).not.toContain('failed')
 })

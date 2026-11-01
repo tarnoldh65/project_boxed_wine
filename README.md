@@ -59,10 +59,21 @@ docker compose -f deploy/compose.yaml exec backend python -m app.jobs retention
 
 After changing API routes or models, run the backend tests (they regenerate `backend/openapi.json`), then `npm run gen:api` in `frontend/`.
 
+## Kubernetes
+
+Production deployment uses the Helm charts in `deploy/helm/`; see `docs/deployment.md` (secure deployment) and `docs/operations.md` (backups, restore, key rotation, load testing). To run the charts locally on kind (requires `kind` and `helm`; stop the compose stack first, since they share ports):
+
+```sh
+bash deploy/kind/up.sh              # app at https://localhost:8443
+bash deploy/kind/restore-drill.sh   # restore the database from backup into a new namespace
+kind delete cluster --name casemgr
+```
+
 ## Tests
 
 ```sh
 cd backend && uv run pytest
 cd frontend && npm test
 cd e2e && npx playwright test   # requires the compose stack
+cd e2e && E2E_TARGET=kind BASE_URL=https://localhost:8443 npx playwright test   # against kind
 ```

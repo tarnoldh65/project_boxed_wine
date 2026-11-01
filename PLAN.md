@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 9 complete.**
+Status: **Phase 10 complete.** All phases done.
 
 ---
 
@@ -18,13 +18,13 @@ Status: **Phase 9 complete.**
 | Identity | OIDC only (Keycloak self-hosted, or Entra ID / Okta) | SSO + MFA enforced at the IdP; break-glass accounts live in the IdP (SR-01) |
 | Background work | Kubernetes CronJobs running `python -m app.jobs <name>` | No queue or broker needed for MVP |
 | Notifications | SMTP email + outbound webhooks | Covers escalation, @mentions, clock warnings |
-| Reports | WeasyPrint (PDF), python-docx (DOCX) | FR-92 |
+| Reports | fpdf2 with a bundled DejaVu font (PDF), python-docx (DOCX) | FR-92; pure Python, no system libraries |
 | Packaging | One backend image (API + jobs), one frontend image (static files on nginx-unprivileged), one Helm chart | Simple to deploy |
 
 Key design decisions:
 - **Auth:** the backend runs the OIDC authorization-code + PKCE flow and gives the browser an HttpOnly, Secure, SameSite=Strict session cookie (server-side session in Postgres, idle timeout). Users are created on first login; roles come from IdP group claims and are re-read through the refresh token every `CASEMGR_GROUP_SYNC_MINUTES` (default 5), so IdP changes take effect without a new login. MFA is enforced by the IdP's login flow (OTP always required). Machines use scoped, expiring API tokens (stored hashed).
 - **Tenancy:** two tenants at launch, `detect-respond` and `insider-threat`, with full data segregation. Every tenant-owned table has a `tenant_id`. Postgres row-level security filters on `app.tenant_id`, which the backend sets per transaction from the tenant in the URL (`/api/tenants/{slug}/...`) after checking membership, so a missed filter in app code cannot leak data. Users can belong to several tenants with a different role in each, and they switch the active tenant in the UI. Admin configuration (states, fields, templates, SLAs, clocks) is per tenant. Evidence is stored under a per-tenant bucket prefix.
-- **Authorization:** within a tenant, one query helper (`visible_cases(user)`) applies RBAC and case ACLs. Every case-scoped query, search included, goes through it. Restricted cases (e.g., executive compromise, HR/legal matters) are invisible, not just inaccessible (SR-02).
+- **Authorization:** within a tenant, one query helper (`visible_cases(user)`) applies RBAC and case ACLs. Every case-scoped query goes through it; search runs in the `search_hits` database function, which applies the same rule (Phase 10). Restricted cases (e.g., executive compromise, HR/legal matters) are invisible, not just inaccessible (SR-02).
 - **Append-only tables** (audit log, chain of custody, notification log): the app DB role has INSERT/SELECT only, a trigger rejects UPDATE/DELETE, and each row stores `hash = sha256(prev_hash || row)` so tampering is detectable. A `verify` job checks the chain.
 - **Observables** are deduplicated (`unique(type, value)`) and linked to cases through a join table, so cross-case correlation is a single indexed lookup (FR-33).
 - **Time:** all timestamps are `timestamptz` in UTC; the UI renders them in the user's timezone (NFR-09).
@@ -162,16 +162,16 @@ README.md
 
 ### Phase 10 - Deployment, hardening, documentation (SR-04, SR-08, NFR-01, NFR-02, NFR-06, NFR-07)
 
-- [ ] Helm chart: backend (>= 3 replicas, PodDisruptionBudget, HPA), frontend, CronJobs, NetworkPolicies (default deny), non-root read-only containers, Pod Security `restricted`
-- [ ] Postgres via CloudNativePG: 3 instances, synchronous replica, WAL archiving to object storage (RPO <= 15 min), scheduled base backups to an Object Lock bucket
-- [ ] TLS 1.2+ at the Gateway (cert-manager) and between app and Postgres; encrypted volumes and SSE-KMS for buckets
-- [ ] Evidence bucket: CORS allowing PUT from the app origin, a lifecycle rule aborting incomplete multipart uploads, `CASEMGR_S3_PUBLIC_ORIGIN` in the frontend CSP, and the `evidence_hash` job as a CronJob
-- [ ] Rate limiting on the API at the Gateway
-- [ ] Images signed with cosign; SBOM published per release
-- [ ] Load test (k6) against a dataset seeded to 1M cases / 100M observables: case view p95 < 2s, search p95 < 3s
-- [ ] Restore drill performed from backup into a fresh namespace within RTO 4h; procedure written in `docs/operations.md`
-- [ ] `docs/deployment.md` covers the secure deployment steps (below); README links to it
-- [ ] All five acceptance-criteria E2E tests pass on the Helm deployment (kind cluster in CI)
+- [x] Helm chart `deploy/helm/casemgr`: backend (>= 3 replicas, PodDisruptionBudget, HPA), frontend, CronJobs, NetworkPolicies (default deny), non-root read-only containers, Pod Security `restricted`. Migrations and bucket setup run as pre-install/pre-upgrade hooks
+- [x] Postgres via CloudNativePG in a separate chart `deploy/helm/casemgr-db` (kept on uninstall): 3 instances, synchronous replica, WAL archiving through the Barman Cloud plugin (`archive_timeout` 5 min, so RPO <= 15 min), daily base backups to an Object Lock bucket
+- [x] TLS 1.2+ at the Gateway (cert-manager; TLS 1.1 refused) and verified TLS between app and Postgres (`ssl=verify-full`, non-TLS rejected by `pg_hba`); encrypted volumes and SSE-KMS for buckets documented and configurable
+- [x] Evidence bucket: the `create_bucket` hook applies CORS (PUT from the app origin) and a lifecycle rule aborting incomplete multipart uploads after 7 days; `CASEMGR_S3_PUBLIC_ORIGIN` in the frontend CSP; `evidence_hash` and the other jobs as CronJobs
+- [x] Rate limiting on the API route at the Gateway (Envoy Gateway local rate limit; per-client limits need the global limiter and Redis, documented)
+- [x] Images signed with cosign (keyless) with a signed SPDX SBOM attestation, and SBOMs attached to each GitHub release (`release.yml`, on `v*` tags)
+- [x] Load test (k6, `loadtest/`) run locally at 1M cases / 10M observables, by decision; the 100M run is for staging. Result: case view p95 886 ms, search p95 2.88 s with PostgreSQL on 2 CPUs. The first run failed: row-level security kept Postgres from using the full-text indexes (`@@` is not leakproof), so search now runs in a `search_hits` function owned by `casemgr_search` (NOLOGIN, BYPASSRLS) that applies the tenant and restricted-case filters itself, and excerpts are built only for returned hits
+- [x] Restore drill (`deploy/kind/restore-drill.sh`, also in CI) restores into a fresh namespace from the backups, deploys the app, verifies the audit chain and row counts: 93 s locally; procedure in `docs/operations.md`
+- [x] `docs/deployment.md` covers the secure deployment steps (below); README links to it
+- [x] All E2E tests (24, including the five acceptance criteria) pass on the Helm deployment on kind, locally and as the `e2e-kind` CI job. The specs run jobs through `kubectl exec` when `E2E_TARGET=kind`
 
 ---
 

@@ -1,0 +1,144 @@
+# Stand-ins for the IdP, object storage, and mail servers on the local cluster.
+# Credentials here are for local use only.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: casemgr-dev
+spec:
+  selector:
+    matchLabels: { app: keycloak }
+  template:
+    metadata:
+      labels: { app: keycloak }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      containers:
+        - name: keycloak
+          securityContext: { allowPrivilegeEscalation: false }
+          image: quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b
+          args: [start-dev, --import-realm]
+          env:
+            - { name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin }
+            - { name: KC_BOOTSTRAP_ADMIN_PASSWORD, value: admin }
+            - { name: KC_HEALTH_ENABLED, value: "true" }
+            # Browsers use localhost:8180; the backend reaches the token endpoint in-cluster.
+            - { name: KC_HOSTNAME, value: "http://localhost:8180" }
+            - { name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC, value: "true" }
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 9000 }
+          volumeMounts:
+            - { name: realm, mountPath: /opt/keycloak/data/import }
+      volumes:
+        - name: realm
+          configMap: { name: keycloak-realm }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: casemgr-dev
+spec:
+  type: NodePort
+  selector: { app: keycloak }
+  ports:
+    - { port: 8080, nodePort: 30180 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seaweedfs
+  namespace: casemgr-dev
+spec:
+  selector:
+    matchLabels: { app: seaweedfs }
+  template:
+    metadata:
+      labels: { app: seaweedfs }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      containers:
+        - name: seaweedfs
+          securityContext: { allowPrivilegeEscalation: false }
+          image: chrislusf/seaweedfs:4.51@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8
+          args: [server, -s3, -dir=/data]
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8333 }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs
+  namespace: casemgr-dev
+spec:
+  type: NodePort
+  selector: { app: seaweedfs }
+  ports:
+    - { port: 8333, nodePort: 30333 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: casemgr-dev
+spec:
+  selector:
+    matchLabels: { app: mailpit }
+  template:
+    metadata:
+      labels: { app: mailpit }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      containers:
+        - name: mailpit
+          securityContext: { allowPrivilegeEscalation: false }
+          image: axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: casemgr-dev
+spec:
+  type: NodePort
+  selector: { app: mailpit }
+  ports:
+    - { name: http, port: 8025, nodePort: 30025 }
+    - { name: smtp, port: 1025 }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenmail
+  namespace: casemgr-dev
+spec:
+  selector:
+    matchLabels: { app: greenmail }
+  template:
+    metadata:
+      labels: { app: greenmail }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      containers:
+        - name: greenmail
+          securityContext: { allowPrivilegeEscalation: false }
+          image: greenmail/standalone:2.1.15@sha256:309ba544ea482e5d4265d09921cdab07c8dad2cc4481d715c9b8ff5d3f0a149f
+          env:
+            - name: GREENMAIL_OPTS
+              value: -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenmail
+  namespace: casemgr-dev
+spec:
+  selector: { app: greenmail }
+  ports:
+    - { name: smtp, port: 3025 }
+    - { name: imap, port: 3143 }
