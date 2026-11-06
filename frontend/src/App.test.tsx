@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
 import App from './App'
 import type { Me } from './api/client'
-import { json, mockApi, renderWithQuery } from './testing'
+import { json, mockApi, renderWithQuery, stubGridWidth } from './testing'
 
 const ME: Me = {
   id: '00000000-0000-0000-0000-000000000001',
@@ -19,6 +19,7 @@ const ME: Me = {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
   localStorage.clear()
 })
 
@@ -26,16 +27,19 @@ afterEach(() => {
 function signedIn(me: Me = ME) {
   return mockApi({
     'GET /api/me': () => json(me),
-    'GET /api/tenants/detect-respond/cases': () => json([]),
-    'GET /api/tenants/insider-threat/cases': () => json([]),
+    'GET /api/tenants/detect-respond/cases': () => json({ cases: [], total: 0 }),
+    'GET /api/tenants/insider-threat/cases': () => json({ cases: [], total: 0 }),
     'GET /api/tenants/detect-respond/members': () => json([]),
     'GET /api/tenants/insider-threat/members': () => json([]),
     'GET /api/tenants/detect-respond/tokens': () => json([]),
+    'GET /api/tenants/detect-respond/clocks': () => json([]),
+    'GET /api/tenants/insider-threat/clocks': () => json([]),
     'POST /api/auth/logout': () => json({ logout_url: '/' }),
   })
 }
 
 function renderApp(path = '/') {
+  stubGridWidth()
   return renderWithQuery(
     <MemoryRouter initialEntries={[path]}>
       <App />
@@ -95,8 +99,8 @@ test('tenant admins reach settings', async () => {
   renderApp()
   fireEvent.click(await screen.findByRole('link', { name: 'Settings' }))
   expect(await screen.findByRole('heading', { name: 'API tokens' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('link', { name: 'Cases' }))
-  expect(await screen.findByRole('heading', { name: 'Cases' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('link', { name: 'Case Manager' }))
+  expect(await screen.findByRole('heading', { name: 'Case queue' })).toBeInTheDocument()
 })
 
 test('explains when the user has no tenants', async () => {
@@ -115,6 +119,7 @@ test('reports a server error', async () => {
 test('signs out through the API', async () => {
   const requests = signedIn()
   renderApp()
+  fireEvent.click(await screen.findByRole('button', { name: 'J Doe' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
   await vi.waitFor(() =>
     expect(requests.map((r) => `${r.method} ${new URL(r.url).pathname}`)).toContain(

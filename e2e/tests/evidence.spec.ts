@@ -1,13 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { runJob } from './backend'
-import { createUser, signIn } from './identity'
+import { act, createUser, openCaseFrame, queueFrame, signIn, signOut } from './identity'
 
 
 async function newCase(page: Page, title: string) {
-  await page.getByText('New case').click()
-  await page.getByLabel('Title').fill(title)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Title').fill(title)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
 }
 
@@ -19,6 +19,7 @@ test('evidence uploads straight to storage, is hashed, verified, and held', asyn
   // Several MiB of varied bytes, uploaded by the browser through presigned URLs.
   const content = Buffer.alloc(3 * 1024 * 1024)
   for (let i = 0; i < content.length; i++) content[i] = (i * 31) % 251
+  await openCaseFrame(page, 'Evidence')
   await page.locator('summary', { hasText: 'Add evidence' }).click()
   await page.getByLabel('File', { exact: true }).setInputFiles({ name: 'capture.pcap', mimeType: 'application/octet-stream', buffer: content })
   await page.getByLabel('Collected from').fill('fw-01')
@@ -42,8 +43,7 @@ test('evidence uploads straight to storage, is hashed, verified, and held', asyn
   await expect(page.getByRole('cell', { name: 'verified', exact: true })).toBeVisible()
   await expect(page.getByRole('cell', { name: /collected_from: fw-01/ })).toBeVisible()
 
-  await page.getByLabel('Legal hold reason').fill('Litigation expected')
-  await page.getByRole('button', { name: 'Place legal hold' }).click()
+  await act(page, 'Place legal hold', 'Legal hold reason', 'Litigation expected')
   await expect(page.getByText('Legal hold: evidence on this case cannot be deleted.')).toBeVisible()
   await expect(row.getByRole('button', { name: 'Delete capture.pcap' })).toBeDisabled()
 })
@@ -54,6 +54,7 @@ test('malware samples are only downloadable with malware access', async ({ page,
   await newCase(page, `Dropper ${Date.now()}`)
   const caseUrl = page.url()
 
+  await openCaseFrame(page, 'Evidence')
   await page.locator('summary', { hasText: 'Add evidence' }).click()
   await page.getByLabel('Malware sample (stored encrypted)').check()
   await page.getByLabel('File', { exact: true }).setInputFiles({ name: 'invoice.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ fake sample') })
@@ -66,11 +67,12 @@ test('malware samples are only downloadable with malware access', async ({ page,
     'casemgr-detect-respond-analyst',
     'casemgr-detect-respond-malware:read',
   ])
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await signOut(page, admin)
   // Let the IdP logout finish before the next sign-in.
   await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
   await signIn(page, handler)
   await page.goto(caseUrl)
+  await openCaseFrame(page, 'Evidence')
   const download = page.waitForEvent('download')
   await page.getByRole('link', { name: 'Download invoice.exe' }).click()
   expect((await download).suggestedFilename()).toBe('invoice.exe.zip')

@@ -27,6 +27,6 @@ test('tenant admin edits lifecycle states and the change persists', async ({ pag
 test('analysts do not see settings', async ({ page, request }) => {
   const user = await createUser(request, ['casemgr-insider-threat-analyst'])
   await signIn(page, user)
-  await expect(page.getByRole('heading', { name: 'Cases' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Case queue' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Settings' })).toBeHidden()
 })

@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router'
+import { Link } from 'react-router'
 import { api } from '../api/client'
+import { Badge, SeverityBadge } from '../Badge'
+import { Skeleton } from '../Skeleton'
 import { useTenant } from '../tenant'
 
-export function ObservablePage() {
+export function ObservablePage({ observableId }: { observableId: string }) {
   const { slug } = useTenant()
-  const observableId = useParams().observableId ?? ''
   const observable = useQuery({
     queryKey: ['observable', slug, observableId],
     queryFn: async () => {
@@ -20,7 +21,7 @@ export function ObservablePage() {
   })
 
   if (observable.isError) return <p role="alert">{observable.error.message}</p>
-  if (!observable.data) return <p>Loading...</p>
+  if (!observable.data) return <Skeleton />
   const { type, defanged, cases } = observable.data
 
   return (
@@ -48,8 +49,12 @@ export function ObservablePage() {
               <td>
                 <Link to={`/t/${slug}/cases/${c.number}`}>{c.title}</Link>
               </td>
-              <td>{c.state}</td>
-              <td>{c.severity}</td>
+              <td>
+                <Badge>{c.state}</Badge>
+              </td>
+              <td>
+                <SeverityBadge severity={c.severity} />
+              </td>
               <td>{new Date(c.created_at).toLocaleString()}</td>
             </tr>
           ))}

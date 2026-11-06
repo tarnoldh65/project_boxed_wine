@@ -78,8 +78,7 @@ export function TasksPanel({
 
   return (
     <section>
-      <h3>Tasks</h3>
-      {current.tasks.length === 0 && <p>No tasks.</p>}
+      {current.tasks.length === 0 && <p className="empty">No tasks.</p>}
       {current.tasks.map((task) => (
         <div key={task.id} className="task">
           <div className="task-head">

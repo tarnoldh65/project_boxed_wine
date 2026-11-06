@@ -1,11 +1,28 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
+import { useParams } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { Case } from '../api/client'
 import { json, mockApi, renderInTenant } from '../testing'
-import { CasePage } from './CasePage'
+import {
+  AlertsFrame,
+  AssetsFrame,
+  CaseScope,
+  DetailsFrame,
+  ReportsFrame,
+  type CaseView,
+} from './CaseFrames'
+import { CaseSummary } from './CaseSummary'
 import { CASE, CONFIG, MEMBERS, TENANT } from './fixtures'
+import { ObservablesPanel } from './ObservablesPanel'
+import { TasksPanel } from './TasksPanel'
+import { useSplitSelection } from './useCase'
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  onOpenFrame.mockClear()
+})
+
+const onOpenFrame = vi.fn()
 
 const BASE = '/api/tenants/dr/cases/7'
 
@@ -23,8 +40,39 @@ function api(current: Case = CASE, extra: Record<string, (r: Request) => Respons
   })
 }
 
+function Frames({ view }: { view: CaseView }) {
+  const split = useSplitSelection(view.current.number)
+  return (
+    <>
+      <CaseSummary view={view} split={split} openFrames={['case-notes']} onOpenFrame={onOpenFrame} />
+      <DetailsFrame view={view} />
+      <TasksPanel slug="dr" current={view.current} members={view.members} editable={view.editable} />
+      <AlertsFrame view={view} split={split} />
+      <AssetsFrame view={view} split={split} />
+      <ObservablesPanel
+        slug="dr"
+        current={view.current}
+        editable={view.canWrite}
+        selected={split.observables}
+        onSelect={(ids) => split.choose('observables', ids)}
+      />
+      <ReportsFrame view={view} />
+    </>
+  )
+}
+
+/** The frames of the case in the address, side by side as in the workspace. */
+function Routed() {
+  const number = Number(useParams().number)
+  return (
+    <CaseScope key={number} number={number}>
+      {(view) => <Frames view={view} />}
+    </CaseScope>
+  )
+}
+
 function open(permissions = TENANT.permissions) {
-  renderInTenant(<CasePage />, { ...TENANT, permissions }, { path: '/t/dr/cases/7', route: 'cases/:number' })
+  renderInTenant(<Routed />, { ...TENANT, permissions }, { path: '/t/dr/cases/7', route: 'cases/:number' })
 }
 
 async function sent(requests: Request[], method: string, path: string): Promise<Request> {
@@ -37,11 +85,21 @@ async function body(requests: Request[], method: string, path: string) {
   return (await sent(requests, method, path)).json()
 }
 
+/** Open an action's dialog, fill its one field, and confirm. */
+async function act(action: string, field: string, value: string) {
+  fireEvent.click(await screen.findByRole('button', { name: action }))
+  fireEvent.change(screen.getByLabelText(field), { target: { value } })
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+}
+
 test('shows the case, its alerts, and its assets', async () => {
   api()
   open()
   expect(await screen.findByRole('heading', { name: '#7 Suspicious email' })).toBeInTheDocument()
-  expect(screen.getByText(/P1 high \| New \| source email/)).toBeInTheDocument()
+  expect(screen.getByText('P1 high')).toHaveClass('badge-high')
+  expect(screen.getByText('New', { selector: '.badge' })).toBeInTheDocument()
+  expect(screen.getByText('TLP:AMBER')).toHaveClass('badge-medium')
+  expect(screen.getByText(/source email/)).toBeInTheDocument()
   expect(screen.getByText(/Invoice overdue/)).toBeInTheDocument()
   expect(screen.getByText(/billing@evil.example/)).toBeInTheDocument()
   expect(screen.getByText(/host: web-01 \(CMDB CI-1\)/)).toBeInTheDocument()
@@ -69,21 +127,51 @@ test('saves only the changed fields', async () => {
   expect(await screen.findByRole('status')).toHaveTextContent('Saved')
 })
 
-test('closing asks for a resolution and overriding asks for a justification', async () => {
+test('closing asks for a resolution', async () => {
   const requests = api()
   open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Change state' }))
   expect(screen.queryByLabelText('Resolution')).not.toBeInTheDocument()
-  fireEvent.change(await screen.findByLabelText('State'), { target: { value: 'closed' } })
+  fireEvent.change(screen.getByLabelText('State'), { target: { value: 'closed' } })
   fireEvent.change(screen.getByLabelText('Resolution'), { target: { value: 'false_positive' } })
-  fireEvent.click(screen.getByLabelText('Override severity'))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+
+  expect(await body(requests, 'PATCH', BASE)).toEqual({ state: 'closed', resolution: 'false_positive' })
+  await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+})
+
+test('moving between open states sends only the state', async () => {
+  const requests = api()
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Change state' }))
+  fireEvent.change(screen.getByLabelText('State'), { target: { value: 'triage' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+  expect(await body(requests, 'PATCH', BASE)).toEqual({ state: 'triage' })
+})
+
+test('a refused state change stays open with the reason', async () => {
+  api(CASE, {
+    [`PATCH ${BASE}`]: () =>
+      json({ detail: [{ loc: ['body', 'state'], msg: 'finish every task first', type: 'value_error' }] }, 422),
+  })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Change state' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+  expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('finish every task first')
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('overriding severity asks for a justification', async () => {
+  const requests = api()
+  open()
+  fireEvent.click(await screen.findByLabelText('Override severity'))
   fireEvent.change(screen.getByLabelText('Severity'), { target: { value: 'low' } })
   fireEvent.change(screen.getByLabelText('Justification'), { target: { value: 'Test mailbox' } })
   fireEvent.change(screen.getByLabelText('Owner'), { target: { value: '' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save case' }))
 
   expect(await body(requests, 'PATCH', BASE)).toEqual({
-    state: 'closed',
-    resolution: 'false_positive',
     override: { severity: 'low', justification: 'Test mailbox' },
     owner_id: null,
   })
@@ -95,7 +183,7 @@ test('shows validation errors from the server', async () => {
       json({ detail: [{ loc: ['body', 'custom', 'root_cause'], msg: 'required', type: 'value_error' }] }, 422),
   })
   open()
-  fireEvent.change(await screen.findByLabelText('State'), { target: { value: 'triage' } })
+  fireEvent.change(await screen.findByLabelText('Title'), { target: { value: 'New title' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save case' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('custom.root_cause: required')
 })
@@ -114,7 +202,9 @@ test('read-only users see the case without editing controls', async () => {
   expect(await screen.findByLabelText('Title')).toBeDisabled()
   expect(screen.queryByRole('button', { name: 'Save case' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Link asset' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Merge or split' })).not.toBeInTheDocument()
+  for (const action of ['Change state', 'Merge into case', 'Split selected into new case']) {
+    expect(screen.queryByRole('button', { name: action })).not.toBeInTheDocument()
+  }
 })
 
 test('links and removes assets', async () => {
@@ -143,8 +233,7 @@ test('merges into another case and follows it', async () => {
     'GET /api/tenants/dr/cases/9': () => json(target),
   })
   open()
-  fireEvent.change(await screen.findByLabelText('Merge into case'), { target: { value: '9' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Merge into case' }))
+  await act('Merge into case', 'Case number', '9')
   expect(await body(requests, 'POST', `${BASE}/merge`)).toEqual({ into: 9 })
   expect(await screen.findByRole('heading', { name: '#9 Campaign' })).toBeInTheDocument()
 })
@@ -161,8 +250,7 @@ test('splits the selected alerts and assets into a new case', async () => {
   fireEvent.click(screen.getByLabelText('Select alert Invoice overdue'))
   fireEvent.click(screen.getByLabelText('Select asset web-01'))
   fireEvent.click(screen.getByLabelText('Select observable evil[.]example'))
-  fireEvent.change(screen.getByLabelText('New case title'), { target: { value: 'Second wave' } })
-  fireEvent.click(button)
+  await act('Split selected into new case', 'New case title', 'Second wave')
 
   expect(await body(requests, 'POST', `${BASE}/split`)).toEqual({
     title: 'Second wave',
@@ -179,16 +267,17 @@ test('reports a failed merge', async () => {
       json({ detail: [{ loc: ['body', 'into'], msg: 'only open cases can be merged', type: 'value_error' }] }, 422),
   })
   open()
-  fireEvent.change(await screen.findByLabelText('Merge into case'), { target: { value: '3' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Merge into case' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('into: only open cases can be merged')
+  await act('Merge into case', 'Case number', '3')
+  expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent(
+    'into: only open cases can be merged',
+  )
 })
 
 test('links to the case a merged case went into', async () => {
   api({ ...CASE, state: 'closed', resolution: 'merged', merged_into: 9 })
   open()
   expect(await screen.findByRole('link', { name: '#9' })).toHaveAttribute('href', '/t/dr/cases/9')
-  expect(screen.queryByRole('heading', { name: 'Merge or split' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Merge into case' })).not.toBeInTheDocument()
 })
 
 test('reports a missing case', async () => {
@@ -217,19 +306,19 @@ test('declares a major incident', async () => {
   const declared = { ...CASE, major_incident_at: '2026-10-31T11:00:00Z', major_incident_reason: 'Payroll down' }
   const requests = api(CASE, { [`POST ${BASE}/major-incident`]: () => json(declared) })
   open()
-  fireEvent.change(await screen.findByLabelText('Major incident reason'), { target: { value: 'Payroll down' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Declare major incident' }))
+  await act('Declare major incident', 'Major incident reason', 'Payroll down')
   expect(await body(requests, 'POST', `${BASE}/major-incident`)).toEqual({ reason: 'Payroll down' })
   expect(await screen.findByText(/Major incident declared .*: Payroll down/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Declare major incident' })).not.toBeInTheDocument()
 })
 
-test('closed cases offer no workflow actions', async () => {
+test('closed cases can still be reopened, but offer no other workflow actions', async () => {
   api({ ...CASE, state: 'closed', resolution: 'benign' })
   open()
   await screen.findByRole('heading', { name: '#7 Suspicious email' })
   expect(screen.queryByRole('button', { name: 'Acknowledge' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Declare major incident' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Change state' })).toBeInTheDocument()
   expect(screen.getByLabelText('Status of Identify recipients')).toBeDisabled()
 })
 
@@ -238,8 +327,7 @@ test('places a legal hold with a reason', async () => {
     [`PUT ${BASE}/legal-hold`]: () => json({ ...CASE, legal_hold: true }),
   })
   open([...TENANT.permissions, 'legal:manage'])
-  fireEvent.change(await screen.findByLabelText('Legal hold reason'), { target: { value: 'Litigation' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Place legal hold' }))
+  await act('Place legal hold', 'Legal hold reason', 'Litigation')
   expect(await body(requests, 'PUT', `${BASE}/legal-hold`)).toEqual({ on: true, reason: 'Litigation' })
   expect(await screen.findByText(/Legal hold: evidence/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Lift legal hold' })).toBeInTheDocument()
@@ -249,7 +337,7 @@ test('only legal hold managers see the control', async () => {
   api()
   open()
   await screen.findByRole('heading', { name: '#7 Suspicious email' })
-  expect(screen.queryByLabelText('Legal hold reason')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Place legal hold' })).not.toBeInTheDocument()
 })
 
 test('legal marks the case privileged', async () => {
@@ -257,8 +345,7 @@ test('legal marks the case privileged', async () => {
     [`PUT ${BASE}/privilege`]: () => json({ ...CASE, privileged: true }),
   })
   open([...TENANT.permissions, 'legal:manage'])
-  fireEvent.change(await screen.findByLabelText('Privilege reason'), { target: { value: 'Counsel directed' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Mark privileged' }))
+  await act('Mark privileged', 'Privilege reason', 'Counsel directed')
   expect(await body(requests, 'PUT', `${BASE}/privilege`)).toEqual({ on: true, reason: 'Counsel directed' })
   expect(await screen.findByText('Attorney-Client Privileged / Prepared at Direction of Counsel')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Remove privilege marking' })).toBeInTheDocument()
@@ -275,4 +362,48 @@ test('offers each report as PDF and DOCX', async () => {
     `${BASE}/reports/pir?format=docx`,
   )
   expect(screen.getAllByRole('link', { name: /\((PDF|DOCX)\)$/ })).toHaveLength(6)
+})
+
+test('the privilege marking shows above every frame of a privileged case', async () => {
+  api({ ...CASE, privileged: true })
+  renderInTenant(
+    <>
+      <CaseScope number={7}>{() => <p>First frame</p>}</CaseScope>
+      <CaseScope number={7}>{() => <p>Second frame</p>}</CaseScope>
+    </>,
+    TENANT,
+  )
+  await screen.findByText('Second frame')
+  expect(screen.getAllByText('Attorney-Client Privileged / Prepared at Direction of Counsel')).toHaveLength(2)
+})
+
+test('chips show what each frame holds, which are open, and open the rest', async () => {
+  api()
+  open()
+  const notes = await screen.findByRole('button', { name: /^Notes/ })
+  expect(notes).toHaveAttribute('aria-pressed', 'true')
+  const assets = screen.getByRole('button', { name: 'Assets1' })
+  expect(assets).toHaveAttribute('aria-pressed', 'false')
+  fireEvent.click(assets)
+  expect(onOpenFrame).toHaveBeenCalledWith('case-assets')
+  expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
+})
+
+test('a change from another frame shows in the form without losing what is being typed', async () => {
+  const requests = api()
+  open()
+  fireEvent.change(await screen.findByLabelText('Description'), { target: { value: 'Half-written' } })
+
+  fireEvent.click(screen.getByRole('button', { name: 'Change state' }))
+  fireEvent.change(screen.getByLabelText('State'), { target: { value: 'triage' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+  await sent(requests, 'PATCH', BASE)
+  await vi.waitFor(() => expect(screen.getByText('Triage', { selector: '.badge' })).toBeInTheDocument())
+
+  expect(screen.getByLabelText('Description')).toHaveValue('Half-written')
+  fireEvent.click(screen.getByRole('button', { name: 'Save case' }))
+  await vi.waitFor(async () =>
+    expect(requests.filter((r) => r.method === 'PATCH')).toHaveLength(2),
+  )
+  expect(await requests.filter((r) => r.method === 'PATCH')[1].json()).toEqual({ description: 'Half-written' })
 })

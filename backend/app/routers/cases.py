@@ -13,17 +13,17 @@ from app.cases import (
     AssetOut,
     CaseCreate,
     CaseOut,
-    CaseSummary,
+    CaseQueue,
     CaseUpdate,
     MajorIncidentIn,
     MarkingIn,
     MergeIn,
+    QueueQuery,
     SplitIn,
 )
 from app.db import Db
 from app.models import Asset, Case
 from app.tasks import TaskIn, TaskUpdate
-from app.tenant_config import Key
 
 router = APIRouter(prefix="/api/tenants/{slug}", tags=["cases"])
 
@@ -46,20 +46,11 @@ async def list_members(ctx: Reader, db: Db) -> list[MemberOut]:
 
 
 @router.get("/cases")
-async def list_cases(
-    ctx: Reader,
-    db: Db,
-    state: Key | None = None,
-    limit: Annotated[int, Query(ge=1, le=500)] = 100,
-) -> list[CaseSummary]:
-    query = cases.visible(ctx).order_by(Case.created_at.desc()).limit(limit)
-    if state is not None:
-        query = query.where(Case.state == state)
-    found = (await db.scalars(query)).all()
+async def list_cases(ctx: Reader, db: Db, q: Annotated[QueueQuery, Query()]) -> CaseQueue:
     config = await tenant_config.load(db, ctx.tenant.id)
-    await ctx.audit(db, "case.list", "cases", state=state, count=len(found))
-    now = datetime.now(UTC)
-    return [cases.summary(c, config, now) for c in found]
+    found = await cases.queue(db, ctx, config, q)
+    await ctx.audit(db, "case.list", "cases", state=q.state, count=found.total)
+    return found
 
 
 @router.post("/cases", status_code=201)
@@ -207,9 +198,11 @@ async def unlink_asset(number: int, asset_id: UUID, ctx: Writer, db: Db) -> None
 async def search_assets(
     ctx: Reader, db: Db, q: Annotated[str, Query(max_length=200)] = ""
 ) -> list[AssetOut]:
-    pattern = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
     found = await db.scalars(
-        select(Asset).where(Asset.name.ilike(pattern)).order_by(Asset.kind, Asset.name).limit(50)
+        select(Asset)
+        .where(Asset.name.ilike(cases.like_pattern(q)))
+        .order_by(Asset.kind, Asset.name)
+        .limit(50)
     )
     await ctx.audit(db, "asset.search", "assets", q=q)
     return [AssetOut.model_validate(a) for a in found]

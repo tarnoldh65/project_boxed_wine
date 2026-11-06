@@ -25,8 +25,8 @@ test('shows clocks, decisions, and the notification log', () => {
   const clocks = within(screen.getByRole('table', { name: 'Notification clocks' }))
   const [gdpr, state] = clocks.getAllByRole('row').slice(1)
   expect(within(gdpr).getByText('GDPR Art. 33')).toBeInTheDocument()
-  expect(within(gdpr).getByText('pending')).toHaveClass('sla-pending')
-  expect(within(state).getByText(/^met /)).toHaveClass('sla-met')
+  expect(within(gdpr).getByText('pending')).toHaveClass('badge-neutral')
+  expect(within(state).getByText(/^met /)).toHaveClass('badge-ok')
 
   expect(screen.getByText('Not material', { selector: 'strong' })).toBeInTheDocument()
   expect(screen.getByText(/decided by General counsel .*No customer data involved/)).toBeInTheDocument()

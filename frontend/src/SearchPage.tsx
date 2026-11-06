@@ -1,14 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { api, describeError } from './api/client'
+import { Skeleton } from './Skeleton'
 import { useTenant } from './tenant'
 
-export function SearchPage() {
+const searchUrl = (slug: string, q: string) => `/t/${slug}/search?q=${encodeURIComponent(q)}`
+
+export function SearchPage({ q }: { q: string }) {
   const { slug } = useTenant()
   const queryClient = useQueryClient()
-  const [params, setParams] = useSearchParams()
-  const q = params.get('q') ?? ''
+  const navigate = useNavigate()
   const path = { params: { path: { slug } } }
 
   const results = useQuery({
@@ -40,7 +42,7 @@ export function SearchPage() {
 
   function run(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setParams({ q: String(new FormData(event.currentTarget).get('q')).trim() })
+    navigate(searchUrl(slug, String(new FormData(event.currentTarget).get('q')).trim()))
   }
 
   function save(event: FormEvent<HTMLFormElement>) {
@@ -54,7 +56,6 @@ export function SearchPage() {
 
   return (
     <section>
-      <h2>Search</h2>
       <form key={q} className="inline-form" onSubmit={run}>
         <input
           name="q"
@@ -72,7 +73,7 @@ export function SearchPage() {
         <ul className="saved-searches">
           {saved.data.map((s) => (
             <li key={s.id}>
-              <Link to={`?q=${encodeURIComponent(s.query)}`}>{s.name}</Link>{' '}
+              <Link to={searchUrl(slug, s.query)}>{s.name}</Link>{' '}
               <button
                 type="button"
                 onClick={() =>
@@ -91,7 +92,8 @@ export function SearchPage() {
       )}
 
       {results.isError && <p role="alert">{results.error.message}</p>}
-      {results.data?.length === 0 && <p>No matches.</p>}
+      {q !== '' && results.isPending && <Skeleton />}
+      {results.data?.length === 0 && <p className="empty">No matches.</p>}
       {!!results.data?.length && (
         <>
           <ol className="results">

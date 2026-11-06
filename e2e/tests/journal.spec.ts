@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { runJob } from './backend'
-import { createUser, signIn } from './identity'
+import { act, createUser, openCaseFrame, queueFrame, signIn } from './identity'
 
 const MAILPIT = 'http://localhost:8025/api/v1'
 
@@ -14,9 +14,9 @@ test('timeline, notes with mentions, and comments', async ({ page, browser, requ
   const user = await createUser(request, ['casemgr-detect-respond-analyst'])
   await signIn(page, user)
   const title = `Intrusion ${Date.now()}`
-  await page.getByText('New case').click()
-  await page.getByLabel('Title').fill(title)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Title').fill(title)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   const number = page.url().split('/').at(-1)
 
@@ -31,17 +31,19 @@ test('timeline, notes with mentions, and comments', async ({ page, browser, requ
     await page.getByRole('button', { name: 'Add event' }).click()
     await expect(page.getByRole('button', { name: `Remove event ${what}` })).toBeVisible()
   }
-  const rows = page.locator('section', { has: page.getByRole('heading', { name: 'Timeline' }) }).getByRole('row')
+  const rows = page.getByRole('region', { name: /^Timeline #/ }).getByRole('row')
   await expect(rows.nth(1)).toContainText('First phish click')
-  await expect(page.getByText('3.1 days')).toBeVisible()
+  await expect(page.getByText('3.1 days', { exact: true })).toBeVisible()
 
   const note = `## Findings\n\nAsk @${teammate.username} to check **web-01**.\n\n<img src=x onerror="document.title='pwned'">`
+  await openCaseFrame(page, 'Notes')
   await page.getByLabel('New note').fill(note)
   await page.getByRole('button', { name: 'Add note' }).click()
   await expect(page.getByRole('heading', { name: 'Findings' })).toBeVisible()
   await expect(page.locator('.markdown img')).toHaveCount(0)
   expect(await page.title()).toBe('Case Manager')
 
+  await openCaseFrame(page, 'Comments')
   await page.getByLabel('New comment').fill('Isolating web-01 now')
   await page.getByRole('button', { name: 'Post comment' }).click()
   await expect(page.getByText('Isolating web-01 now')).toBeVisible()
@@ -58,15 +60,15 @@ test('timeline, notes with mentions, and comments', async ({ page, browser, requ
 test('legal marks a case privileged', async ({ page, request }) => {
   const admin = await createUser(request, ['casemgr-detect-respond-admin'])
   await signIn(page, admin)
-  await page.getByText('New case').click()
-  await page.getByLabel('Title').fill(`Counsel review ${Date.now()}`)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Title').fill(`Counsel review ${Date.now()}`)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
 
-  await page.getByLabel('Privilege reason').fill('Outside counsel engaged')
-  await page.getByRole('button', { name: 'Mark privileged' }).click()
+  await act(page, 'Mark privileged', 'Privilege reason', 'Outside counsel engaged')
+  // The summary, tasks, and timeline frames each carry the marking.
   await expect(
     page.getByText('Attorney-Client Privileged / Prepared at Direction of Counsel'),
-  ).toBeVisible()
+  ).toHaveCount(3)
   await page.reload()
   await expect(page.getByRole('button', { name: 'Remove privilege marking' })).toBeVisible()
 })

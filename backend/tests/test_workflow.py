@@ -215,7 +215,7 @@ async def test_list_shows_the_worst_sla_status(
             ),
             {"slug": tenant, "n": number},
         )
-    listed = (await analyst.client.get(url(tenant))).json()
+    listed = (await analyst.client.get(url(tenant))).json()["cases"]
     # Phishing is rated high: acknowledge within 30 minutes, so 25 minutes in is a warning.
     assert listed[0]["sla_status"] == "warning"
 

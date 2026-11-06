@@ -56,6 +56,7 @@ Evidence objects are not part of the database backup. They stay in the evidence 
 | Date | Environment | Data | Restore time | Result |
 |---|---|---|---|---|
 | 2026-11-01 | kind, 4 CPUs | 36 cases, 513 audit entries | 93 s (database and app) | Pass: counts match, audit chain intact |
+| 2026-11-05 | kind, 4 CPUs | 22 cases, 617 audit entries | 95 s (database and app) | Pass: counts match, audit chain intact |
 
 ## Key rotation
 

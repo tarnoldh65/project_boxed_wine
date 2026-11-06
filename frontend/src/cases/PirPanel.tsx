@@ -71,7 +71,6 @@ export function PirPanel({
 
   return (
     <section>
-      <h3>Post-incident review</h3>
       <p>
         {review.complete
           ? 'Complete.'
@@ -91,8 +90,8 @@ export function PirPanel({
         )}
       </form>
 
-      <h4>Action items</h4>
-      {review.actions.length === 0 && <p>No action items.</p>}
+      <h3>Action items</h3>
+      {review.actions.length === 0 && <p className="empty">No action items.</p>}
       {review.actions.length > 0 && (
         <table>
           <thead>

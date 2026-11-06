@@ -28,8 +28,6 @@ from app.cases import Resolution
 from app.models import Case, CaseObservable, PirAction, TimelineEvent
 from app.tenant_config import TenantConfig
 
-AGING = ((timedelta(days=1), "under_1_day"), (timedelta(days=7), "1_to_7_days"),
-         (timedelta(days=30), "7_to_30_days"))  # fmt: skip
 NOT_INCIDENTS = {Resolution.MERGED, Resolution.DUPLICATE}
 
 
@@ -152,7 +150,7 @@ async def dashboard(
 
     def age(case: Case) -> str:
         return next(
-            (name for limit, name in AGING if now - case.created_at < limit), "over_30_days"
+            (name for limit, name in cases.AGING if now - case.created_at < limit), "over_30_days"
         )
 
     owners = Counter(c.owner_id for c in open_cases)

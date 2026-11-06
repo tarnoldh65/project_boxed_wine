@@ -5,6 +5,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Case Manager</title>
+    <script src="/theme.js"></script>
+    <!-- react-draggable injects an inline style, which the CSP blocks, unless this id exists. The rule is in index.css. -->
+    <meta id="react-draggable-style-el" name="react-draggable-style" />
   </head>
   <body>
     <div id="root"></div>

@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { createUser, signIn } from './identity'
+import { createUser, openCaseFrame, queueFrame, signIn } from './identity'
 
 async function newCase(page: Page, title: string) {
-  await page.getByText('New case').click()
-  await page.getByLabel('Title').fill(title)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Title').fill(title)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
 }
 
@@ -21,14 +21,16 @@ test('restricted content never shows in search without the restricted grant', as
   await signIn(page, insider)
   await page.goto('/t/insider-threat')
   await newCase(page, `Data hoarding ${word}`)
+  await openCaseFrame(page, 'Notes')
   await page.getByLabel('New note').fill(`HR interview with the ${word} subject`)
   await page.getByRole('button', { name: 'Add note' }).click()
+  await openCaseFrame(page, 'Details')
   await page.getByLabel('Restricted').check()
   await page.getByRole('button', { name: 'Save case' }).click()
   await expect(page.getByRole('status')).toHaveText('Saved')
 
   await search(page, 'insider-threat', word)
-  await expect(page.getByRole('link', { name: `Data hoarding ${word}` })).toHaveCount(2)
+  await expect(page.getByRole('region', { name: 'Search' }).getByRole('link', { name: `Data hoarding ${word}` })).toHaveCount(2)
   await page.getByLabel('Saved search name').fill('Hoarding')
   await page.getByRole('button', { name: 'Save search' }).click()
   await expect(page.getByRole('link', { name: 'Hoarding', exact: true })).toBeVisible()
@@ -42,6 +44,7 @@ test('restricted content never shows in search without the restricted grant', as
     await signIn(other, await createUser(request, [...groups]))
     await search(other, tenant, word)
     await expect(other.getByText('No matches.')).toBeVisible()
+    await expect(other.getByText(`Data hoarding ${word}`)).toHaveCount(0)
     await context.close()
   }
 })
@@ -50,6 +53,7 @@ test('reports download and the dashboard shows metrics', async ({ page, request 
   const admin = await createUser(request, ['casemgr-detect-respond-admin'])
   await signIn(page, admin)
   await newCase(page, `Report check ${Date.now()}`)
+  await openCaseFrame(page, 'Reports')
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -63,7 +67,7 @@ test('reports download and the dashboard shows metrics', async ({ page, request 
   ])
   expect(word.suggestedFilename()).toMatch(/^case-\d+-executive\.docx$/)
 
-  await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
   await expect(page.getByRole('table', { name: 'Open cases by severity' })).toBeVisible()
+  await page.getByRole('button', { name: /^SLA compliance/ }).click()
   await expect(page.getByRole('table', { name: /Response times \(\d+ cases\)/ })).toContainText('Mean time to acknowledge')
 })

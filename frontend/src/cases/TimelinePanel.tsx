@@ -86,7 +86,6 @@ export function TimelinePanel({
 
   return (
     <section>
-      <h3>Timeline</h3>
       <dl className="milestones">
         {MILESTONES.map(([key, label]) => (
           <div key={key}>
@@ -107,7 +106,7 @@ export function TimelinePanel({
           </div>
         )}
       </dl>
-      {current.timeline.length === 0 && <p>No events recorded.</p>}
+      {current.timeline.length === 0 && <p className="empty">No events recorded.</p>}
       {current.timeline.length > 0 && (
         <table>
           <thead>

@@ -42,6 +42,11 @@ export function renderWithQuery(ui: ReactElement) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
+/** The workspace grid measures its container, which is always 0 wide in jsdom. */
+export function stubGridWidth(width = 1280) {
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(width)
+}
+
 function Location() {
   return <p>Now at {useLocation().pathname}</p>
 }
