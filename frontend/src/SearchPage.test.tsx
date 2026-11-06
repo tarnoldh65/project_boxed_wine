@@ -1,4 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react'
+import { useSearchParams } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
 import { TENANT } from './cases/fixtures'
 import { SearchPage } from './SearchPage'
@@ -22,8 +23,13 @@ function api(saved = SAVED) {
   })
 }
 
+function Routed() {
+  const [params] = useSearchParams()
+  return <SearchPage q={params.get('q') ?? ''} />
+}
+
 function render(path = '/t/dr/search') {
-  renderInTenant(<SearchPage />, TENANT, { route: 'search', path })
+  renderInTenant(<Routed />, TENANT, { route: 'search', path })
 }
 
 test('searches and links each hit to its case', async () => {

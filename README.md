@@ -2,6 +2,8 @@
 
 A cyber incident response case management tool. See `PLAN.md` for scope and status.
 
+The app is one workspace of frames that move and resize on a grid, plus an admin Settings page. Layouts are saved in the browser per user and tenant; Frames > Reset layout restores the default.
+
 ## Local development
 
 Requires Docker, `uv`, and Node.js.

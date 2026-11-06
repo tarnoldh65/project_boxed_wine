@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createUser, removeFromGroup, signIn } from './identity'
+import { createUser, removeFromGroup, signIn, signOut } from './identity'
 
 test('user signs in with MFA and sees only their tenants', async ({ page, request }) => {
   const user = await createUser(request, ['casemgr-detect-respond-analyst'])
@@ -56,7 +56,7 @@ test('sign out ends both the app and IdP sessions', async ({ page, request }) =>
   const user = await createUser(request, ['casemgr-detect-respond-analyst'])
   await signIn(page, user)
 
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await signOut(page, user)
   await page.getByRole('link', { name: 'Sign in' }).click()
   await expect(page.getByLabel('Username or email')).toBeVisible()
 })

@@ -784,6 +784,17 @@
             }
           },
           {
+            "name": "text",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 300,
+              "default": "",
+              "title": "Text"
+            }
+          },
+          {
             "name": "state",
             "in": "query",
             "required": false,
@@ -802,6 +813,129 @@
             }
           },
           {
+            "name": "open_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Open Only"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40,
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner"
+            }
+          },
+          {
+            "name": "unassigned",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Unassigned"
+            }
+          },
+          {
+            "name": "sla",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "met",
+                    "late",
+                    "pending",
+                    "warning",
+                    "breached"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "const": "none",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sla"
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "under_1_day",
+                    "1_to_7_days",
+                    "7_to_30_days",
+                    "over_30_days"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Age"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/QueueSort",
+              "default": "created"
+            }
+          },
+          {
+            "name": "descending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Descending"
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -812,6 +946,17 @@
               "default": 100,
               "title": "Limit"
             }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
           }
         ],
         "responses": {
@@ -820,11 +965,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CaseSummary"
-                  },
-                  "title": "Response List Cases Api Tenants  Slug  Cases Get"
+                  "$ref": "#/components/schemas/CaseQueue"
                 }
               }
             }
@@ -4756,6 +4897,27 @@
         ],
         "title": "CaseOut"
       },
+      "CaseQueue": {
+        "properties": {
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/CaseSummary"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cases",
+          "total"
+        ],
+        "title": "CaseQueue"
+      },
       "CaseSummary": {
         "properties": {
           "number": {
@@ -6676,6 +6838,19 @@
           "title"
         ],
         "title": "PlaybookTask"
+      },
+      "QueueSort": {
+        "type": "string",
+        "enum": [
+          "number",
+          "title",
+          "state",
+          "severity",
+          "sla",
+          "owner",
+          "created"
+        ],
+        "title": "QueueSort"
       },
       "Recipient": {
         "type": "string",

@@ -29,8 +29,7 @@ export function CommentsPanel({
 
   return (
     <section>
-      <h3>Comments</h3>
-      {current.comments.length === 0 && <p>No comments.</p>}
+      {current.comments.length === 0 && <p className="empty">No comments.</p>}
       <ul className="comments">
         {current.comments.map((comment) => (
           <li key={comment.id}>

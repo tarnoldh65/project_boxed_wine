@@ -1,19 +1,21 @@
 import { expect, test } from '@playwright/test'
 import { runJob } from './backend'
-import { createUser, signIn } from './identity'
+import { createUser, openCaseFrame, queueFrame, signIn } from './identity'
 
 
 test('regulatory clocks, materiality decision, and notification log', async ({ page, request }) => {
   const admin = await createUser(request, ['casemgr-detect-respond-admin'])
   await signIn(page, admin)
-  await page.getByText('New case').click()
-  await page.getByLabel('Type').selectOption('data_exposure')
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Type').selectOption('data_exposure')
   const title = `Customer data exposure ${Date.now()}`
-  await page.getByLabel('Title').fill(title)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByLabel('Title').fill(title)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   const number = page.url().split('/').at(-1)
 
+  await openCaseFrame(page, 'Details')
+  await openCaseFrame(page, 'Regulatory')
   await page.getByLabel('PII').check()
   await page.getByLabel('Data regions').fill('EU')
   await page.getByRole('button', { name: 'Save case' }).click()
@@ -36,7 +38,6 @@ test('regulatory clocks, materiality decision, and notification log', async ({ p
   await expect(gdpr).toContainText('met')
   await expect(page.getByText('Irish DPC (regulator)')).toBeVisible()
 
-  await page.getByRole('link', { name: 'Dashboard', exact: true }).click()
   const deadlines = page.locator('section', { has: page.getByRole('heading', { name: 'Notification deadlines' }) })
   await expect(deadlines.getByRole('row', { name: new RegExp(`#${number} SEC Form 8-K`) })).toBeVisible()
   await expect(deadlines.getByRole('row', { name: new RegExp(`#${number} GDPR`) })).toHaveCount(0)

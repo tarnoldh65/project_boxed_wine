@@ -84,8 +84,7 @@ export function ObservablesPanel({
 
   return (
     <section>
-      <h3>Observables</h3>
-      {current.observables.length === 0 && <p>No observables.</p>}
+      {current.observables.length === 0 && <p className="empty">No observables.</p>}
       {current.observables.length > 0 && (
         <table>
           <tbody>

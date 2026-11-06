@@ -1,9 +1,10 @@
 import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import type { Case } from '../api/client'
 import { json, mockApi, renderWithQuery } from '../testing'
-import { EvidencePanel } from './EvidencePanel'
+import { Custody, EvidencePanel } from './EvidencePanel'
 import { CASE } from './fixtures'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -12,8 +13,26 @@ const BASE = '/api/tenants/dr/cases/7/evidence'
 const WRITER = ['cases:read', 'cases:write']
 const S3_PART = '/bucket/t/e9'
 
+/** The evidence frame beside the chain of custody frame it opens. */
+function Frames({ current, permissions }: { current: Case; permissions: string[] }) {
+  const [custody, setCustody] = useState<string | null>(null)
+  const item = current.evidence.find((e) => e.id === custody)
+  return (
+    <>
+      <EvidencePanel
+        slug="dr"
+        current={current}
+        permissions={permissions}
+        collector="J Doe"
+        onCustody={setCustody}
+      />
+      {item && <Custody slug="dr" number={current.number} item={item} canWrite />}
+    </>
+  )
+}
+
 function render(current: Case = CASE, permissions = WRITER) {
-  renderWithQuery(<EvidencePanel slug="dr" current={current} permissions={permissions} collector="J Doe" />)
+  renderWithQuery(<Frames current={current} permissions={permissions} />)
 }
 
 function calls(requests: Request[], method: string, path: string) {

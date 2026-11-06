@@ -62,6 +62,35 @@ export async function removeFromGroup(request: APIRequestContext, username: stri
   expect(response.ok()).toBe(true)
 }
 
+export const queueFrame = (page: Page) => page.getByRole('region', { name: 'Case queue' })
+export const caseFrame = (page: Page) => page.getByRole('region', { name: /^Case #\d+$/ })
+
+/** Open one of the open case's frames from its summary. */
+export async function openCaseFrame(page: Page, name: string) {
+  await caseFrame(page).getByRole('button', { name: new RegExp(`^${name}`) }).click()
+}
+
+/** Run a case action that asks for one value in a dialog. */
+export async function act(page: Page, action: string, field: string, value: string) {
+  await caseFrame(page).getByRole('button', { name: action }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel(field).fill(value)
+  await dialog.getByRole('button', { name: 'Confirm' }).click()
+}
+
+export async function changeState(page: Page, state: string, resolution?: string) {
+  await caseFrame(page).getByRole('button', { name: 'Change state' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('State').selectOption({ label: state })
+  if (resolution) await dialog.getByLabel('Resolution').selectOption(resolution)
+  await dialog.getByRole('button', { name: 'Confirm' }).click()
+}
+
+export async function signOut(page: Page, user: TestUser) {
+  await page.getByRole('button', { name: user.displayName }).click()
+  await page.getByRole('button', { name: 'Sign out' }).click()
+}
+
 /** Sign in from the app for the first time, enrolling a TOTP authenticator as required. */
 export async function signIn(page: Page, user: TestUser) {
   await page.goto('/')
@@ -84,5 +113,5 @@ export async function signIn(page: Page, user: TestUser) {
   if (secondsLeft < 5) await page.waitForTimeout(secondsLeft * 1000 + 250)
   await page.locator('#totp').fill(totp.generate())
   await page.locator('#saveTOTPBtn').click()
-  await expect(page.getByText(user.displayName)).toBeVisible()
+  await expect(page.getByRole('button', { name: user.displayName })).toBeVisible()
 }

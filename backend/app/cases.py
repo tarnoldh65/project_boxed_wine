@@ -2,9 +2,9 @@
 
 import copy
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Annotated, Any, NoReturn, Self
+from typing import Annotated, Any, Literal, NoReturn, Self
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -12,10 +12,12 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     StringConstraints,
     model_validator,
 )
-from sqlalchemy import Select, delete, func, select, update
+from sqlalchemy import Select, delete, func, or_, select, update
+from sqlalchemy import case as sql_case
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -99,6 +101,42 @@ class CaseSummary(BaseModel):
     created_at: datetime
     updated_at: datetime
     sla_status: sla.Status | None = None
+
+
+class QueueSort(StrEnum):
+    NUMBER = "number"
+    TITLE = "title"
+    STATE = "state"
+    SEVERITY = "severity"
+    SLA = "sla"
+    OWNER = "owner"
+    CREATED = "created"
+
+
+SlaFilter = sla.Status | Literal["none"]
+
+
+class QueueQuery(BaseModel):
+    """Filters, order, and page for the case queue."""
+
+    text: Annotated[str, StringConstraints(strip_whitespace=True, max_length=300)] = ""
+    state: Key | None = None
+    # Not in a terminal state and not merged, as the dashboard counts open cases.
+    open_only: bool = False
+    severity: Key | None = None
+    owner: UUID | None = None
+    unassigned: bool = False
+    sla: SlaFilter | None = None
+    age: Literal["under_1_day", "1_to_7_days", "7_to_30_days", "over_30_days"] | None = None
+    sort: QueueSort = QueueSort.CREATED
+    descending: bool = True
+    limit: Annotated[int, Field(ge=1, le=500)] = 100
+    offset: Annotated[int, Field(ge=0)] = 0
+
+
+class CaseQueue(BaseModel):
+    cases: list[CaseSummary]
+    total: int
 
 
 class CaseFields(CaseSummary):
@@ -191,6 +229,13 @@ class Override(BaseModel):
     ]
 
 
+# Open-case age buckets: each case falls in the first whose limit it is younger than.
+AGING = (
+    (timedelta(days=1), "under_1_day"),
+    (timedelta(days=7), "1_to_7_days"),
+    (timedelta(days=30), "7_to_30_days"),
+)
+MAX_NUMBER_DIGITS = 10  # longer digit strings cannot be a case number
 NULLABLE = {"override", "owner_id", "team", "resolution", "detected_at"}
 
 
@@ -277,6 +322,90 @@ def visible(ctx: TenantContext) -> Select[Case]:
     if "restricted_case" not in ctx.permissions:
         query = query.where(Case.restricted.is_(False))
     return query
+
+
+def like_pattern(text: str) -> str:
+    """An ILIKE pattern that finds `text` literally anywhere in a value."""
+    return "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+def _queue_filters(
+    ctx: TenantContext, config: TenantConfig, q: QueueQuery, now: datetime
+) -> Select:
+    query = visible(ctx)
+    if q.text:
+        matches = Case.title.ilike(like_pattern(q.text))
+        if q.text.isdigit() and len(q.text) < MAX_NUMBER_DIGITS:
+            matches = or_(matches, Case.number == int(q.text))
+        query = query.where(matches)
+    if q.open_only:
+        query = query.where(
+            Case.state.not_in(config.terminal_states), Case.merged_into_id.is_(None)
+        )
+    if q.state:
+        query = query.where(Case.state == q.state)
+    if q.severity:
+        query = query.where(Case.severity == q.severity)
+    if q.unassigned:
+        query = query.where(Case.owner_id.is_(None))
+    if q.owner:
+        query = query.where(Case.owner_id == q.owner)
+    if q.age:
+        limits = [limit for limit, _ in AGING]
+        names = [name for _, name in AGING]
+        index = names.index(q.age) if q.age in names else len(limits)
+        if index < len(limits):
+            query = query.where(Case.created_at > now - limits[index])
+        if index > 0:
+            query = query.where(Case.created_at <= now - limits[index - 1])
+    return query
+
+
+def _queue_order(query: Select, config: TenantConfig, q: QueueQuery) -> Select:
+    def rank(order: list[str], column: Any) -> Any:
+        return sql_case({key: i for i, key in enumerate(order)}, value=column, else_=len(order))
+
+    newest_first = Case.number.desc()
+    if q.sort == QueueSort.SLA:  # computed, so sorted after loading
+        return query.order_by(newest_first)
+    if q.sort == QueueSort.OWNER:
+        query = query.outerjoin(User, User.id == Case.owner_id)
+    column = {
+        QueueSort.NUMBER: Case.number,
+        QueueSort.TITLE: Case.title,
+        QueueSort.STATE: rank([s.key for s in config.states], Case.state),
+        QueueSort.SEVERITY: rank([s.key for s in config.severity.levels], Case.severity),
+        QueueSort.OWNER: User.display_name,
+        QueueSort.CREATED: Case.created_at,
+    }[q.sort]
+    return query.order_by(
+        (column.desc() if q.descending else column.asc()).nulls_last(), newest_first
+    )
+
+
+async def queue(
+    db: AsyncSession, ctx: TenantContext, config: TenantConfig, q: QueueQuery
+) -> CaseQueue:
+    """One page of the cases matching a filter, and how many match in all."""
+    now = datetime.now(UTC)
+    filtered = _queue_filters(ctx, config, q, now)
+    ordered = _queue_order(filtered, config, q)
+    if not q.sla and q.sort != QueueSort.SLA:
+        total = await db.scalar(select(func.count()).select_from(filtered.subquery()))
+        page = await db.scalars(ordered.limit(q.limit).offset(q.offset))
+        return CaseQueue(cases=[summary(c, config, now) for c in page], total=total or 0)
+
+    # SLA status is computed from each case's clocks, so these run over the matching cases.
+    found = [summary(c, config, now) for c in await db.scalars(ordered)]
+    if q.sla:
+        found = [c for c in found if (c.sla_status or "none") == q.sla]
+    if q.sort == QueueSort.SLA:
+        order = {status: i for i, status in enumerate(sla.SEVERITY_ORDER)}
+        found.sort(
+            key=lambda c: order.get(c.sla_status, len(order)) if c.sla_status else len(order),
+            reverse=q.descending,
+        )
+    return CaseQueue(cases=found[q.offset : q.offset + q.limit], total=len(found))
 
 
 async def get_case(db: AsyncSession, ctx: TenantContext, number: int) -> Case:

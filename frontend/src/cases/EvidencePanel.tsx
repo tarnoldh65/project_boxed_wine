@@ -8,6 +8,7 @@ import {
   type CustodyReport,
   type Evidence,
 } from '../api/client'
+import { Skeleton } from '../Skeleton'
 
 type Mode = 'file' | 'malware' | 'reference'
 const DOWNLOADABLE = ['stored', 'hashed', 'mismatch']
@@ -42,7 +43,7 @@ async function ok(response: Response, error: unknown = undefined): Promise<void>
   if (!response.ok) throw new Error(describeError(error ?? (await response.json().catch(() => null)), response.status))
 }
 
-function Custody({
+export function Custody({
   slug,
   number,
   item,
@@ -100,7 +101,7 @@ function Custody({
   }
 
   if (report.isError) return <p role="alert">{report.error.message}</p>
-  if (!report.data) return <p>Loading custody...</p>
+  if (!report.data) return <Skeleton />
   return (
     <div className="custody">
       <p>
@@ -152,18 +153,19 @@ export function EvidencePanel({
   current,
   permissions,
   collector,
+  onCustody,
 }: {
   slug: string
   current: Case
   permissions: string[]
   collector: string
+  onCustody: (evidenceId: string) => void
 }) {
   const queryClient = useQueryClient()
   const base = `/api/tenants/${slug}/cases/${current.number}/evidence`
   const canWrite = permissions.includes('cases:write')
   const [mode, setMode] = useState<Mode>('file')
   const [progress, setProgress] = useState<string | null>(null)
-  const [openCustody, setOpenCustody] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['case', slug, current.number] })
 
@@ -252,8 +254,7 @@ export function EvidencePanel({
 
   return (
     <section>
-      <h3>Evidence</h3>
-      {current.evidence.length === 0 && <p>No evidence.</p>}
+      {current.evidence.length === 0 && <p className="empty">No evidence.</p>}
       {current.evidence.map((item) => (
         <div key={item.id} className="task">
           <div className="task-head">
@@ -268,10 +269,7 @@ export function EvidencePanel({
                   Download {item.name}
                 </a>
               )}
-            <button
-              type="button"
-              onClick={() => setOpenCustody(openCustody === item.id ? null : item.id)}
-            >
+            <button type="button" onClick={() => onCustody(item.id)}>
               Custody of {item.name}
             </button>
             {canWrite && item.status !== 'deleted' && (
@@ -297,9 +295,6 @@ export function EvidencePanel({
                 Cancel
               </button>
             </form>
-          )}
-          {openCustody === item.id && (
-            <Custody slug={slug} number={current.number} item={item} canWrite={canWrite} />
           )}
         </div>
       ))}

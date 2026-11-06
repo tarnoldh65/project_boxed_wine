@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { api, type Case, type Member, type Recipient } from '../api/client'
+import { SlaBadge } from '../Badge'
 import { actorName, useCaseAction } from './journal'
 
 const RECIPIENTS: [Recipient, string][] = [
@@ -69,9 +70,8 @@ export function RegulatoryPanel({
 
   return (
     <section>
-      <h3>Regulatory notifications</h3>
       {current.clocks.length === 0 && (
-        <p>No notification clocks. They start when regulated data is flagged or an incident is found material.</p>
+        <p className="empty">No notification clocks. They start when regulated data is flagged or an incident is found material.</p>
       )}
       {current.clocks.length > 0 && (
         <table>
@@ -90,9 +90,8 @@ export function RegulatoryPanel({
                 <td>{clock.name}</td>
                 <td>{when(clock.started_at)}</td>
                 <td>{when(clock.due_at)}</td>
-                <td className={`sla-${clock.status}`}>
-                  {clock.status}
-                  {clock.met_at && ` ${when(clock.met_at)}`}
+                <td>
+                  <SlaBadge status={clock.status}>{clock.met_at && ` ${when(clock.met_at)}`}</SlaBadge>
                 </td>
               </tr>
             ))}
@@ -100,8 +99,8 @@ export function RegulatoryPanel({
         </table>
       )}
 
-      <h4>Materiality decisions</h4>
-      {current.materiality.length === 0 && <p>No decision recorded.</p>}
+      <h3>Materiality decisions</h3>
+      {current.materiality.length === 0 && <p className="empty">No decision recorded.</p>}
       <ul>
         {current.materiality.map((d) => (
           <li key={d.id}>
@@ -126,8 +125,8 @@ export function RegulatoryPanel({
         </form>
       )}
 
-      <h4>Notification log</h4>
-      {current.disclosures.length === 0 && <p>No notifications sent.</p>}
+      <h3>Notification log</h3>
+      {current.disclosures.length === 0 && <p className="empty">No notifications sent.</p>}
       {current.disclosures.length > 0 && (
         <table>
           <thead>

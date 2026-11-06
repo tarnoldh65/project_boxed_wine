@@ -101,8 +101,7 @@ export function NotesPanel({
 
   return (
     <section>
-      <h3>Notes</h3>
-      {current.notes.length === 0 && <p>No notes.</p>}
+      {current.notes.length === 0 && <p className="empty">No notes.</p>}
       {current.notes.map((note) => (
         <article key={note.id} className="note">
           {note.privileged && <p className="banner">{PRIVILEGE_NOTICE}</p>}

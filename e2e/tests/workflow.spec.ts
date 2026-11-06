@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { runJob } from './backend'
-import { createUser, signIn } from './identity'
+import { act, changeState, createUser, openCaseFrame, queueFrame, signIn } from './identity'
 
 const MAILPIT = 'http://localhost:8025/api/v1'
 
@@ -9,18 +9,17 @@ test('tasks and the post-incident review gate closing a case', async ({ page, re
   await signIn(page, user)
   const title = `Flood ${Date.now()}`
 
-  await page.getByText('New case').click()
-  await page.getByLabel('Type').selectOption({ label: 'DDoS' })
-  await page.getByLabel('Title').fill(title)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Type').selectOption({ label: 'DDoS' })
+  await queueFrame(page).getByLabel('Title').fill(title)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   await expect(page.locator('strong', { hasText: 'Engage the DDoS mitigation provider' })).toBeVisible()
   await expect(page.getByText('blocked')).toBeVisible()
 
-  await page.getByLabel('State').selectOption({ label: 'Closed' })
-  await page.getByLabel('Resolution').selectOption('true_positive')
-  await page.getByRole('button', { name: 'Save case' }).click()
-  await expect(page.getByRole('alert')).toContainText('finish or waive every task first')
+  await changeState(page, 'Closed', 'true_positive')
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('finish or waive every task first')
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
 
   await page.getByLabel('Status of Engage the DDoS mitigation provider').selectOption('done')
   await expect(page.getByText('blocked')).toBeHidden()
@@ -29,8 +28,10 @@ test('tasks and the post-incident review gate closing a case', async ({ page, re
   await page.getByRole('button', { name: 'Confirm waive' }).click()
   await expect(page.getByText('Waived: Provider confirmed')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Save case' }).click()
-  await expect(page.getByRole('alert')).toContainText('complete the post-incident review first')
+  await changeState(page, 'Closed', 'true_positive')
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText('complete the post-incident review first')
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
+  await openCaseFrame(page, 'Post-incident review')
   for (const [label, text] of [
     ['Root cause', 'Upstream provider capacity'],
     ['Contributing factors', 'No rate limiting at the edge'],
@@ -42,9 +43,9 @@ test('tasks and the post-incident review gate closing a case', async ({ page, re
   await page.getByRole('button', { name: 'Save review' }).click()
   await expect(page.getByText('Complete.')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Save case' }).click()
-  await expect(page.getByRole('status')).toHaveText('Saved')
-  await expect(page.getByRole('table', { name: 'SLA' })).toContainText('resolve met')
+  await changeState(page, 'Closed', 'true_positive')
+  await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(page.getByRole('table', { name: 'SLA', exact: true })).toContainText('resolve met')
 })
 
 test('declaring a major incident emails the escalation contacts', async ({ page, request }) => {
@@ -58,14 +59,13 @@ test('declaring a major incident emails the escalation contacts', async ({ page,
   expect(rules.status()).toBe(200)
 
   const title = `Payroll outage ${run}`
-  await page.getByText('New case').click()
-  await page.getByLabel('Title').fill(title)
-  await page.getByRole('button', { name: 'Create case' }).click()
+  await queueFrame(page).getByText('New case').click()
+  await queueFrame(page).getByLabel('Title').fill(title)
+  await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   const number = page.url().split('/').at(-1)
 
-  await page.getByLabel('Major incident reason').fill('Payroll cannot run')
-  await page.getByRole('button', { name: 'Declare major incident' }).click()
+  await act(page, 'Declare major incident', 'Major incident reason', 'Payroll cannot run')
   await expect(page.getByText(/Major incident declared .*: Payroll cannot run/)).toBeVisible()
 
   expect(runJob('sla')).toContain('notifications sent')

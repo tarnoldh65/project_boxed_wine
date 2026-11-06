@@ -105,7 +105,7 @@ async def test_view_and_list_are_audited(
 ) -> None:
     case = await create(analyst.client, tenant)
     assert (await analyst.client.get(cases_url(tenant, f"/{case['number']}"))).status_code == 200
-    listed = (await analyst.client.get(cases_url(tenant))).json()
+    listed = (await analyst.client.get(cases_url(tenant))).json()["cases"]
     assert [c["number"] for c in listed] == [case["number"]]
     actions = await audit_actions(owner, f"user:{analyst.id}")
     assert [a for a in actions if a.startswith("case.")] == [
@@ -119,7 +119,8 @@ async def test_list_filters_by_state(analyst: SignedIn, tenant: str) -> None:
     await create(analyst.client, tenant)
     second = await create(analyst.client, tenant)
     await patch(analyst.client, tenant, second["number"], state="triage")
-    listed = (await analyst.client.get(cases_url(tenant), params={"state": "triage"})).json()
+    response = await analyst.client.get(cases_url(tenant), params={"state": "triage"})
+    listed = response.json()["cases"]
     assert [c["number"] for c in listed] == [second["number"]]
 
 
@@ -133,10 +134,10 @@ async def test_restricted_cases_are_hidden(make_user: MakeUser, tenant: str) -> 
     case = await create(insider.client, tenant, title="Executive mailbox access")
     assert (await patch(insider.client, tenant, case["number"], restricted=True)).status_code == 200
 
-    assert (await analyst.client.get(cases_url(tenant))).json() == []
+    assert (await analyst.client.get(cases_url(tenant))).json()["cases"] == []
     assert (await analyst.client.get(cases_url(tenant, f"/{case['number']}"))).status_code == 404
     assert (await patch(analyst.client, tenant, case["number"], title="x")).status_code == 404
-    assert len((await insider.client.get(cases_url(tenant))).json()) == 1
+    assert len((await insider.client.get(cases_url(tenant))).json()["cases"]) == 1
 
 
 async def test_restricting_needs_permission(

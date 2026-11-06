@@ -1430,6 +1430,13 @@ export interface components {
             disclosures: components["schemas"]["DisclosureOut"][];
             pir: components["schemas"]["PirOut"];
         };
+        /** CaseQueue */
+        CaseQueue: {
+            /** Cases */
+            cases: components["schemas"]["CaseSummary"][];
+            /** Total */
+            total: number;
+        };
         /** CaseSummary */
         CaseSummary: {
             /** Number */
@@ -2167,6 +2174,11 @@ export interface components {
             depends_on: string[];
             when?: components["schemas"]["Condition"] | null;
         };
+        /**
+         * QueueSort
+         * @enum {string}
+         */
+        QueueSort: "number" | "title" | "state" | "severity" | "sla" | "owner" | "created";
         /**
          * Recipient
          * @enum {string}
@@ -3587,8 +3599,18 @@ export interface operations {
     list_cases_api_tenants__slug__cases_get: {
         parameters: {
             query?: {
+                text?: string;
                 state?: string | null;
+                open_only?: boolean;
+                severity?: string | null;
+                owner?: string | null;
+                unassigned?: boolean;
+                sla?: ("met" | "late" | "pending" | "warning" | "breached") | "none" | null;
+                age?: ("under_1_day" | "1_to_7_days" | "7_to_30_days" | "over_30_days") | null;
+                sort?: components["schemas"]["QueueSort"];
+                descending?: boolean;
                 limit?: number;
+                offset?: number;
             };
             header?: never;
             path: {
@@ -3604,7 +3626,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CaseSummary"][];
+                    "application/json": components["schemas"]["CaseQueue"];
                 };
             };
             /** @description Validation Error */

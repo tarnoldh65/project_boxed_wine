@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 10 complete.** All phases done.
+Status: **Phase 15 complete.** All phases done, including the UI redesign (section 2a).
 
 ---
 
@@ -175,6 +175,77 @@ README.md
 
 ---
 
+## 2a. UI redesign: frame workspace
+
+Goal: replace the tabbed pages with a sleek, interactive workspace. Everything lives on two pages: **Workspace** and **Settings** (admins only). The Workspace is a grid of frames that users move and resize; selecting something in one frame opens related frames. Light and dark themes are both first-class.
+
+Approach:
+- **Frames:** `react-grid-layout` 2.x handles drag and resize; the workspace picks the breakpoint itself. It supports React 19 and injects no styles, so the CSP stays as it is. It has no keyboard support, so each frame also gets a menu for moving and resizing.
+- **Reuse:** existing panels (tasks, notes, evidence, and so on) move into frames with their logic and tests intact. The one API change is server-side filtering of the case list, added in Phase 14 by decision.
+- **Look:** CSS custom properties for colour, spacing, and elevation; `lucide-react` icons; Inter, self-hosted because the CSP blocks font CDNs. Charts are small hand-written components, so no chart library is added.
+- **Addresses:** `/t/:slug`, `/t/:slug/cases/:n`, and `/t/:slug/observables/:id` keep working and open the matching frames, so links stay shareable. `/dashboard` and `/search?q=` open their frames in the Workspace.
+- **Saved layout:** kept in the browser's localStorage per user and tenant, holding frame ids and positions only, never case data. The page works normally if storage is unavailable.
+- **Narrow windows:** frames reflow by breakpoint and stack in a single column on phones, where dragging is turned off.
+
+Frames and what opens them:
+
+| Frame | Opens from | Selecting inside it opens |
+|---|---|---|
+| Case queue, Overview (KPIs and charts), Notification deadlines, Metrics, Search | Always available from the frame launcher | A case's frames |
+| Case summary (fields, state, actions), Tasks, Timeline | Selecting a case | Any other case frame, from the summary's frame chips |
+| Notes, Comments, Observables, Evidence, Assets, Regulatory, Post-incident review, Reports | Case summary chips | See the next rows |
+| Observable correlation | Selecting an observable | Another case |
+| Chain of custody | Selecting an evidence item | - |
+
+### Phase 11 - Design system and themes
+
+- [x] Colour, type, spacing, radius, and elevation tokens for light and dark, each colour defined once with CSS `light-dark()`; `index.css` restyled on them, including forms, tables, buttons, badges, and alerts
+- [x] Theme control with Light, Dark, and System. The default follows the operating system; the choice is remembered, and `public/theme.js` applies it before first paint, so the page does not flash the wrong theme on load
+- [x] Severity, TLP, SLA, and state badges meet WCAG AA contrast in both themes (`contrast.test.ts` reads the token pairs from the CSS), and each shows its status as text, so none relies on colour alone
+- [x] Tests: theme selection and persistence, including when storage is unavailable; existing frontend tests pass
+
+### Phase 12 - Frame workspace
+
+- [x] `Frame` component (title bar, drag handle, collapse, maximize, close, menu) and `Workspace` grid with launcher and "Reset layout". The existing queue, dashboard, search, case, and observable pages run inside frames until Phases 13 and 14 split them
+- [x] Frames drag and resize with the mouse, and the same moves work from the keyboard through the frame menu
+- [x] Layout reflows at each breakpoint with no horizontal page scroll down to 360 px, and stacks in one column on phones
+- [x] Layout is saved per user and tenant, restored on return, and a corrupt or outdated saved layout falls back to the default
+- [x] Top bar replaces the tabs: tenant switcher, global search box, launcher, theme control, user menu
+- [x] The address drives selection, so every existing link opens or updates a frame, and frames stay open as it moves on. Any successful change refreshes all open frames
+- [x] Tests: layout save, restore, and fallback; opening, closing, collapsing, and keyboard moves; `workspace.spec.ts` drags, resizes, reloads, and checks window sizes in a real browser, with no CSP violations
+
+### Phase 13 - Queue and insight frames
+
+- [x] Case queue with sort and filter (state, severity, owner, text), a severity marker per row, the open case highlighted, and New case in a panel without leaving the page. Filtering moved to the server in Phase 14
+- [x] Overview frame: KPI tiles and bar charts in place of the dashboard tables. Each chart is a styled table, so the figures are readable without the bars; bar fills were checked with the palette validator in both themes
+- [x] Selecting a KPI or chart row filters the queue to the open cases it counts, and selecting it again clears the filter; SLA compliance opens the Metrics frame
+- [x] Notification deadlines, Metrics, and Search frames, with saved searches; a search hit opens its case
+- [x] `/dashboard` and `/search?q=` open these frames; restricted cases stay out of every frame for users without the grant
+- [x] Tests: queue filtering and sorting, chart selection, deep links
+
+### Phase 14 - Case frames and drill-down
+
+- [x] Selecting a case opens Summary, Tasks, and Timeline; a second selection swaps the active case in the same frames, and the frame arrangement is kept
+- [x] `CasePage` is split into a summary frame and a frame for each part of the case, titled with the case number; summary chips open the rest and show counts
+- [x] Case actions (state change, merge, split, legal hold, privilege, major incident) open in dialogs from the summary; the privilege banner stays visible in every frame of a privileged case
+- [x] Selecting an observable opens Observable correlation; selecting an evidence item opens Chain of custody, which closes when another case is selected; both follow links to other cases
+- [x] Frames for one case share one copy of it and refresh together after a change. The Details form keeps only the user's edits, so unsaved text survives and other frames' changes show through
+- [x] The case queue moved to the server, by decision, so every match stays reachable: `GET /cases` filters, sorts, and pages, returns `{cases, total}`, and the queue loads more on request. `open_only` counts as the dashboard does. SLA status is computed, so filtering or sorting on it runs over the matching cases in Python
+- [x] Tests: panel tests moved to frames with their assertions kept; opening, swapping, and drill-down; privilege banner; `test_queue.py` covers every filter, sort, page, and restricted cases
+
+### Phase 15 - Settings page, polish, and verification
+
+- [x] Settings restyled with side navigation in the new design; all sections stay mounted, so unsaved edits are safe while moving between them
+- [x] Transitions for opening and moving frames, turned off under `prefers-reduced-motion`; loading skeletons and empty states
+- [x] Keyboard focus is visible and logical across frames: tab order follows the on-screen layout, and keyboard moves keep focus. An automated accessibility scan (axe) finds no serious issues in either theme; `contrast.test.ts` covers elements it cannot measure when scrolled out of view
+- [x] Visual check of every frame in both themes at 360, 768, 1280, and 1920 px, with no sideways scrolling or console errors
+- [x] Playwright specs updated for the new navigation, plus specs for moving a frame, reloading, and seeing it restored, and for the page settling after a breakpoint change; all 35 pass on compose and on kind with the CSP unchanged, and the restore drill passes
+- [x] README updated; frontend lint, type check, tests, build, npm audit, Semgrep, and Trivy clean
+- [x] Phones: frames take their natural height, so the page does the scrolling. Bundle: Settings and the Markdown renderer load on demand, and the first load drops from 651 KB to 465 KB
+- [x] The grid is the plain controlled `GridLayout`, and only moves a person makes are saved. `ResponsiveGridLayout` kept a second copy of the layout that fought ours in an endless render loop after any breakpoint change, and stored layouts under the wrong breakpoint; saved layouts from before the fix are discarded
+
+---
+
 ## 3. Recommended deployment platforms and tools
 
 | Need | Recommendation |
@@ -221,3 +292,4 @@ SR-08's annual third-party pentest and vulnerability disclosure program are orga
 3. Multi-tenant from the start: `detect-respond` and `insider-threat`, with full data segregation.
 4. Stack: FastAPI + React.
 5. Report layouts are fixed in code for MVP; editable report templates may come later.
+6. UI redesign: one active case at a time (selecting another swaps the case frames' content), layouts saved in the browser per user and tenant, frames on a snapping grid that never overlap, and a dense operations-console look with neutral surfaces, one accent colour, and colour reserved for severity and status.

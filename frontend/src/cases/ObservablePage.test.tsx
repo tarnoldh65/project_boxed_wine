@@ -7,7 +7,7 @@ import { ObservablePage } from './ObservablePage'
 afterEach(() => vi.unstubAllGlobals())
 
 function open() {
-  renderInTenant(<ObservablePage />, TENANT, {
+  renderInTenant(<ObservablePage observableId="o1" />, TENANT, {
     path: '/t/dr/observables/o1',
     route: 'observables/:observableId',
   })

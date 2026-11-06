@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, type ReactNode } from 'react'
+import { CircleUser, LayoutGrid, Search as SearchIcon } from 'lucide-react'
+import { lazy, Suspense, useEffect, type FormEvent, type ReactNode } from 'react'
 import {
+  Link,
   Navigate,
   NavLink,
   Outlet,
@@ -9,15 +11,18 @@ import {
   useNavigate,
   useParams,
 } from 'react-router'
-import { api, type Me } from './api/client'
-import { CasePage } from './cases/CasePage'
-import { CasesPage } from './cases/CasesPage'
-import { ObservablePage } from './cases/ObservablePage'
-import { DashboardPage } from './DashboardPage'
-import { SearchPage } from './SearchPage'
-import { Settings } from './settings/Settings'
+import { api, type Me, type TenantAccess } from './api/client'
+import { Menu } from './Menu'
+import { Skeleton } from './Skeleton'
+import { ThemeControl } from './ThemeControl'
+import { FRAMES, LAUNCHABLE } from './workspace/layout'
+import { useWorkspace, WorkspaceContext, type Workspace as WorkspaceState } from './workspace/useWorkspace'
+import { Workspace } from './workspace/Workspace'
 
 const TENANT_KEY = 'casemgr.tenant'
+const Settings = lazy(() =>
+  import('./settings/Settings').then((module) => ({ default: module.Settings })),
+)
 
 async function fetchMe(): Promise<Me | null> {
   const { data, response } = await api.GET('/api/me')
@@ -49,24 +54,41 @@ export default function App() {
   return (
     <Routes>
       <Route path="/t/:slug" element={<TenantLayout me={me.data} />}>
-        <Route index element={<CasesPage />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="search" element={<SearchPage />} />
-        <Route path="cases/:number" element={<CasePage />} />
-        <Route path="observables/:observableId" element={<ObservablePage />} />
-        <Route path="settings" element={<Settings />} />
+        <Route index element={<Workspace />} />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<Skeleton lines={8} />}>
+              <Settings />
+            </Suspense>
+          }
+        />
+        <Route path="*" element={<Workspace />} />
       </Route>
       <Route path="*" element={<Home me={me.data} />} />
     </Routes>
   )
 }
 
-function Shell({ actions, children }: { actions?: ReactNode; children?: ReactNode }) {
+function Shell({
+  actions,
+  home = '/',
+  children,
+}: {
+  actions?: ReactNode
+  home?: string
+  children?: ReactNode
+}) {
   return (
     <div className="shell">
       <header className="shell-header">
-        <span className="brand">Case Manager</span>
-        <div className="shell-actions">{actions}</div>
+        <Link className="brand" to={home}>
+          Case Manager
+        </Link>
+        <div className="shell-actions">
+          {actions}
+          <ThemeControl />
+        </div>
       </header>
       <main className="shell-main">{children}</main>
     </div>
@@ -86,30 +108,87 @@ function Home({ me }: { me: Me }) {
   const tenant = me.tenants.find((t) => t.slug === stored) ?? me.tenants[0]
   if (tenant) return <Navigate to={`/t/${tenant.slug}`} replace />
   return (
-    <Shell actions={<UserActions me={me} />}>
+    <Shell actions={<UserMenu me={me} />}>
       <p>You do not have access to any tenant. Ask an administrator to add you to a group.</p>
     </Shell>
   )
 }
 
-function UserActions({ me }: { me: Me }) {
+function UserMenu({ me }: { me: Me }) {
   async function signOut() {
     const { data } = await api.POST('/api/auth/logout')
     window.location.assign(data?.logout_url ?? '/')
   }
   return (
-    <>
-      <span>{me.display_name}</span>
-      <button type="button" onClick={signOut}>
+    <Menu
+      label={me.display_name}
+      trigger={
+        <>
+          <CircleUser aria-hidden size={16} /> {me.display_name}
+        </>
+      }
+    >
+      <button type="button" className="ghost" onClick={signOut}>
         Sign out
       </button>
-    </>
+    </Menu>
+  )
+}
+
+function FramesMenu({ workspace }: { workspace: WorkspaceState }) {
+  return (
+    <Menu
+      label="Frames"
+      trigger={
+        <>
+          <LayoutGrid aria-hidden size={16} /> Frames
+        </>
+      }
+    >
+      {LAUNCHABLE.map((id) => (
+        <label key={id}>
+          <input
+            type="checkbox"
+            checked={workspace.state.open.includes(id)}
+            onChange={() => workspace.toggleOpen(id)}
+          />
+          {FRAMES[id].title}
+        </label>
+      ))}
+      <hr />
+      <button type="button" className="ghost" onClick={workspace.reset}>
+        Reset layout
+      </button>
+    </Menu>
+  )
+}
+
+function GlobalSearch({ slug }: { slug: string }) {
+  const navigate = useNavigate()
+
+  function search(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const q = String(new FormData(event.currentTarget).get('q')).trim()
+    event.currentTarget.reset()
+    if (q) navigate(`/t/${slug}/search?q=${encodeURIComponent(q)}`)
+  }
+
+  return (
+    <form className="global-search" role="search" onSubmit={search}>
+      <SearchIcon aria-hidden size={16} />
+      <input
+        name="q"
+        type="search"
+        maxLength={500}
+        aria-label="Search everything"
+        placeholder="Search cases, notes, evidence"
+      />
+    </form>
   )
 }
 
 function TenantLayout({ me }: { me: Me }) {
   const { slug } = useParams()
-  const navigate = useNavigate()
   const tenant = me.tenants.find((t) => t.slug === slug)
 
   useEffect(() => {
@@ -122,12 +201,19 @@ function TenantLayout({ me }: { me: Me }) {
   }, [tenant])
 
   if (!tenant) return <Navigate to="/" replace />
+  return <TenantShell key={tenant.slug} me={me} tenant={tenant} />
+}
+
+function TenantShell({ me, tenant }: { me: Me; tenant: TenantAccess }) {
+  const navigate = useNavigate()
+  const workspace = useWorkspace(me.id, tenant.slug)
   const isAdmin = ['config:manage', 'tokens:manage'].some((p) => tenant.permissions.includes(p))
 
   const actions = (
     <>
-      <label>
-        Tenant{' '}
+      <GlobalSearch slug={tenant.slug} />
+      <label className="tenant-switch">
+        <span className="sr-only">Tenant</span>
         <select value={tenant.slug} onChange={(e) => navigate(`/t/${e.target.value}`)}>
           {me.tenants.map((t) => (
             <option key={t.slug} value={t.slug}>
@@ -136,22 +222,27 @@ function TenantLayout({ me }: { me: Me }) {
           ))}
         </select>
       </label>
-      <UserActions me={me} />
+      <FramesMenu workspace={workspace} />
+      {isAdmin && (
+        <>
+          <NavLink className="top-link" to={`/t/${tenant.slug}`} end>
+            Workspace
+          </NavLink>
+          <NavLink className="top-link" to={`/t/${tenant.slug}/settings`}>
+            Settings
+          </NavLink>
+        </>
+      )}
+      <UserMenu me={me} />
     </>
   )
 
   return (
-    <Shell actions={actions}>
-      <h1>{tenant.name}</h1>
-      <nav className="tabs">
-        <NavLink to={`/t/${tenant.slug}`} end>
-          Cases
-        </NavLink>
-        <NavLink to={`/t/${tenant.slug}/dashboard`}>Dashboard</NavLink>
-        <NavLink to={`/t/${tenant.slug}/search`}>Search</NavLink>
-        {isAdmin && <NavLink to={`/t/${tenant.slug}/settings`}>Settings</NavLink>}
-      </nav>
-      <Outlet key={tenant.slug} context={tenant} />
+    <Shell actions={actions} home={`/t/${tenant.slug}`}>
+      <h1 className="sr-only">{tenant.name}</h1>
+      <WorkspaceContext value={workspace}>
+        <Outlet context={tenant} />
+      </WorkspaceContext>
     </Shell>
   )
 }

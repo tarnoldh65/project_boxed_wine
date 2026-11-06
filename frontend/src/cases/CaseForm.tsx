@@ -9,7 +9,6 @@ import {
   type Member,
   type Pap,
   type Regulated,
-  type Resolution,
   type TenantConfig,
   type Tlp,
 } from '../api/client'
@@ -18,15 +17,12 @@ import { splitList } from '../settings/editing'
 const TLPS: Tlp[] = ['clear', 'green', 'amber', 'amber+strict', 'red']
 const PAPS: Pap[] = ['clear', 'green', 'amber', 'red']
 const REGULATED: Regulated[] = ['pii', 'phi', 'pci', 'cui']
-const RESOLUTIONS: Resolution[] = ['true_positive', 'false_positive', 'benign', 'duplicate']
 
 type CustomValue = string | number
 
 interface Draft {
   title: string
   description: string
-  state: string
-  resolution: string
   impact: string
   urgency: string
   overridden: boolean
@@ -55,8 +51,6 @@ function toDraft(c: Case): Draft {
   return {
     title: c.title,
     description: c.description,
-    state: c.state,
-    resolution: c.resolution ?? '',
     impact: c.impact,
     urgency: c.urgency,
     overridden: c.override_justification !== null,
@@ -76,13 +70,10 @@ function toDraft(c: Case): Draft {
   }
 }
 
-function toUpdate(d: Draft, config: TenantConfig): CaseUpdate {
-  const terminal = config.states.some((s) => s.key === d.state && s.terminal)
+function toUpdate(d: Draft): CaseUpdate {
   return {
     title: d.title,
     description: d.description,
-    state: d.state,
-    resolution: terminal && d.resolution ? (d.resolution as Resolution) : null,
     impact: d.impact,
     urgency: d.urgency,
     override: d.overridden ? { severity: d.overrideSeverity, justification: d.justification } : null,
@@ -125,9 +116,11 @@ export function CaseForm({
   canRestrict: boolean
 }) {
   const queryClient = useQueryClient()
-  const [draft, setDraft] = useState(() => toDraft(current))
-  const set = (change: Partial<Draft>) => setDraft({ ...draft, ...change })
-  const terminal = config.states.some((s) => s.key === draft.state && s.terminal)
+  // Only what the user changed: the rest follows the live case as other frames update it.
+  const [edits, setEdits] = useState<Partial<Draft>>({})
+  const saved = toDraft(current)
+  const draft = { ...saved, ...edits }
+  const set = (change: Partial<Draft>) => setEdits({ ...edits, ...change })
 
   const save = useMutation({
     mutationFn: async (body: CaseUpdate) => {
@@ -139,7 +132,7 @@ export function CaseForm({
       return data
     },
     onSuccess: (updated) => {
-      setDraft(toDraft(updated))
+      setEdits({})
       queryClient.setQueryData(['case', slug, current.number], updated)
       return queryClient.invalidateQueries({ queryKey: ['cases', slug] })
     },
@@ -147,7 +140,7 @@ export function CaseForm({
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    save.mutate(changes(toUpdate(toDraft(current), config), toUpdate(draft, config)))
+    save.mutate(changes(toUpdate(saved), toUpdate(draft)))
   }
 
   function customInput(field: CustomField) {
@@ -201,21 +194,6 @@ export function CaseForm({
         <label>
           Title <input value={draft.title} onChange={(e) => set({ title: e.target.value })} />
         </label>
-        <label>
-          State{' '}
-          <select value={draft.state} onChange={(e) => set({ state: e.target.value })}>
-            {config.states.map((s) => option(s.key, s.name))}
-          </select>
-        </label>
-        {terminal && (
-          <label>
-            Resolution{' '}
-            <select value={draft.resolution} onChange={(e) => set({ resolution: e.target.value })}>
-              <option value="" />
-              {RESOLUTIONS.map((r) => option(r, r.replace('_', ' ')))}
-            </select>
-          </label>
-        )}
         <label>
           Impact{' '}
           <select value={draft.impact} onChange={(e) => set({ impact: e.target.value })}>
