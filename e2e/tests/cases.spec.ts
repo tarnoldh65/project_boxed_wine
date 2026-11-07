@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { GREENMAIL, inBackend, runJob } from './backend'
-import { act, changeState, createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { act, changeState, createUser, openCaseTab, queueFrame, signIn } from './identity'
 
 const TENANT = '/api/tenants/detect-respond'
 
@@ -36,19 +36,20 @@ test('analyst opens a case from a template, edits it, and links an asset', async
   await expect(page.locator('.case-meta')).toContainText('New')
   await changeState(page, 'Triage')
   await expect(page.locator('.case-meta')).toContainText('Triage')
-  await openCaseFrame(page, 'Details')
+  await openCaseTab(page, 'Details')
   await page.getByLabel('Data regions').fill('EU')
   await page.getByLabel('PII').check()
   await page.getByRole('button', { name: 'Save case' }).click()
   await expect(page.getByRole('status')).toHaveText('Saved')
 
-  await openCaseFrame(page, 'Assets')
+  await openCaseTab(page, 'Assets')
   await page.getByLabel('Asset name').fill('cfo-laptop')
   await page.getByRole('button', { name: 'Link asset' }).click()
   await expect(page.getByRole('button', { name: 'Remove cfo-laptop' })).toBeVisible()
 
   await page.reload()
   await expect(page.locator('.case-meta')).toContainText('Triage')
+  await openCaseTab(page, 'Details')
   await expect(page.getByLabel('Data regions')).toHaveValue('EU')
   await expect(page.getByLabel('PII')).toBeChecked()
 })
@@ -79,7 +80,7 @@ test('API and webhook alerts open cases and group by key', async ({ page, reques
   expect(hook.status()).toBe(201)
 
   await page.goto(`/t/detect-respond/cases/${first.case_number}`)
-  await openCaseFrame(page, 'Alerts')
+  await openCaseTab(page, 'Alerts')
   await expect(alertRow(page, `Lure A ${run}`)).toBeVisible()
   await expect(alertRow(page, `Lure B ${run}`)).toBeVisible()
   await page.goto('/t/detect-respond')
@@ -109,7 +110,7 @@ test('email to the intake mailbox becomes a case', async ({ page, request }) => 
   await signIn(page, user)
   await page.getByRole('link', { name: subject }).click()
   await expect(page.getByText(/source email/)).toBeVisible()
-  await openCaseFrame(page, 'Alerts')
+  await openCaseTab(page, 'Alerts')
   await expect(page.getByText(/billing@evil.example/)).toBeAttached()
 })
 
@@ -132,7 +133,7 @@ test('analyst splits an alert off and merges it into another case', async ({ pag
   const target = await post(`Other alert ${run}`, `b-${run}`)
 
   await page.goto(`/t/detect-respond/cases/${source}`)
-  await openCaseFrame(page, 'Alerts')
+  await openCaseTab(page, 'Alerts')
   await page.getByLabel(`Select alert Alert two ${run}`).check()
   await act(page, 'Split selected into new case', 'New case title', `Split ${run}`)
   await expect(page.getByRole('heading', { name: `Split ${run}` })).toBeVisible()
@@ -143,6 +144,7 @@ test('analyst splits an alert off and merges it into another case', async ({ pag
   await expect(alertRow(page, `Alert two ${run}`)).toBeVisible()
 
   await page.goto(`/t/detect-respond/cases/${source}`)
+  await openCaseTab(page, 'Alerts')
   await expect(alertRow(page, `Alert one ${run}`)).toBeVisible()
   await expect(alertRow(page, `Alert two ${run}`)).toBeHidden()
 })

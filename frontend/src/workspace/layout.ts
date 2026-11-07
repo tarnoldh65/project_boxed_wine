@@ -51,10 +51,10 @@ export const FRAMES: Record<FrameId, FrameSpec> = {
   deadlines: { title: 'Notification deadlines', w: 7, h: 8, minW: 3, minH: 4 },
   metrics: { title: 'Metrics', w: 7, h: 12, minW: 3, minH: 6 },
   search: { title: 'Search', w: 7, h: 10, minW: 3, minH: 6 },
-  case: { title: 'Case', w: 7, h: 9, minW: 4, minH: 5, prominent: true },
+  case: { title: 'Case', w: 7, h: 18, minW: 4, minH: 6, prominent: true },
   'case-details': { title: 'Details', w: 7, h: 14, minW: 4, minH: 6 },
-  'case-tasks': { title: 'Tasks', w: 7, h: 9, minW: 3, minH: 5, prominent: true },
-  'case-timeline': { title: 'Timeline', w: 7, h: 10, minW: 3, minH: 5, prominent: true },
+  'case-tasks': { title: 'Tasks', w: 7, h: 9, minW: 3, minH: 5 },
+  'case-timeline': { title: 'Timeline', w: 7, h: 10, minW: 3, minH: 5 },
   'case-notes': { title: 'Notes', w: 5, h: 12, minW: 3, minH: 5 },
   'case-comments': { title: 'Comments', w: 5, h: 10, minW: 3, minH: 5 },
   'case-observables': { title: 'Observables', w: 5, h: 12, minW: 3, minH: 5 },
@@ -88,10 +88,10 @@ export const CASE_FRAMES: FrameId[] = [
   'case-pir',
   'case-reports',
 ]
-/** Each opens on top of the last, so the summary ends up first. */
-const CASE_OPENING: FrameId[] = ['case-timeline', 'case-tasks', 'case']
 
-const STORAGE_VERSION = 2
+const STORAGE_VERSION = 3
+/** Version 2 opened a frame per case section; version 3 shows them as tabs of the case. */
+const TABBED_CASES_VERSION = 3
 const COLLAPSED_ROWS = 1
 
 function storageKey(userId: string, slug: string): string {
@@ -144,9 +144,31 @@ export function openFrame(state: WorkspaceState, id: FrameId): WorkspaceState {
   }
 }
 
-/** Selecting a case opens its core frames, unless a case is open and they were arranged already. */
 export function openCase(state: WorkspaceState): WorkspaceState {
-  return state.open.includes('case') ? openFrame(state, 'case') : CASE_OPENING.reduce(openFrame, state)
+  return openFrame(state, 'case')
+}
+
+/** Columns two items share. */
+function sharesColumns(a: LayoutItem, b: LayoutItem): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w
+}
+
+/** A case section in its own frame, docked right under the case and pushing what is below down. */
+export function popOut(state: WorkspaceState, id: FrameId): WorkspaceState {
+  if (state.open.includes(id)) return openFrame(state, id)
+  return {
+    open: [...state.open, id],
+    collapsed: state.collapsed.filter((frame) => frame !== id),
+    layouts: eachBreakpoint((b) => {
+      const anchor = state.layouts[b].find((item) => item.i === 'case')
+      if (!anchor) return place(state.layouts[b], id, COLS[b])
+      const item = { i: id, x: anchor.x, y: anchor.y + anchor.h, w: anchor.w, h: FRAMES[id].h }
+      const below = state.layouts[b].map((other) =>
+        other.y >= item.y && sharesColumns(other, item) ? { ...other, y: other.y + item.h } : other,
+      )
+      return plain(verticalCompactor.compact([...below, item], COLS[b]))
+    }),
+  }
 }
 
 export function closeCase(state: WorkspaceState): WorkspaceState {
@@ -283,7 +305,7 @@ function isItem(value: unknown): value is LayoutItem {
 function isSaved(saved: Partial<WorkspaceState> & { version?: number }): boolean {
   const { open, collapsed, layouts, version } = saved
   return (
-    version === STORAGE_VERSION &&
+    (version === STORAGE_VERSION || version === TABBED_CASES_VERSION - 1) &&
     Array.isArray(open) &&
     open.every(isFrameId) &&
     Array.isArray(collapsed) &&
@@ -304,7 +326,9 @@ export function loadWorkspace(userId: string, slug: string): WorkspaceState {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey(userId, slug)) ?? 'null')
     if (saved && isSaved(saved)) {
-      return { open: saved.open, collapsed: saved.collapsed, layouts: saved.layouts }
+      const state: WorkspaceState = { open: saved.open, collapsed: saved.collapsed, layouts: saved.layouts }
+      // Sections that used to open as frames are tabs of the case now.
+      return saved.version < TABBED_CASES_VERSION ? CASE_FRAMES.reduce(closeFrame, state) : state
     }
   } catch {
     // Unreadable or blocked storage falls through to the default.

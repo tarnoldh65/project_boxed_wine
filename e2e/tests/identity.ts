@@ -65,9 +65,15 @@ export async function removeFromGroup(request: APIRequestContext, username: stri
 export const queueFrame = (page: Page) => page.getByRole('region', { name: 'Case queue' })
 export const caseFrame = (page: Page) => page.getByRole('region', { name: /^Case #\d+$/ })
 
-/** Open one of the open case's frames from its summary. */
-export async function openCaseFrame(page: Page, name: string) {
-  await caseFrame(page).getByRole('button', { name: new RegExp(`^${name}`) }).click()
+/** Show one section of the open case, on its tab. */
+export async function openCaseTab(page: Page, name: string) {
+  await caseFrame(page).getByRole('tab', { name: new RegExp(`^${name}`) }).click()
+}
+
+/** Show one section of the open case in a frame of its own, under the case. */
+export async function popOut(page: Page, name: string) {
+  await openCaseTab(page, name)
+  await caseFrame(page).getByRole('button', { name: `Pop out ${name}` }).click()
 }
 
 /** Run a case action that asks for one value in a dialog. */

@@ -192,7 +192,7 @@ Frames and what opens them:
 | Frame | Opens from | Selecting inside it opens |
 |---|---|---|
 | Case queue, Overview (KPIs and charts), Notification deadlines, Metrics, Search | Always available from the frame launcher | A case's frames |
-| Case summary (fields, state, actions), Tasks, Timeline | Selecting a case | Any other case frame, from the summary's frame chips |
+| Case (header, actions, and a tab per section) | Selecting a case | A section popped out of its tab, docked under the case |
 | Notes, Comments, Observables, Evidence, Assets, Regulatory, Post-incident review, Reports | Case summary chips | See the next rows |
 | Observable correlation | Selecting an observable | Another case |
 | Chain of custody | Selecting an evidence item | - |
@@ -293,3 +293,5 @@ SR-08's annual third-party pentest and vulnerability disclosure program are orga
 4. Stack: FastAPI + React.
 5. Report layouts are fixed in code for MVP; editable report templates may come later.
 6. UI redesign: one active case at a time (selecting another swaps the case frames' content), layouts saved in the browser per user and tenant, frames on a snapping grid that never overlap, and a dense operations-console look with neutral surfaces, one accent colour, and colour reserved for severity and status.
+7. Case sections are tabs of the case frame, kept mounted once visited so typing survives switching. Any section can pop out into its own frame, docked directly under the case, and go back as a tab. This replaced opening a frame per section wherever there was space, which scattered a case across the workspace.
+

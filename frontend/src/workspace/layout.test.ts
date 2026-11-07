@@ -11,6 +11,7 @@ import {
   moveFrame,
   openCase,
   openFrame,
+  popOut,
   readingOrder,
   saveWorkspace,
   toggleCollapsed,
@@ -76,19 +77,35 @@ describe('placing frames', () => {
     expect(at(state.layouts.lg, 'observable')).toMatchObject({ x: 0, y: 20 })
   })
 
-  test('a case opens its core frames at the top, beside the queue, pushing others down', () => {
+  test('a case opens one frame at the top, beside the queue, pushing others down', () => {
     const { layouts, open } = openCase(defaultWorkspace())
-    expect(open).toEqual(expect.arrayContaining(['case', 'case-tasks', 'case-timeline']))
+    expect(open).toEqual(['queue', 'overview', 'deadlines', 'case'])
     expect(at(layouts.lg, 'case')).toMatchObject({ x: 5, y: 0, w: 7 })
-    expect(at(layouts.lg, 'case-tasks').y).toBe(at(layouts.lg, 'case').h)
     expect(at(layouts.lg, 'queue')).toMatchObject({ x: 0, y: 0 })
-    expect(at(layouts.lg, 'overview').y).toBeGreaterThan(at(layouts.lg, 'case-timeline').y)
+    expect(at(layouts.lg, 'overview').y).toBe(at(layouts.lg, 'case').h)
     expect(overlapping(layouts.lg)).toBe(false)
   })
 
-  test('a case keeps the arrangement of frames the user already chose', () => {
-    const arrangedCase = closeFrame(openCase(defaultWorkspace()), 'case-tasks')
-    expect(openCase(arrangedCase).open).not.toContain('case-tasks')
+  test.each(BREAKPOINTS)('a popped-out section docks right under the case at %s', (breakpoint) => {
+    const withNotes = popOut(openCase(defaultWorkspace()), 'case-notes')
+    const caseItem = at(withNotes.layouts[breakpoint], 'case')
+    expect(at(withNotes.layouts[breakpoint], 'case-notes')).toMatchObject({
+      x: caseItem.x,
+      y: caseItem.y + caseItem.h,
+      w: caseItem.w,
+    })
+    expect(overlapping(withNotes.layouts[breakpoint])).toBe(false)
+    // The newest pops out closest to the case.
+    const both = popOut(withNotes, 'case-tasks')
+    expect(at(both.layouts[breakpoint], 'case-tasks').y).toBe(caseItem.y + caseItem.h)
+    expect(at(both.layouts[breakpoint], 'case-notes').y).toBeGreaterThan(at(both.layouts[breakpoint], 'case-tasks').y)
+    expect(overlapping(both.layouts[breakpoint])).toBe(false)
+  })
+
+  test('popping out an open section only expands it', () => {
+    const state = toggleCollapsed(popOut(openCase(defaultWorkspace()), 'case-notes'), 'case-notes')
+    expect(popOut(state, 'case-notes').collapsed).toEqual([])
+    expect(popOut(state, 'case-notes').layouts).toBe(state.layouts)
   })
 
   test('closing the case closes all its frames and leaves the others', () => {
@@ -218,24 +235,32 @@ describe('saved layouts', () => {
   test.each([
     ['broken JSON', '{nope'],
     ['an empty value', 'null'],
-    ['an older version', JSON.stringify({ ...defaultWorkspace(), version: 1 })],
-    ['an unknown frame', JSON.stringify({ ...defaultWorkspace(), version: 2, open: ['gone'] })],
-    ['a missing breakpoint', JSON.stringify({ ...defaultWorkspace(), version: 2, layouts: {} })],
+    ['a much older version', JSON.stringify({ ...defaultWorkspace(), version: 1 })],
+    ['an unknown frame', JSON.stringify({ ...defaultWorkspace(), version: 3, open: ['gone'] })],
+    ['a missing breakpoint', JSON.stringify({ ...defaultWorkspace(), version: 3, layouts: {} })],
     [
       'an open frame with no position',
-      JSON.stringify({ ...closeFrame(defaultWorkspace(), 'deadlines'), version: 2, open: ['queue', 'deadlines'] }),
+      JSON.stringify({ ...closeFrame(defaultWorkspace(), 'deadlines'), version: 3, open: ['queue', 'deadlines'] }),
     ],
     [
       'a bad position',
       JSON.stringify({
         ...defaultWorkspace(),
-        version: 2,
+        version: 3,
         layouts: { ...defaultWorkspace().layouts, lg: [{ i: 'queue', x: -1, y: 0, w: 1, h: 'tall' }] },
       }),
     ],
   ])('falls back to the default for %s', (_, saved) => {
     localStorage.setItem(KEY, saved)
     expect(loadWorkspace('u1', 'dr')).toEqual(defaultWorkspace())
+  })
+
+  test('a layout from before case tabs keeps its arrangement, with case sections back in the case', () => {
+    const before = popOut(popOut(openCase(defaultWorkspace()), 'case-tasks'), 'case-notes')
+    localStorage.setItem(KEY, JSON.stringify({ version: 2, ...before }))
+    const loaded = loadWorkspace('u1', 'dr')
+    expect(loaded.open).toEqual(['queue', 'overview', 'deadlines', 'case'])
+    expect(at(loaded.layouts.lg, 'case')).toEqual(at(before.layouts.lg, 'case'))
   })
 
   test('works when storage is unavailable', () => {

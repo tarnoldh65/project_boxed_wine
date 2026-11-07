@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { runJob } from './backend'
-import { act, createUser, openCaseFrame, queueFrame, signIn, signOut } from './identity'
+import { act, createUser, openCaseTab, queueFrame, signIn, signOut } from './identity'
 
 
 async function newCase(page: Page, title: string) {
@@ -19,7 +19,7 @@ test('evidence uploads straight to storage, is hashed, verified, and held', asyn
   // Several MiB of varied bytes, uploaded by the browser through presigned URLs.
   const content = Buffer.alloc(3 * 1024 * 1024)
   for (let i = 0; i < content.length; i++) content[i] = (i * 31) % 251
-  await openCaseFrame(page, 'Evidence')
+  await openCaseTab(page, 'Evidence')
   await page.locator('summary', { hasText: 'Add evidence' }).click()
   await page.getByLabel('File', { exact: true }).setInputFiles({ name: 'capture.pcap', mimeType: 'application/octet-stream', buffer: content })
   await page.getByLabel('Collected from').fill('fw-01')
@@ -28,6 +28,7 @@ test('evidence uploads straight to storage, is hashed, verified, and held', asyn
 
   expect(runJob('evidence_hash')).toContain('hashed evidence')
   await page.reload()
+  await openCaseTab(page, 'Evidence')
   const row = page.locator('.task-head', { hasText: 'capture.pcap' })
   const sha256 = createHash('sha256').update(content).digest('hex')
   await expect(row.locator('code')).toHaveAttribute('title', sha256)
@@ -54,7 +55,7 @@ test('malware samples are only downloadable with malware access', async ({ page,
   await newCase(page, `Dropper ${Date.now()}`)
   const caseUrl = page.url()
 
-  await openCaseFrame(page, 'Evidence')
+  await openCaseTab(page, 'Evidence')
   await page.locator('summary', { hasText: 'Add evidence' }).click()
   await page.getByLabel('Malware sample (stored encrypted)').check()
   await page.getByLabel('File', { exact: true }).setInputFiles({ name: 'invoice.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ fake sample') })
@@ -72,7 +73,7 @@ test('malware samples are only downloadable with malware access', async ({ page,
   await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
   await signIn(page, handler)
   await page.goto(caseUrl)
-  await openCaseFrame(page, 'Evidence')
+  await openCaseTab(page, 'Evidence')
   const download = page.waitForEvent('download')
   await page.getByRole('link', { name: 'Download invoice.exe' }).click()
   expect((await download).suggestedFilename()).toBe('invoice.exe.zip')

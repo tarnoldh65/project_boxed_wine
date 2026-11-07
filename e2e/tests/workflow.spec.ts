@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { runJob } from './backend'
-import { act, changeState, createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { act, changeState, createUser, openCaseTab, queueFrame, signIn } from './identity'
 
 const MAILPIT = 'http://localhost:8025/api/v1'
 
@@ -14,6 +14,7 @@ test('tasks and the post-incident review gate closing a case', async ({ page, re
   await queueFrame(page).getByLabel('Title').fill(title)
   await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
+  await openCaseTab(page, 'Tasks')
   await expect(page.locator('strong', { hasText: 'Engage the DDoS mitigation provider' })).toBeVisible()
   await expect(page.getByText('blocked')).toBeVisible()
 
@@ -31,7 +32,7 @@ test('tasks and the post-incident review gate closing a case', async ({ page, re
   await changeState(page, 'Closed', 'true_positive')
   await expect(page.getByRole('dialog').getByRole('alert')).toContainText('complete the post-incident review first')
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
-  await openCaseFrame(page, 'Post-incident review')
+  await openCaseTab(page, 'Post-incident review')
   for (const [label, text] of [
     ['Root cause', 'Upstream provider capacity'],
     ['Contributing factors', 'No rate limiting at the edge'],
@@ -45,6 +46,7 @@ test('tasks and the post-incident review gate closing a case', async ({ page, re
 
   await changeState(page, 'Closed', 'true_positive')
   await expect(page.getByRole('dialog')).toBeHidden()
+  await openCaseTab(page, 'Summary')
   await expect(page.getByRole('table', { name: 'SLA', exact: true })).toContainText('resolve met')
 })
 

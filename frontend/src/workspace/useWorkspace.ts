@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { matchPath, useLocation, useNavigate } from 'react-router'
+import type { CaseTab } from '../cases/CaseSummary'
 import { NO_FILTER, openCasesFilter, sameFilter, type QueueFilter } from '../cases/queue'
 import {
   closeCase,
@@ -10,6 +11,7 @@ import {
   moveFrame,
   openCase,
   openFrame,
+  popOut,
   saveWorkspace,
   toggleCollapsed,
   type Breakpoint,
@@ -70,6 +72,7 @@ export function useWorkspace(userId: string, slug: string) {
   const [selection, setSelection] = useState<Selection>(target?.selection ?? {})
   const [maximized, setMaximized] = useState<FrameId | null>(null)
   const [queueFilter, setQueueFilter] = useState(NO_FILTER)
+  const [caseTab, setCaseTab] = useState<CaseTab>('summary')
   const [reveal, setReveal] = useState<{ id: FrameId } | null>(target && { id: target.frame })
   const visible = useMemo(
     () => state.open.filter((id) => hasContent(id, selection)),
@@ -137,6 +140,20 @@ export function useWorkspace(userId: string, slug: string) {
     show(id: FrameId) {
       setState((current) => openFrame(current, id))
       setReveal({ id })
+    },
+    caseTab,
+    setCaseTab,
+    /** Show a section of the case in its own frame, right below the case. */
+    popOut(id: FrameId) {
+      setState((current) => popOut(current, id))
+      setCaseTab((current) => (current === id ? 'summary' : current))
+      setReveal({ id })
+    },
+    /** Put a popped-out section back as a tab of the case. */
+    putBack(id: FrameId) {
+      setState((current) => closeFrame(current, id))
+      setCaseTab(id)
+      setReveal({ id: 'case' })
     },
     showCustody(evidenceId: string) {
       setSelection((current) => ({ ...current, evidenceId }))

@@ -19,10 +19,12 @@ import { useSplitSelection } from './useCase'
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  onOpenFrame.mockClear()
+  vi.clearAllMocks()
 })
 
-const onOpenFrame = vi.fn()
+const onTab = vi.fn()
+const onPopOut = vi.fn()
+const onReveal = vi.fn()
 
 const BASE = '/api/tenants/dr/cases/7'
 
@@ -44,7 +46,16 @@ function Frames({ view }: { view: CaseView }) {
   const split = useSplitSelection(view.current.number)
   return (
     <>
-      <CaseSummary view={view} split={split} openFrames={['case-notes']} onOpenFrame={onOpenFrame} />
+      <CaseSummary
+        view={view}
+        split={split}
+        tab="summary"
+        popped={['case-notes']}
+        onTab={onTab}
+        onPopOut={onPopOut}
+        onReveal={onReveal}
+        renderPart={() => null}
+      />
       <DetailsFrame view={view} />
       <TasksPanel slug="dr" current={view.current} members={view.members} editable={view.editable} />
       <AlertsFrame view={view} split={split} />
@@ -377,16 +388,20 @@ test('the privilege marking shows above every frame of a privileged case', async
   expect(screen.getAllByText('Attorney-Client Privileged / Prepared at Direction of Counsel')).toHaveLength(2)
 })
 
-test('chips show what each frame holds, which are open, and open the rest', async () => {
+test('tabs show what each section holds, and which are popped out', async () => {
   api()
   open()
-  const notes = await screen.findByRole('button', { name: /^Notes/ })
-  expect(notes).toHaveAttribute('aria-pressed', 'true')
-  const assets = screen.getByRole('button', { name: 'Assets1' })
-  expect(assets).toHaveAttribute('aria-pressed', 'false')
+  const assets = await screen.findByRole('tab', { name: 'Assets1' })
+  expect(screen.getByRole('tab', { name: 'Summary' })).toHaveAttribute('aria-selected', 'true')
   fireEvent.click(assets)
-  expect(onOpenFrame).toHaveBeenCalledWith('case-assets')
-  expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
+  expect(onTab).toHaveBeenCalledWith('case-assets')
+
+  // A popped-out section's tab brings its frame into view instead.
+  const notes = screen.getByRole('tab', { name: /^Notes.*in its own frame/ })
+  fireEvent.click(notes)
+  expect(onReveal).toHaveBeenCalledWith('case-notes')
+  expect(screen.getByRole('tab', { name: 'Reports' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^Pop out/ })).not.toBeInTheDocument()
 })
 
 test('a change from another frame shows in the form without losing what is being typed', async () => {

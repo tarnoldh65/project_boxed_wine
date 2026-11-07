@@ -7,6 +7,8 @@ RUN uv sync --locked --no-dev
 
 FROM python:3.15-slim-trixie@sha256:e97b88e416c3c01eb427b21fd8cd3ebf006e6ee38afcfcc3cae1c54ee2ab0a75
 ENV PATH=/app/.venv/bin:$PATH PYTHONUNBUFFERED=1
+# Debian security fixes can land before the base image is rebuilt with them.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN python -m pip uninstall -y pip
 WORKDIR /app
 COPY --from=build /app/.venv .venv

@@ -5,6 +5,7 @@ import {
   GripVertical,
   Maximize2,
   Minimize2,
+  SquareArrowDownLeft,
   X,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -41,6 +42,7 @@ export function Frame({
   onMaximize,
   onClose,
   onMove,
+  onPutBack,
   children,
 }: {
   id: FrameId
@@ -52,6 +54,8 @@ export function Frame({
   onMaximize: () => void
   onClose: () => void
   onMove: (move: Move) => void
+  /** For a popped-out case section: return it to the case as a tab. */
+  onPutBack?: () => void
   children: ReactNode
 }) {
   const titleId = `frame-title-${id}`
@@ -81,6 +85,17 @@ export function Frame({
                 </button>
               ))}
           </Menu>
+          {onPutBack && (
+            <button
+              type="button"
+              className="ghost"
+              title="Put back in the case"
+              aria-label={`Put ${title} back in the case`}
+              onClick={onPutBack}
+            >
+              <SquareArrowDownLeft aria-hidden size={16} />
+            </button>
+          )}
           <button
             type="button"
             className="ghost"

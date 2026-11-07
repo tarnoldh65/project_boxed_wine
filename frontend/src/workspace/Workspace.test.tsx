@@ -115,49 +115,90 @@ test('a case link opens the case beside the other frames, and another swaps it',
   expect(screen.getAllByRole('region').filter((r) => r.id === 'frame-case')).toHaveLength(1)
 })
 
-test('selecting a case opens its summary, tasks, and timeline', async () => {
+const tab = (name: string | RegExp) => screen.findByRole('tab', { name })
+
+test('selecting a case opens one frame, on its Summary tab', async () => {
   open()
   fireEvent.click(await screen.findByRole('link', { name: 'Suspicious email' }))
-  await frame('Case #7')
-  expect(await frame('Tasks #7')).toBeInTheDocument()
-  expect(await frame('Timeline #7')).toBeInTheDocument()
-  expect(screen.queryByRole('region', { name: 'Notes #7' })).not.toBeInTheDocument()
+  const summary = await frame('Case #7')
+  expect(await tab('Summary')).toHaveAttribute('aria-selected', 'true')
+  expect(within(summary).getByRole('table', { name: 'SLA' })).toBeVisible()
+  expect(screen.queryByRole('region', { name: /^(Tasks|Timeline) #7$/ })).not.toBeInTheDocument()
 })
 
-test('summary chips open the other parts of the case, labelled with its number', async () => {
+test('tabs show each section of the case in place', async () => {
   open('/t/dr/cases/7')
   const summary = await frame('Case #7')
-  fireEvent.click(await within(summary).findByRole('button', { name: /^Notes/ }))
-  expect(await frame('Notes #7')).toBeInTheDocument()
-  expect(within(summary).getByRole('button', { name: /^Notes/ })).toHaveAttribute('aria-pressed', 'true')
+  fireEvent.click(await tab(/^Tasks/))
+  expect(await within(summary).findByText('Identify recipients', { selector: 'strong' })).toBeVisible()
+  expect(within(summary).queryByRole('table', { name: 'SLA' })).not.toBeInTheDocument()
+  expect(screen.getAllByRole('region')).toHaveLength(4)
 
+  // Another case keeps the open tab.
+  fireEvent.click(screen.getByRole('link', { name: 'Second incident' }))
+  await frame('Case #8')
+  expect(await tab(/^Tasks/)).toHaveAttribute('aria-selected', 'true')
+})
+
+test('arrow keys move between tabs', async () => {
+  open('/t/dr/cases/7')
+  const summary = await tab('Summary')
+  fireEvent.keyDown(summary, { key: 'ArrowRight' })
+  expect(await tab('Details')).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: 'Details' })).toHaveFocus()
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Details' }), { key: 'End' })
+  expect(await tab('Reports')).toHaveAttribute('aria-selected', 'true')
+  fireEvent.keyDown(screen.getByRole('tab', { name: 'Reports' }), { key: 'ArrowRight' })
+  expect(await tab('Summary')).toHaveAttribute('aria-selected', 'true')
+})
+
+test('a tab keeps what was typed while another tab is showing', async () => {
+  open('/t/dr/cases/7')
+  const summary = await frame('Case #7')
+  fireEvent.click(await tab('Details'))
+  const description = await within(summary).findByLabelText('Description')
+  fireEvent.change(description, { target: { value: 'Half-written' } })
+  fireEvent.click(await tab(/^Tasks/))
+  expect(description).not.toBeVisible()
+  fireEvent.click(await tab('Details'))
+  expect(within(summary).getByLabelText('Description')).toHaveValue('Half-written')
+})
+
+test('a section pops out into its own frame below the case, and goes back as a tab', async () => {
+  open('/t/dr/cases/7')
+  fireEvent.click(await tab(/^Notes/))
+  fireEvent.click(await screen.findByRole('button', { name: 'Pop out Notes' }))
+  const notes = await frame('Notes #7')
+  const layout = savedLayout().layouts.lg as { i: string; x: number; y: number; h: number }[]
+  const caseItem = layout.find((item) => item.i === 'case')!
+  expect(layout.find((item) => item.i === 'case-notes')).toMatchObject({ x: caseItem.x, y: caseItem.y + caseItem.h })
+  // The case shows its summary again, and the Notes tab now points at the frame.
+  expect(await tab('Summary')).toHaveAttribute('aria-selected', 'true')
+  expect(await tab(/^Notes.*in its own frame/)).toBeInTheDocument()
+  expect(await screen.findAllByLabelText('New note')).toHaveLength(1)
+
+  fireEvent.click(within(notes).getByRole('button', { name: 'Put Notes #7 back in the case' }))
+  await vi.waitFor(() => expect(screen.queryByRole('region', { name: 'Notes #7' })).not.toBeInTheDocument())
+  expect(await tab(/^Notes/)).toHaveAttribute('aria-selected', 'true')
+  expect(await screen.findByLabelText('New note')).toBeVisible()
+})
+
+test('a popped-out section follows the selected case and closes with it', async () => {
+  open('/t/dr/cases/7')
+  fireEvent.click(await tab(/^Notes/))
+  fireEvent.click(await screen.findByRole('button', { name: 'Pop out Notes' }))
+  await frame('Notes #7')
   fireEvent.click(screen.getByRole('link', { name: 'Second incident' }))
   expect(await frame('Notes #8')).toBeInTheDocument()
-  expect(screen.queryByRole('region', { name: 'Notes #7' })).not.toBeInTheDocument()
-})
 
-test('closing the summary closes the whole case', async () => {
-  open('/t/dr/cases/7')
-  fireEvent.click(await within(await frame('Case #7')).findByRole('button', { name: /^Notes/ }))
-  await frame('Notes #7')
-  fireEvent.click(screen.getByRole('button', { name: 'Close Case #7' }))
-  await vi.waitFor(() => expect(screen.queryByRole('region', { name: /#7$/ })).not.toBeInTheDocument())
-})
-
-test('closing one case frame leaves the rest, and it stays closed for the next case', async () => {
-  open('/t/dr/cases/7')
-  await frame('Tasks #7')
-  fireEvent.click(screen.getByRole('button', { name: 'Close Tasks #7' }))
-  fireEvent.click(await screen.findByRole('link', { name: 'Second incident' }))
-  await frame('Case #8')
-  expect(screen.queryByRole('region', { name: 'Tasks #8' })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Close Case #8' }))
+  await vi.waitFor(() => expect(screen.queryByRole('region', { name: /#8$/ })).not.toBeInTheDocument())
 })
 
 test('an evidence item opens its chain of custody, which closes with its case', async () => {
   open('/t/dr/cases/7')
-  fireEvent.click(await within(await frame('Case #7')).findByRole('button', { name: /^Evidence/ }))
-  const evidence = await frame('Evidence #7')
-  fireEvent.click(await within(evidence).findByRole('button', { name: 'Custody of mail.eml' }))
+  fireEvent.click(await tab(/^Evidence/))
+  fireEvent.click(await screen.findByRole('button', { name: 'Custody of mail.eml' }))
   const custody = await frame('Chain of custody')
   expect(within(custody).getByRole('heading', { name: 'mail.eml' })).toBeInTheDocument()
   expect(await within(custody).findByText(/verified intact/)).toBeInTheDocument()

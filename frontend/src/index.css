@@ -880,28 +880,62 @@ pre {
   z-index: 2;
 }
 
-.chips {
+/* The section tabs stay in view while the open section scrolls. */
+.case-tabs {
+  position: sticky;
+  top: calc(-1 * var(--space-3));
+  z-index: 2;
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--space-1);
-  margin-top: var(--space-2);
-}
-
-.chips .chip {
-  padding: 0.0625rem var(--space-2);
-  border: 1px solid var(--border-strong);
+  margin: var(--space-3) calc(-1 * var(--space-3)) var(--space-3);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--border);
   background: var(--surface);
-  color: var(--text);
-  font-size: 0.8125rem;
 }
 
-.chips .chip[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+/* Tabs wrap rather than scroll, so every section stays in sight. */
+.case-tabs [role='tablist'] {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.case-tabs [role='tab'] {
+  flex: none;
+  margin-bottom: -1px;
+  padding: var(--space-2) var(--space-2);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.case-tabs [role='tab']:hover {
+  background: none;
+  color: var(--text);
+}
+
+.case-tabs [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--accent);
   color: var(--accent);
 }
 
+.case-tabs [role='tab'] svg {
+  margin-left: 0.125rem;
+  vertical-align: -1px;
+}
+
+.case-panel[hidden] {
+  display: none;
+}
+
 .chip-count {
+  margin-left: 0.25rem;
   color: var(--text-muted);
   font-size: 0.75rem;
 }
