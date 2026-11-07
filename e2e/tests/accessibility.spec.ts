@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { caseFrame, createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { caseFrame, createUser, openCaseTab, popOut, queueFrame, signIn } from './identity'
 
 const CASE_FRAMES = ['Details', 'Notes', 'Comments', 'Observables', 'Evidence', 'Assets', 'Alerts', 'Regulatory', 'Post-incident review', 'Reports']
 
@@ -25,7 +25,8 @@ for (const theme of ['Light', 'Dark']) {
     await queueFrame(page).getByLabel('Title').fill(`Accessibility ${Date.now()}`)
     await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
     await expect(caseFrame(page)).toBeVisible()
-    for (const name of CASE_FRAMES) await openCaseFrame(page, name)
+    for (const name of CASE_FRAMES) await openCaseTab(page, name)
+    await popOut(page, 'Notes')
     await page.getByRole('button', { name: 'Frames' }).click()
     await page.getByRole('checkbox', { name: 'Metrics' }).check()
     await page.getByRole('checkbox', { name: 'Search' }).check()

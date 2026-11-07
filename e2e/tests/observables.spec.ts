@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { createUser, openCaseTab, queueFrame, signIn } from './identity'
 
 const TENANT = '/api/tenants/detect-respond'
 
@@ -27,7 +27,7 @@ test('observables are extracted, linked, and correlated across cases', async ({ 
   const first = (await alert.json()).case_number
 
   await page.goto(`/t/detect-respond/cases/${first}`)
-  await openCaseFrame(page, 'Observables')
+  await openCaseTab(page, 'Observables')
   await page.getByText('Add observables').click()
   await page.getByRole('button', { name: 'Extract from alerts' }).click()
   await expect(
@@ -42,6 +42,7 @@ test('observables are extracted, linked, and correlated across cases', async ({ 
   await queueFrame(page).getByLabel('Title').fill(`Follow-up ${run}`)
   await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
   await expect(page.getByRole('heading', { name: `Follow-up ${run}` })).toBeVisible()
+  await openCaseTab(page, 'Observables')
   await page.getByText('Add observables').click()
   await page.getByLabel(/Paste text/).fill(`Firewall blocked ${ip.replaceAll('.', '[.]')} at 10:02`)
   await page.getByRole('button', { name: 'Extract from text' }).click()

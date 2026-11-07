@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { SquareArrowOutUpRight } from 'lucide-react'
+import { useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { api, describeError, type Case, type Resolution } from '../api/client'
 import { Badge, SeverityBadge, SlaBadge, TlpBadge } from '../Badge'
@@ -12,8 +13,15 @@ const RESOLUTIONS: Resolution[] = ['true_positive', 'false_positive', 'benign', 
 
 type CaseCall = () => Promise<{ data?: Case; error?: unknown; response: Response }>
 
-/** How many items a case frame's chip counts. */
-function itemCount(id: FrameId, current: Case): number | null {
+export type CaseTab = 'summary' | FrameId
+
+const TABS: [CaseTab, string][] = [
+  ['summary', 'Summary'],
+  ...CASE_FRAMES.map((id): [CaseTab, string] => [id, FRAMES[id].title]),
+]
+
+/** How many items a case section holds, for its tab. */
+function itemCount(id: CaseTab, current: Case): number | null {
   const counts: Partial<Record<FrameId, unknown[]>> = {
     'case-tasks': current.tasks,
     'case-timeline': current.timeline,
@@ -25,7 +33,111 @@ function itemCount(id: FrameId, current: Case): number | null {
     'case-alerts': current.alerts,
     'case-regulatory': current.clocks,
   }
-  return counts[id]?.length ?? null
+  return counts[id as FrameId]?.length ?? null
+}
+
+/**
+ * The sections of a case as tabs. A tab stays mounted once visited, so switching away keeps
+ * what was being typed. A popped-out section shows in its own frame; its tab brings that
+ * frame into view.
+ */
+function CaseTabs({
+  current,
+  tab,
+  popped,
+  onTab,
+  onPopOut,
+  onReveal,
+  renderPart,
+}: {
+  current: Case
+  tab: CaseTab
+  popped: FrameId[]
+  onTab: (tab: CaseTab) => void
+  onPopOut: (id: FrameId) => void
+  onReveal: (id: FrameId) => void
+  renderPart: (id: CaseTab) => ReactNode
+}) {
+  const [visited, setVisited] = useState<CaseTab[]>([tab])
+  if (!visited.includes(tab)) setVisited([...visited, tab])
+  const list = useRef<HTMLDivElement>(null)
+  const isPopped = (id: CaseTab) => id !== 'summary' && popped.includes(id)
+
+  function choose(id: CaseTab) {
+    if (isPopped(id)) onReveal(id as FrameId)
+    else onTab(id)
+  }
+
+  // Arrow keys move between tabs, as in any tab list.
+  function arrows(event: KeyboardEvent<HTMLDivElement>) {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key]
+    const edge = { Home: 0, End: TABS.length - 1 }[event.key]
+    if (step === undefined && edge === undefined) return
+    event.preventDefault()
+    const index = TABS.findIndex(([id]) => id === tab)
+    const next = edge ?? (index + step! + TABS.length) % TABS.length
+    choose(TABS[next][0])
+    list.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+  }
+
+  const label = TABS.find(([id]) => id === tab)![1]
+  return (
+    <>
+      <div className="case-tabs">
+        <div ref={list} role="tablist" aria-label="Case sections" onKeyDown={arrows}>
+          {TABS.map(([id, name]) => {
+            const count = itemCount(id, current)
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`case-tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls={isPopped(id) ? undefined : `case-panel-${id}`}
+                tabIndex={tab === id ? 0 : -1}
+                onClick={() => choose(id)}
+              >
+                {name}
+                {count !== null && <span className="chip-count">{count}</span>}
+                {isPopped(id) && (
+                  <>
+                    <SquareArrowOutUpRight aria-hidden size={12} />
+                    <span className="sr-only"> (in its own frame)</span>
+                  </>
+                )}
+              </button>
+            )
+          })}
+        </div>
+        {tab !== 'summary' && (
+          <button
+            type="button"
+            className="ghost"
+            title="Open beside the case"
+            aria-label={`Pop out ${label}`}
+            onClick={() => onPopOut(tab)}
+          >
+            <SquareArrowOutUpRight aria-hidden size={16} />
+          </button>
+        )}
+      </div>
+      {visited
+        .filter((id) => !isPopped(id))
+        .map((id) => (
+          <div
+            key={id}
+            role="tabpanel"
+            id={`case-panel-${id}`}
+            aria-labelledby={`case-tab-${id}`}
+            className="case-panel"
+            hidden={tab !== id}
+          >
+            {renderPart(id)}
+          </div>
+        ))}
+    </>
+  )
 }
 
 function ActionDialog({
@@ -126,13 +238,22 @@ function StateFields({ view }: { view: CaseView }) {
 export function CaseSummary({
   view,
   split,
-  openFrames,
-  onOpenFrame,
+  tab,
+  popped,
+  onTab,
+  onPopOut,
+  onReveal,
+  renderPart,
 }: {
   view: CaseView
   split: SplitSelection
-  openFrames: FrameId[]
-  onOpenFrame: (id: FrameId) => void
+  tab: CaseTab
+  /** Parts showing in frames of their own rather than as tabs. */
+  popped: FrameId[]
+  onTab: (tab: CaseTab) => void
+  onPopOut: (id: FrameId) => void
+  onReveal: (id: FrameId) => void
+  renderPart: (id: FrameId) => ReactNode
 }) {
   const { slug, current, config, members, permissions, editable } = view
   const number = current.number
@@ -208,22 +329,6 @@ export function CaseSummary({
         </p>
       )}
 
-      <table className="sla">
-        <caption>SLA</caption>
-        <tbody>
-          <tr>
-            {current.sla.map((clock) => (
-              <td key={clock.step}>
-                <strong>{clock.step}</strong> <SlaBadge status={clock.status} />
-                <br />
-                {clock.met_at
-                  ? `met ${new Date(clock.met_at).toLocaleString()}`
-                  : `due ${new Date(clock.due_at).toLocaleString()}`}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
 
       <div className="inline-form">
         {editable && !current.acknowledged_at && (
@@ -351,23 +456,36 @@ export function CaseSummary({
       </div>
       {acknowledge.error && <p role="alert">{acknowledge.error.message}</p>}
 
-      <nav className="chips" aria-label="Case frames">
-        {CASE_FRAMES.map((id) => {
-          const count = itemCount(id, current)
-          return (
-            <button
-              key={id}
-              type="button"
-              className="chip"
-              aria-pressed={openFrames.includes(id)}
-              onClick={() => onOpenFrame(id)}
-            >
-              {FRAMES[id].title}
-              {count !== null && <span className="chip-count">{count}</span>}
-            </button>
+      <CaseTabs
+        current={current}
+        tab={tab}
+        popped={popped}
+        onTab={onTab}
+        onPopOut={onPopOut}
+        onReveal={onReveal}
+        renderPart={(id) =>
+          id === 'summary' ? (
+              <table className="sla">
+                <caption>SLA</caption>
+                <tbody>
+                  <tr>
+                    {current.sla.map((clock) => (
+                      <td key={clock.step}>
+                        <strong>{clock.step}</strong> <SlaBadge status={clock.status} />
+                        <br />
+                        {clock.met_at
+                          ? `met ${new Date(clock.met_at).toLocaleString()}`
+                          : `due ${new Date(clock.due_at).toLocaleString()}`}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+          ) : (
+            renderPart(id)
           )
-        })}
-      </nav>
+        }
+      />
     </article>
   )
 }

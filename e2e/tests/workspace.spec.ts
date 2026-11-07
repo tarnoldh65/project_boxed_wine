@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { createUser, popOut, queueFrame, signIn } from './identity'
 
 async function box(locator: Locator) {
   const found = await locator.boundingBox()
@@ -110,8 +110,8 @@ test('a phone stacks an open case without overlaps or sideways scrolling', async
   await queueFrame(page).getByText('New case').click()
   await queueFrame(page).getByLabel('Title').fill(`Phone ${Date.now()}`)
   await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
-  await openCaseFrame(page, 'Notes')
-  await openCaseFrame(page, 'Details')
+  await popOut(page, 'Notes')
+  await popOut(page, 'Details')
   await expect(page.getByRole('region', { name: /^Details #/ })).toBeVisible()
 
   await page.setViewportSize({ width: 360, height: 740 })
@@ -159,15 +159,26 @@ test('selecting a dashboard figure filters the queue, and selecting it again cle
   await expect(queue.getByLabel('State')).toHaveValue('')
 })
 
-test('a frame opened from the case summary comes into view', async ({ page, request }) => {
+test('a popped-out section comes into view under the case, and goes back as a tab', async ({ page, request }) => {
   await page.setViewportSize({ width: 1280, height: 700 })
   await signIn(page, await createUser(request, ['casemgr-detect-respond-analyst']))
   await queueFrame(page).getByText('New case').click()
   await queueFrame(page).getByLabel('Title').fill(`Reveal ${Date.now()}`)
   await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
 
-  await openCaseFrame(page, 'Notes')
-  await expect(page.getByRole('region', { name: /^Notes #/ })).toBeInViewport()
+  await popOut(page, 'Notes')
+  const notes = page.getByRole('region', { name: /^Notes #/ })
+  await expect(notes).toBeInViewport()
+  // It docks right under the case.
+  const caseBox = (await page.getByRole('region', { name: /^Case #/ }).boundingBox())!
+  await expect.poll(async () => (await notes.boundingBox())!.x).toBe(caseBox.x)
+  const notesBox = (await notes.boundingBox())!
+  expect(notesBox.y).toBeGreaterThan(caseBox.y + caseBox.height)
+  expect(notesBox.y).toBeLessThan(caseBox.y + caseBox.height + 40)
+
+  await notes.getByRole('button', { name: /^Put Notes #\d+ back in the case$/ }).click()
+  await expect(notes).toBeHidden()
+  await expect(page.getByRole('tab', { name: /^Notes/ })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('the page settles after the window crosses a breakpoint, and navigation still works', async ({ page, request }) => {

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { runJob } from './backend'
-import { createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { createUser, openCaseTab, queueFrame, signIn } from './identity'
 
 
 test('regulatory clocks, materiality decision, and notification log', async ({ page, request }) => {
@@ -14,11 +14,12 @@ test('regulatory clocks, materiality decision, and notification log', async ({ p
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   const number = page.url().split('/').at(-1)
 
-  await openCaseFrame(page, 'Details')
-  await openCaseFrame(page, 'Regulatory')
+  await openCaseTab(page, 'Details')
   await page.getByLabel('PII').check()
   await page.getByLabel('Data regions').fill('EU')
   await page.getByRole('button', { name: 'Save case' }).click()
+  await expect(page.getByRole('status')).toHaveText('Saved')
+  await openCaseTab(page, 'Regulatory')
   const clocks = page.getByRole('table', { name: 'Notification clocks' })
   const gdpr = clocks.getByRole('row', { name: /GDPR Art. 33/ })
   await expect(gdpr).toContainText('pending')

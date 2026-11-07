@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { createUser, openCaseTab, queueFrame, signIn } from './identity'
 
 async function newCase(page: Page, title: string) {
   await queueFrame(page).getByText('New case').click()
@@ -21,10 +21,10 @@ test('restricted content never shows in search without the restricted grant', as
   await signIn(page, insider)
   await page.goto('/t/insider-threat')
   await newCase(page, `Data hoarding ${word}`)
-  await openCaseFrame(page, 'Notes')
+  await openCaseTab(page, 'Notes')
   await page.getByLabel('New note').fill(`HR interview with the ${word} subject`)
   await page.getByRole('button', { name: 'Add note' }).click()
-  await openCaseFrame(page, 'Details')
+  await openCaseTab(page, 'Details')
   await page.getByLabel('Restricted').check()
   await page.getByRole('button', { name: 'Save case' }).click()
   await expect(page.getByRole('status')).toHaveText('Saved')
@@ -53,7 +53,7 @@ test('reports download and the dashboard shows metrics', async ({ page, request 
   const admin = await createUser(request, ['casemgr-detect-respond-admin'])
   await signIn(page, admin)
   await newCase(page, `Report check ${Date.now()}`)
-  await openCaseFrame(page, 'Reports')
+  await openCaseTab(page, 'Reports')
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),

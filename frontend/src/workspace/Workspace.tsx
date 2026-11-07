@@ -62,7 +62,16 @@ function caseContent(
   switch (id) {
     case 'case':
       return (
-        <CaseSummary view={view} split={split} openFrames={workspace.visible} onOpenFrame={workspace.show} />
+        <CaseSummary
+          view={view}
+          split={split}
+          tab={workspace.caseTab}
+          popped={workspace.visible}
+          onTab={workspace.setCaseTab}
+          onPopOut={workspace.popOut}
+          onReveal={workspace.show}
+          renderPart={(part) => caseContent(part, view, workspace, split, collector)}
+        />
       )
     case 'case-details':
       return <DetailsFrame view={view} />
@@ -213,6 +222,7 @@ export function Workspace() {
                 onMaximize={() => workspace.toggleMaximized(id)}
                 onClose={() => workspace.close(id)}
                 onMove={(move) => workspace.move(breakpoint, id, move)}
+                onPutBack={id.startsWith('case-') ? () => workspace.putBack(id) : undefined}
               >
                 {content(id, workspace, split, collector)}
               </Frame>

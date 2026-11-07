@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { runJob } from './backend'
-import { act, createUser, openCaseFrame, queueFrame, signIn } from './identity'
+import { act, caseFrame, createUser, openCaseTab, popOut, queueFrame, signIn } from './identity'
 
 const MAILPIT = 'http://localhost:8025/api/v1'
 
@@ -20,6 +20,7 @@ test('timeline, notes with mentions, and comments', async ({ page, browser, requ
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   const number = page.url().split('/').at(-1)
 
+  await openCaseTab(page, 'Timeline')
   for (const [when, source, what, milestone] of [
     ['2026-10-30T12:00', 'EDR', 'Beacon observed', 'detection'],
     ['2026-10-27T09:00', 'Proxy log', 'First phish click', 'first_compromise'],
@@ -31,19 +32,19 @@ test('timeline, notes with mentions, and comments', async ({ page, browser, requ
     await page.getByRole('button', { name: 'Add event' }).click()
     await expect(page.getByRole('button', { name: `Remove event ${what}` })).toBeVisible()
   }
-  const rows = page.getByRole('region', { name: /^Timeline #/ }).getByRole('row')
+  const rows = caseFrame(page).getByRole('tabpanel', { name: /^Timeline/ }).getByRole('row')
   await expect(rows.nth(1)).toContainText('First phish click')
   await expect(page.getByText('3.1 days', { exact: true })).toBeVisible()
 
   const note = `## Findings\n\nAsk @${teammate.username} to check **web-01**.\n\n<img src=x onerror="document.title='pwned'">`
-  await openCaseFrame(page, 'Notes')
+  await openCaseTab(page, 'Notes')
   await page.getByLabel('New note').fill(note)
   await page.getByRole('button', { name: 'Add note' }).click()
   await expect(page.getByRole('heading', { name: 'Findings' })).toBeVisible()
   await expect(page.locator('.markdown img')).toHaveCount(0)
   expect(await page.title()).toBe('Case Manager')
 
-  await openCaseFrame(page, 'Comments')
+  await openCaseTab(page, 'Comments')
   await page.getByLabel('New comment').fill('Isolating web-01 now')
   await page.getByRole('button', { name: 'Post comment' }).click()
   await expect(page.getByText('Isolating web-01 now')).toBeVisible()
@@ -65,10 +66,12 @@ test('legal marks a case privileged', async ({ page, request }) => {
   await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
 
   await act(page, 'Mark privileged', 'Privilege reason', 'Outside counsel engaged')
-  // The summary, tasks, and timeline frames each carry the marking.
-  await expect(
-    page.getByText('Attorney-Client Privileged / Prepared at Direction of Counsel'),
-  ).toHaveCount(3)
+  // Every frame of the case carries the marking, a popped-out section included.
+  const marking = page.getByText('Attorney-Client Privileged / Prepared at Direction of Counsel')
+  await expect(marking).toHaveCount(1)
+  await popOut(page, 'Notes')
+  await expect(page.getByRole('region', { name: /^Notes #/ })).toContainText('Attorney-Client Privileged')
+  await expect(marking).toHaveCount(2)
   await page.reload()
   await expect(page.getByRole('button', { name: 'Remove privilege marking' })).toBeVisible()
 })
