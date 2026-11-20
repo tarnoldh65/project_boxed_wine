@@ -543,6 +543,7 @@ async def create_case(
         tenant_id,
         {"template": template.key, "source": source},
     )
+    await journal.record(db, case, actor, f"Case opened from the {template.name} template")
     await tasks.sync_playbook(db, case, config, actor)
     await escalation.fire(db, config, case, Trigger.CASE_CREATED)
     return case
@@ -590,6 +591,7 @@ async def ingest(
     )
     db.add(row)
     await db.flush()
+    await journal.record(db, case, actor, f"Alert received from {alert.source}: {alert.title}")
     await audit.record(
         db,
         actor,
@@ -619,6 +621,7 @@ async def update_case(
 
     was_terminal = case.state in config.terminal_states
     previous_state = case.state
+    before = {key: getattr(case, key) for key in TRACKED}
     for key in fields - {"override"}:
         setattr(case, key, getattr(change, key))
 
@@ -657,6 +660,8 @@ async def update_case(
             invalid("not a tenant member", "custom", field.key)
 
     case.updated_at = datetime.now(UTC)
+    for line in _changes(config, member_list, before, case, fields):
+        await journal.record(db, case, ctx.principal.actor, line)
     await ctx.audit(
         db,
         "case.update",
@@ -668,9 +673,64 @@ async def update_case(
             db, config, case, ClockTrigger.REGULATED_DATA, case.updated_at
         )
         if started:
+            await journal.record(db, case, ctx.principal.actor, clocks_started(config, started))
             await ctx.audit(db, "clock.start", f"case:{case.number}", regimes=started)
     if not terminal:
         await tasks.sync_playbook(db, case, config, ctx.principal.actor)
+
+
+# Case fields whose changes go on the timeline; the rest show as "Details edited".
+TRACKED = (
+    "state", "resolution", "severity", "owner_id", "team", "restricted", "regulated_data",
+    "data_regions",
+)  # fmt: skip
+
+
+def _label(field: str) -> str:
+    return field.removesuffix("_id").replace("_", " ")
+
+
+def _changes(
+    config: TenantConfig,
+    member_list: Sequence[User],
+    before: dict[str, Any],
+    case: Case,
+    fields: set[str],
+) -> list[str]:
+    """Timeline lines for what an update changed."""
+    state_name = {s.key: s.name for s in config.states}
+    lines = []
+    if case.state != before["state"]:
+        line = f"State changed from {state_name[before['state']]} to {state_name[case.state]}"
+        if case.resolution is not None:
+            line += f", resolved as {case.resolution.replace('_', ' ')}"
+        lines.append(line)
+    if case.severity != before["severity"]:
+        lines.append(f"Severity changed from {before['severity']} to {case.severity}")
+    if case.owner_id != before["owner_id"]:
+        owner = next((m.display_name for m in member_list if m.id == case.owner_id), None)
+        lines.append(f"Assigned to {owner}" if owner else "Unassigned")
+    if case.team != before["team"]:
+        team = config.team(case.team) if case.team else None
+        lines.append(f"Team changed to {team.name}" if team else "Team removed")
+    if case.restricted != before["restricted"]:
+        lines.append("Marked restricted" if case.restricted else "Restriction removed")
+    if (case.regulated_data, case.data_regions) != (
+        before["regulated_data"],
+        before["data_regions"],
+    ):
+        flagged = ", ".join(d.upper() for d in case.regulated_data) or "none"
+        regions = f" ({', '.join(case.data_regions)})" if case.data_regions else ""
+        lines.append(f"Regulated data: {flagged}{regions}")
+    edited = sorted(_label(f) for f in fields - set(TRACKED) - {"impact", "urgency", "override"})
+    if edited:
+        lines.append(f"Details edited: {', '.join(edited)}")
+    return lines
+
+
+def clocks_started(config: TenantConfig, keys: Sequence[str]) -> str:
+    names = [r.name for r in config.regimes if r.key in keys]
+    return f"Notification {'clock' if len(names) == 1 else 'clocks'} started: {', '.join(names)}"
 
 
 async def _check_gate(db: AsyncSession, config: TenantConfig, case: Case) -> None:
@@ -714,6 +774,7 @@ async def acknowledge(db: AsyncSession, ctx: TenantContext, case: Case) -> None:
         invalid("the case is already acknowledged")
     case.acknowledged_at = case.updated_at = datetime.now(UTC)
     case.owner_id = case.owner_id or ctx.principal.user_id
+    await journal.record(db, case, ctx.principal.actor, "Acknowledged")
     await ctx.audit(db, "case.acknowledge", f"case:{case.number}")
 
 
@@ -726,6 +787,7 @@ async def declare_major_incident(
         invalid("closed cases cannot be declared major incidents", "reason")
     case.major_incident_at = case.updated_at = datetime.now(UTC)
     case.major_incident_reason = reason
+    await journal.record(db, case, ctx.principal.actor, f"Major incident declared: {reason}")
     await ctx.audit(db, "case.major_incident", f"case:{case.number}", reason=reason)
     await escalation.fire(db, config, case, Trigger.MAJOR_INCIDENT)
 
@@ -810,6 +872,10 @@ async def merge(
         **moved_regulatory,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
+    await journal.record(db, source, ctx.principal.actor, f"Merged into case #{target.number}")
+    await journal.record(
+        db, target, ctx.principal.actor, f"Case #{source.number} merged into this case"
+    )
 
 
 COPIED_ON_SPLIT = (
@@ -858,6 +924,8 @@ async def split(
         observables=observables,
     )
     await ctx.audit(db, "case.create", f"case:{new.number}", split_from=source.number)
+    await journal.record(db, source, ctx.principal.actor, f"Split into case #{new.number}")
+    await journal.record(db, new, ctx.principal.actor, f"Split from case #{source.number}")
     return new
 
 
@@ -872,6 +940,13 @@ async def link_asset(db: AsyncSession, ctx: TenantContext, case: Case, body: Ass
     asset = (await db.scalars(stmt)).one()
     await _link_assets(db, case, [asset.id])
     case.updated_at = datetime.now(UTC)
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        f"Asset linked: {asset.kind.replace('_', ' ')} {asset.name}",
+        asset_id=asset.id,
+    )
     await ctx.audit(
         db,
         "case.asset_link",
@@ -892,4 +967,13 @@ async def unlink_asset(db: AsyncSession, ctx: TenantContext, case: Case, asset_i
     if removed is None:
         raise HTTPException(404, "Asset not linked to this case")
     case.updated_at = datetime.now(UTC)
+    asset = await db.get(Asset, asset_id)
+    assert asset is not None  # noqa: S101 - a linked asset exists
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        f"Asset unlinked: {asset.kind.replace('_', ' ')} {asset.name}",
+        asset_id=asset_id,
+    )
     await ctx.audit(db, "case.asset_unlink", f"case:{case.number}", asset=str(asset_id))

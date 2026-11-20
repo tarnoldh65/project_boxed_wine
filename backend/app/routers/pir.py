@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app import cases, pir, tenant_config
+from app import cases, journal, pir, tenant_config
 from app.auth import TenantContext, require
 from app.cases import CaseOut
 from app.db import Db
@@ -24,6 +24,7 @@ async def _out(db: Db, ctx: TenantContext, case: Case) -> CaseOut:
 async def save_pir(number: int, body: PirIn, ctx: Writer, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     await pir.save(db, case, ctx.principal.actor, body)
+    await journal.record(db, case, ctx.principal.actor, "Post-incident review updated")
     await ctx.audit(db, "pir.update", f"case:{number}", **body.model_dump())
     return await _out(db, ctx, case)
 
@@ -36,6 +37,7 @@ async def add_action(number: int, body: ActionIn, ctx: Writer, db: Db) -> CaseOu
     }:
         cases.invalid("owner must be a tenant member", "owner_id")
     action = await pir.add_action(db, case, ctx.principal.actor, body)
+    await journal.record(db, case, ctx.principal.actor, f"Review action added: {action.title}")
     await ctx.audit(
         db, "pir.action_create", f"case:{number}", item=str(action.id), title=action.title
     )
@@ -52,6 +54,12 @@ async def update_action(
         raise HTTPException(404, "Action item not found")
     if body.done != (action.done_at is not None):
         action.done_at = datetime.now(UTC) if body.done else None
+        await journal.record(
+            db,
+            case,
+            ctx.principal.actor,
+            f"Review action {'done' if body.done else 'reopened'}: {action.title}",
+        )
         await ctx.audit(
             db, "pir.action_update", f"case:{number}", item=str(action.id), done=body.done
         )

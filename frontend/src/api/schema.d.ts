@@ -2927,6 +2927,8 @@ export interface components {
              * Format: date-time
              */
             recorded_at: string;
+            /** Automatic */
+            automatic: boolean;
         };
         /**
          * Tlp

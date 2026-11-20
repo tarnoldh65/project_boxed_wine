@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy import select
 from starlette.background import BackgroundTask
 
-from app import audit, cases, custody, evidence, storage
+from app import audit, cases, custody, evidence, journal, storage
 from app.auth import TenantContext, deny, require
 from app.config import settings
 from app.custody import CustodyAction, CustodyEntryOut
@@ -55,6 +55,12 @@ async def _find(
     return case, found
 
 
+async def _record(db: Db, item: Evidence, actor: str, description: str) -> None:
+    case = await db.get(Case, item.case_id)
+    assert case is not None  # noqa: S101 - evidence belongs to a case
+    await journal.record(db, case, actor, description, evidence_id=item.id)
+
+
 @router.post("/uploads", status_code=201)
 async def start_upload(number: int, body: UploadIn, ctx: Writer, db: Db) -> UploadStart:
     case = await cases.get_case(db, ctx, number)
@@ -74,6 +80,7 @@ async def complete_upload(number: int, evidence_id: UUID, ctx: Writer, db: Db) -
         await evidence.finish_upload(db, item, ctx.principal.actor)
     except ClientError, ValueError:
         cases.invalid("the upload is incomplete; upload every part and try again")
+    await _record(db, item, ctx.principal.actor, f"Evidence added: {item.name}")
     await ctx.audit(db, "evidence.upload", f"case:{number}", evidence=str(item.id), size=item.size)
     return EvidenceOut.model_validate(item)
 
@@ -91,6 +98,13 @@ async def abort_upload(number: int, evidence_id: UUID, ctx: Writer, db: Db) -> N
 async def add_reference(number: int, body: ReferenceIn, ctx: Writer, db: Db) -> EvidenceOut:
     case = await cases.get_case(db, ctx, number)
     item = await evidence.add_reference(db, case, ctx.principal.actor, body)
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        f"Evidence recorded, held elsewhere: {item.name}",
+        evidence_id=item.id,
+    )
     await ctx.audit(db, "evidence.reference", f"case:{number}", evidence=str(item.id))
     return EvidenceOut.model_validate(item)
 
@@ -126,6 +140,9 @@ async def add_malware(
         raise HTTPException(413, f"Samples are limited to {settings.malware_max_mb} MB")
     item = await evidence.add_malware(
         db, case, ctx.principal.actor, file.filename or "sample", description, data, collection
+    )
+    await journal.record(
+        db, case, ctx.principal.actor, f"Malware sample stored: {item.name}", evidence_id=item.id
     )
     await ctx.audit(db, "evidence.malware", f"case:{number}", evidence=str(item.id))
     return EvidenceOut.model_validate(item)
@@ -213,6 +230,7 @@ async def transfer(
     await custody.record(
         db, item, ctx.principal.actor, CustodyAction.TRANSFERRED, **body.model_dump(mode="json")
     )
+    await _record(db, item, ctx.principal.actor, f"Evidence {item.name} transferred to {body.to}")
     await ctx.audit(db, "evidence.transfer", f"case:{number}", evidence=str(item.id))
     return await _report(db, item)
 
@@ -231,4 +249,11 @@ async def delete(
     if item.status == EvidenceStatus.DELETED:
         cases.invalid("the evidence is already deleted")
     await evidence.delete(db, item, ctx.principal.actor, reason)
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        f"Evidence deleted: {item.name} ({reason})",
+        evidence_id=item.id,
+    )
     await ctx.audit(db, "evidence.delete", f"case:{number}", evidence=str(item.id), reason=reason)

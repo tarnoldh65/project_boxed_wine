@@ -171,6 +171,21 @@ async def add_task(db: AsyncSession, case: Case, body: TaskIn) -> Task:
     return task
 
 
+def status_change(task: Task, before: str) -> str | None:
+    """The timeline line for a change of task status, if there was one."""
+    if task.status == before:
+        return None
+    if task.status == TaskStatus.DONE:
+        return f"Task done: {task.title}"
+    if task.status == TaskStatus.WAIVED:
+        return f"Task waived: {task.title} ({task.waive_reason})"
+    if before in FINISHED:
+        return f"Task reopened: {task.title}"
+    if task.status == TaskStatus.IN_PROGRESS:
+        return f"Task started: {task.title}"
+    return f"Task set back to open: {task.title}"
+
+
 def apply_update(task: Task, change: TaskUpdate, by_id: dict[UUID, Task]) -> str | None:
     """Apply a change to a task; return why it is not allowed, or None."""
     fields = change.model_fields_set

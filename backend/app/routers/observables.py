@@ -4,13 +4,13 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
-from app import cases, observable_store, tenant_config
+from app import cases, journal, observable_store, tenant_config
 from app.auth import TenantContext, require
 from app.cases import CaseOut
 from app.db import Db
-from app.models import Alert
+from app.models import Alert, Observable
 from app.observable_store import CandidateOut, ExtractIn, LinkIn, ObservablePage
-from app.observables import defang, extract, normalize, strings_in
+from app.observables import ObservableType, defang, extract, normalize, strings_in
 
 router = APIRouter(prefix="/api/tenants/{slug}", tags=["observables"])
 
@@ -42,6 +42,10 @@ async def extract_observables(
     ]
 
 
+def _named(observable: Observable) -> str:
+    return f"{observable.type} {defang(ObservableType(observable.type), observable.value)}"
+
+
 @router.post("/cases/{number}/observables", status_code=201)
 async def link_observables(number: int, body: LinkIn, ctx: Writer, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
@@ -51,7 +55,19 @@ async def link_observables(number: int, body: LinkIn, ctx: Writer, db: Db) -> Ca
             items.append((item.type, normalize(item.type, item.value)))
         except ValueError as error:
             cases.invalid(str(error), "observables", i, "value")
+    already = await observable_store.own_ids(db, case)
     ids = await observable_store.link(db, case, list(dict.fromkeys(items)))
+    added = await db.scalars(
+        select(Observable).where(Observable.id.in_(set(ids) - already)).order_by(Observable.value)
+    )
+    for observable in added:
+        await journal.record(
+            db,
+            case,
+            ctx.principal.actor,
+            f"Observable linked: {_named(observable)}",
+            observable_id=observable.id,
+        )
     await ctx.audit(db, "observable.link", f"case:{number}", observables=sorted(map(str, ids)))
     return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
@@ -61,6 +77,15 @@ async def unlink_observable(number: int, observable_id: UUID, ctx: Writer, db: D
     case = await cases.get_case(db, ctx, number)
     if not await observable_store.unlink(db, case, observable_id):
         raise HTTPException(404, "Observable not linked to this case")
+    observable = await db.get(Observable, observable_id)
+    assert observable is not None  # noqa: S101 - it was linked a moment ago
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        f"Observable unlinked: {_named(observable)}",
+        observable_id=observable_id,
+    )
     await ctx.audit(db, "observable.unlink", f"case:{number}", observable=str(observable_id))
 
 

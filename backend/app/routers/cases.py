@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from app import cases, tasks, tenant_config
+from app import cases, journal, tasks, tenant_config
 from app.auth import TenantContext, require
 from app.cases import (
     AssetIn,
@@ -93,6 +93,10 @@ async def set_legal_hold(
     case = await cases.get_case(db, ctx, number)
     case.legal_hold = body.on
     case.updated_at = datetime.now(UTC)
+    # The reason stays in the audit log: it may say more than every case reader should see.
+    await journal.record(
+        db, case, ctx.principal.actor, "Legal hold placed" if body.on else "Legal hold lifted"
+    )
     await ctx.audit(db, "case.legal_hold", f"case:{number}", on=body.on, reason=body.reason)
     return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
@@ -108,6 +112,12 @@ async def set_privilege(
     case = await cases.get_case(db, ctx, number)
     case.privileged = body.on
     case.updated_at = datetime.now(UTC)
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        "Marked privileged" if body.on else "Privilege marking removed",
+    )
     await ctx.audit(db, "case.privilege", f"case:{number}", on=body.on, reason=body.reason)
     return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
@@ -157,6 +167,7 @@ async def add_task(number: int, body: TaskIn, ctx: Writer, db: Db) -> CaseOut:
     if not set(body.depends_on) <= own:
         cases.invalid("dependencies must be other tasks of this case", "depends_on")
     task = await tasks.add_task(db, case, body)
+    await journal.record(db, case, ctx.principal.actor, f"Task added: {task.title}")
     await ctx.audit(db, "task.create", f"case:{number}", task=str(task.id))
     return await cases.case_out(db, ctx, case, await tenant_config.load(db, ctx.tenant.id))
 
@@ -170,8 +181,11 @@ async def update_task(number: int, task_id: UUID, body: TaskUpdate, ctx: Writer,
         raise HTTPException(404, "Task not found")
     if body.assignee_id is not None and body.assignee_id not in member_ids:
         cases.invalid("assignee must be a tenant member", "assignee_id")
+    status = task.status
     if problem := tasks.apply_update(task, body, by_id):
         cases.invalid(problem)
+    if line := tasks.status_change(task, status):
+        await journal.record(db, case, ctx.principal.actor, line)
     await ctx.audit(
         db,
         "task.update",

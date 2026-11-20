@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter
 from sqlalchemy import select
 
-from app import cases, regulatory, tenant_config
+from app import cases, journal, regulatory, tenant_config
 from app.auth import TenantContext, require
 from app.cases import CaseOut
 from app.db import Db
@@ -45,6 +45,12 @@ async def decide(number: int, body: DecisionIn, ctx: Legal, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     config = await tenant_config.load(db, ctx.tenant.id)
     decision, started = await regulatory.decide(db, config, case, ctx.principal.actor, body)
+    verdict = "material or reportable" if body.material else "not material"
+    await journal.record(
+        db, case, ctx.principal.actor, f"Materiality decided by {body.decided_by}: {verdict}"
+    )
+    if started:
+        await journal.record(db, case, ctx.principal.actor, cases.clocks_started(config, started))
     await ctx.audit(
         db,
         "materiality.decide",
@@ -62,6 +68,12 @@ async def disclose(number: int, body: DisclosureIn, ctx: Writer, db: Db) -> Case
     if problem := await regulatory.disclosure_problem(db, case, body):
         cases.invalid(problem)
     disclosure = await regulatory.disclose(db, case, ctx.principal.actor, body)
+    await journal.record(
+        db,
+        case,
+        ctx.principal.actor,
+        f"Notification sent to {body.recipient} ({body.recipient_type.replace('_', ' ')})",
+    )
     await ctx.audit(
         db,
         "disclosure.create",
