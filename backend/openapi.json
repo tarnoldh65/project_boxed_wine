@@ -8359,6 +8359,10 @@
             "type": "string",
             "format": "date-time",
             "title": "Recorded At"
+          },
+          "automatic": {
+            "type": "boolean",
+            "title": "Automatic"
           }
         },
         "type": "object",
@@ -8372,7 +8376,8 @@
           "asset_id",
           "evidence_id",
           "recorded_by",
-          "recorded_at"
+          "recorded_at",
+          "automatic"
         ],
         "title": "TimelineOut"
       },

@@ -153,6 +153,7 @@ export const CASE: Case = {
       evidence_id: null,
       recorded_by: 'user:u1',
       recorded_at: '2026-10-31T10:00:00Z',
+      automatic: false,
     },
     {
       id: 'tl2',
@@ -165,6 +166,7 @@ export const CASE: Case = {
       evidence_id: null,
       recorded_by: 'token:x',
       recorded_at: '2026-10-31T10:05:00Z',
+      automatic: false,
     },
   ],
   notes: [

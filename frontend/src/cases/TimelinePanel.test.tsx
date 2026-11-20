@@ -72,6 +72,26 @@ test('removes an event and reports errors', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('already has a detection milestone')
 })
 
+test('entries the app recorded show who acted but cannot be removed', () => {
+  const recorded = {
+    ...CASE.timeline[0],
+    id: 'tl3',
+    occurred_at: '2026-10-31T11:00:00Z',
+    source: 'Case Manager',
+    description: 'Task done: Identify recipients',
+    milestone: null,
+    observable_id: null,
+    recorded_by: 'user:u1',
+    automatic: true,
+  }
+  render({ ...CASE, timeline: [...CASE.timeline, recorded] })
+  const row = screen.getByText('Task done: Identify recipients').closest('tr')!
+  expect(within(row).getByText('Case Manager')).toBeInTheDocument()
+  expect(within(row).getByText(/J Doe/)).toBeInTheDocument()
+  expect(within(row).queryByRole('button')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Remove event First phish click' })).toBeInTheDocument()
+})
+
 test('read-only users see the timeline only', () => {
   render(CASE, false)
   expect(screen.queryByRole('button', { name: 'Add event' })).not.toBeInTheDocument()

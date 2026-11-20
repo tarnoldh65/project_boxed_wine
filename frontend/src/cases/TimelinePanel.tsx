@@ -137,7 +137,8 @@ export function TimelinePanel({
                   {actorName(e.recorded_by, members)}, {new Date(e.recorded_at).toLocaleString()}
                 </td>
                 <td>
-                  {editable && (
+                  {/* What the app recorded as it happened stays on the record. */}
+                  {editable && !e.automatic && (
                     <button type="button" onClick={() => remove(e.id)}>
                       Remove event {e.description}
                     </button>

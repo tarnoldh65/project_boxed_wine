@@ -8,7 +8,7 @@ from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, StringConstraints
-from sqlalchemy import delete, select, update
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +35,8 @@ NoteBody = Annotated[
 CommentBody = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5000)
 ]
+# The source shown for entries the app records itself.
+APP_SOURCE = "Case Manager"
 MENTION = re.compile(r"(?<![\w@])@([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)")
 
 
@@ -70,6 +72,7 @@ class TimelineOut(BaseModel):
     evidence_id: UUID | None
     recorded_by: str
     recorded_at: datetime
+    automatic: bool
 
 
 class NoteIn(BaseModel):
@@ -150,6 +153,33 @@ async def add_event(db: AsyncSession, case: Case, actor: str, body: TimelineIn) 
     return event
 
 
+async def record(
+    db: AsyncSession,
+    case: Case,
+    actor: str,
+    description: str,
+    *,
+    observable_id: UUID | None = None,
+    asset_id: UUID | None = None,
+    evidence_id: UUID | None = None,
+) -> None:
+    """Put an action taken in the app on the case's timeline, as it happens."""
+    db.add(
+        TimelineEvent(
+            tenant_id=case.tenant_id,
+            case_id=case.id,
+            occurred_at=datetime.now(UTC),
+            source=APP_SOURCE,
+            description=description,
+            observable_id=observable_id,
+            asset_id=asset_id,
+            evidence_id=evidence_id,
+            recorded_by=actor,
+            automatic=True,
+        )
+    )
+
+
 async def timeline(db: AsyncSession, case: Case) -> list[TimelineOut]:
     events = await db.scalars(
         select(TimelineEvent)
@@ -159,13 +189,17 @@ async def timeline(db: AsyncSession, case: Case) -> list[TimelineOut]:
     return [TimelineOut.model_validate(e) for e in events]
 
 
-async def delete_event(db: AsyncSession, case: Case, event_id: UUID) -> bool:
-    removed = await db.scalar(
-        delete(TimelineEvent)
-        .where(TimelineEvent.case_id == case.id, TimelineEvent.id == event_id)
-        .returning(TimelineEvent.id)
+async def delete_event(db: AsyncSession, case: Case, event_id: UUID) -> bool | None:
+    """Remove an entry made by hand: False if there is none, None if the app recorded it."""
+    event = await db.scalar(
+        select(TimelineEvent).where(TimelineEvent.case_id == case.id, TimelineEvent.id == event_id)
     )
-    return removed is not None
+    if event is None:
+        return False
+    if event.automatic:
+        return None
+    await db.delete(event)
+    return True
 
 
 # --- Notes --------------------------------------------------------------------------------

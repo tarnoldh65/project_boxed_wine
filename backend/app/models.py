@@ -289,6 +289,8 @@ class TimelineEvent(Base):
     evidence_id: Mapped[UUID | None] = mapped_column(ForeignKey("evidence.id"))
     recorded_by: Mapped[str]
     recorded_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    # Recorded by the app as an action happened, rather than entered by hand.
+    automatic: Mapped[bool] = mapped_column(server_default="false")
 
 
 class Note(Base):

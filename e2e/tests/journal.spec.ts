@@ -66,6 +66,11 @@ test('legal marks a case privileged', async ({ page, request }) => {
   await queueFrame(page).getByRole('button', { name: 'Create case' }).click()
 
   await act(page, 'Mark privileged', 'Privilege reason', 'Outside counsel engaged')
+  // Actions taken in the app go on the timeline as they happen.
+  await openCaseTab(page, 'Timeline')
+  const recorded = caseFrame(page).getByRole('tabpanel', { name: /^Timeline/ })
+  await expect(recorded.getByRole('row', { name: /Case Manager Marked privileged/ })).toBeVisible()
+  await expect(recorded.getByRole('button', { name: 'Remove event Marked privileged' })).toHaveCount(0)
   // Every frame of the case carries the marking, a popped-out section included.
   const marking = page.getByText('Attorney-Client Privileged / Prepared at Direction of Counsel')
   await expect(marking).toHaveCount(1)

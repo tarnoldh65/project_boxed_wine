@@ -69,7 +69,7 @@ async def test_timeline_is_ordered_by_when_events_happened(
         },
     )
 
-    timeline = case["timeline"]
+    timeline = [e for e in case["timeline"] if not e["automatic"]]
     assert [e["description"] for e in timeline] == ["First phish click", "Beacon observed"]
     first = timeline[0]
     assert first["occurred_at"] == "2026-10-28T06:15:00Z"
@@ -308,7 +308,8 @@ async def test_merge_moves_the_journal(analyst: SignedIn, tenant: str) -> None:
 
     assert merged.status_code == 200, merged.text
     case = merged.json()
-    assert sorted((e["description"], e["milestone"]) for e in case["timeline"]) == [
+    manual = [e for e in case["timeline"] if not e["automatic"]]
+    assert sorted((e["description"], e["milestone"]) for e in manual) == [
         ("x", None),  # the target keeps its own detection milestone
         ("y", "detection"),
     ]

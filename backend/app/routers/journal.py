@@ -43,7 +43,10 @@ async def add_event(number: int, body: TimelineIn, ctx: Writer, db: Db) -> CaseO
 @router.delete("/timeline/{event_id}", status_code=204)
 async def delete_event(number: int, event_id: UUID, ctx: Writer, db: Db) -> None:
     case = await cases.get_case(db, ctx, number)
-    if not await journal.delete_event(db, case, event_id):
+    removed = await journal.delete_event(db, case, event_id)
+    if removed is None:
+        cases.invalid("entries the app recorded cannot be removed")
+    if not removed:
         raise HTTPException(404, "Timeline event not found")
     await ctx.audit(db, "timeline.delete", f"case:{number}", event=str(event_id))
 
@@ -52,6 +55,10 @@ async def delete_event(number: int, event_id: UUID, ctx: Writer, db: Db) -> None
 async def add_note(number: int, body: NoteIn, ctx: Writer, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     note, notified = await journal.add_note(db, case, ctx.principal.actor, body)
+    # Only that a note exists: its text, possibly privileged, stays in the note.
+    await journal.record(
+        db, case, ctx.principal.actor, "Privileged note added" if body.privileged else "Note added"
+    )
     await ctx.audit(db, "note.create", f"case:{number}", note=str(note.id), mentioned=notified)
     return await _out(db, ctx, case)
 
@@ -62,6 +69,7 @@ async def edit_note(number: int, note_id: UUID, body: NoteIn, ctx: Writer, db: D
     note = await _note(db, case, note_id)
     notified = await journal.edit_note(db, case, note, ctx.principal.actor, body)
     if notified is not None:
+        await journal.record(db, case, ctx.principal.actor, "Note edited")
         await ctx.audit(
             db, "note.update", f"case:{number}", note=str(note.id), revision=note.revision,
             mentioned=notified,
@@ -81,5 +89,6 @@ async def note_revisions(number: int, note_id: UUID, ctx: Reader, db: Db) -> lis
 async def add_comment(number: int, body: CommentIn, ctx: Writer, db: Db) -> CaseOut:
     case = await cases.get_case(db, ctx, number)
     comment = await journal.add_comment(db, case, ctx.principal.actor, body)
+    await journal.record(db, case, ctx.principal.actor, "Comment added")
     await ctx.audit(db, "comment.create", f"case:{number}", comment=str(comment.id))
     return await _out(db, ctx, case)
