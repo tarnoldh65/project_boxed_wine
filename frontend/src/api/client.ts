@@ -17,6 +17,8 @@ export type SeverityLevel = Schemas['SeverityLevel']
 export type EscalationRule = Schemas['EscalationRule']
 export type Trigger = Schemas['Trigger']
 export type Team = Schemas['Team']
+export type JiraSettings = Schemas['JiraSettings']
+export type ConfluenceSettings = Schemas['ConfluenceSettings']
 export type Template = Schemas['Template']
 export type Tlp = Schemas['Tlp']
 export type Pap = Schemas['Pap']
@@ -66,6 +68,7 @@ export const api = createClient<paths>({
 /** Turn an API error body into a readable message, including each validation problem. */
 export function describeError(error: unknown, status: number): string {
   const detail = (error as { detail?: unknown } | undefined)?.detail
+  if (typeof detail === 'string' && detail) return detail
   if (!Array.isArray(detail) || detail.length === 0) return `Request failed (${status})`
   return (detail as Schemas['ValidationError'][])
     .map((d) => {

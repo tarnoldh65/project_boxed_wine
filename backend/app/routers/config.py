@@ -4,12 +4,15 @@ from fastapi import APIRouter
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
-from app import cases, tenant_config
+from app import cases, connections, outbound, tenant_config
 from app.auth import TenantContext, require
+from app.connections import ConnectionOut
 from app.db import Db
 from app.tenant_config import (
+    ConfluenceSettings,
     CustomField,
     EscalationRule,
+    JiraSettings,
     Regime,
     Severity,
     State,
@@ -58,8 +61,20 @@ async def put_severity(body: Severity, ctx: Manager, db: Db) -> TenantConfig:
     return await _replace(db, ctx, "severity", body)
 
 
+@router.get("/connections")
+async def get_connections(ctx: Manager) -> list[ConnectionOut]:
+    """The outside services this tenant may use, by name. Credentials never leave the server."""
+    found = connections.available(ctx.tenant.slug)
+    return [ConnectionOut(name=name, type=c.type) for name, c in found.items()]
+
+
 @router.put("/escalation-rules")
 async def put_escalation_rules(body: list[EscalationRule], ctx: Manager, db: Db) -> TenantConfig:
+    slack = connections.available(ctx.tenant.slug, "slack")
+    for i, rule in enumerate(body):
+        for j, name in enumerate(rule.slack):
+            if name not in slack:
+                cases.invalid("not a Slack connection this tenant may use", i, "slack", j)
     return await _replace(db, ctx, "escalation_rules", body)
 
 
@@ -75,6 +90,22 @@ async def put_teams(body: list[Team], ctx: Manager, db: Db) -> TenantConfig:
 @router.put("/templates")
 async def put_templates(body: list[Template], ctx: Manager, db: Db) -> TenantConfig:
     return await _replace(db, ctx, "templates", body)
+
+
+@router.put("/jira")
+async def put_jira(ctx: Manager, db: Db, body: JiraSettings | None = None) -> TenantConfig:
+    if problem := outbound.setup_problem(ctx.tenant.slug, "jira", body):
+        cases.invalid(problem, "connection")
+    return await _replace(db, ctx, "jira", body)
+
+
+@router.put("/confluence")
+async def put_confluence(
+    ctx: Manager, db: Db, body: ConfluenceSettings | None = None
+) -> TenantConfig:
+    if problem := outbound.setup_problem(ctx.tenant.slug, "confluence", body):
+        cases.invalid(problem, "connection")
+    return await _replace(db, ctx, "confluence", body)
 
 
 @router.put("/regimes")

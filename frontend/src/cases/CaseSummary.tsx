@@ -281,6 +281,7 @@ export function CaseSummary({
   }
   const action = useMutation(caseAction)
   const acknowledge = useMutation(caseAction)
+  const jira = useMutation(caseAction)
 
   const run = (call: CaseCall, done: () => void) => action.mutate(call, { onSuccess: done })
 
@@ -328,6 +329,14 @@ export function CaseSummary({
           {current.major_incident_reason}
         </p>
       )}
+      {current.jira && (
+        <p>
+          Jira issue{' '}
+          <a href={current.jira.url} target="_blank" rel="noreferrer">
+            {current.jira.issue_key}
+          </a>
+        </p>
+      )}
 
 
       <div className="inline-form">
@@ -339,6 +348,15 @@ export function CaseSummary({
             }
           >
             Acknowledge
+          </button>
+        )}
+        {view.canWrite && config.jira && !current.jira && (
+          <button
+            type="button"
+            disabled={jira.isPending}
+            onClick={() => jira.mutate(() => api.POST('/api/tenants/{slug}/cases/{number}/jira', path))}
+          >
+            Create Jira issue
           </button>
         )}
         {view.canWrite && (
@@ -455,6 +473,7 @@ export function CaseSummary({
         )}
       </div>
       {acknowledge.error && <p role="alert">{acknowledge.error.message}</p>}
+      {jira.error && <p role="alert">{jira.error.message}</p>}
 
       <CaseTabs
         current={current}

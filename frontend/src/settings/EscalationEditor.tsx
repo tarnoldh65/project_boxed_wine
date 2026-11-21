@@ -1,5 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api, type EscalationRule, type Team, type Trigger } from '../api/client'
+import { load } from '../api/queries'
 import { SaveBar } from './SaveBar'
 import { removeAt, splitList, updateAt, useSaveSection } from './editing'
 
@@ -37,6 +39,19 @@ export function EscalationEditor({
   teams: Team[]
 }) {
   const [draft, setDraft] = useState(() => rules.map(toRow))
+  const connections = useQuery({
+    queryKey: ['connections', slug],
+    queryFn: load('connections', () =>
+      api.GET('/api/tenants/{slug}/config/connections', { params: { path: { slug } } }),
+    ),
+  })
+  const slack = connections.data?.filter((c) => c.type === 'slack') ?? []
+
+  function toggleSlack(index: number, name: string, on: boolean) {
+    const current = draft[index].slack ?? []
+    const next = on ? [...current, name] : current.filter((n) => n !== name)
+    setDraft(updateAt(draft, index, { slack: next }))
+  }
   const save = useSaveSection(slug, (body: EscalationRule[]) =>
     api.PUT('/api/tenants/{slug}/config/escalation-rules', { params: { path: { slug } }, body }),
   )
@@ -116,6 +131,25 @@ export function EscalationEditor({
                 onChange={(e) => setDraft(updateAt(draft, i, { webhook: e.target.value }))}
               />
             </label>
+            <div>
+              Slack{' '}
+              {slack.length === 0 && (
+                <span className="note-meta">
+                  No Slack connection is set up for this tenant (see docs/integrations.md).
+                </span>
+              )}
+              {slack.map(({ name }) => (
+                <label key={name}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Rule ${i + 1} Slack ${name}`}
+                    checked={(rule.slack ?? []).includes(name)}
+                    onChange={(e) => toggleSlack(i, name, e.target.checked)}
+                  />{' '}
+                  {name}
+                </label>
+              ))}
+            </div>
             <label>
               Reassign to team{' '}
               <select
@@ -152,6 +186,7 @@ export function EscalationEditor({
               severities: [],
               emailsText: '',
               webhook: '',
+              slack: [],
               reassign_to_team: null,
             },
           ])

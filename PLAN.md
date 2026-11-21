@@ -2,7 +2,7 @@
 
 Scope: every priority **M** item in `cyber-ir-case-management-requirements.md`, plus multi-tenancy (FR-101, a C item pulled in by decision). Other S and C items are out of scope unless an M item depends on them (noted inline). Each phase ends with its success criteria checked off; a phase is not started until the previous one is complete.
 
-Status: **Phase 15 complete.** All phases done, including the UI redesign (section 2a).
+Status: **Phase 19 complete.** Outbound integrations (Phases 16-19, section 2b) are built and verified locally; testing against live Slack, Jira, and Confluence is pending (checklist in `docs/integrations.md`).
 
 ---
 
@@ -246,6 +246,65 @@ Frames and what opens them:
 
 ---
 
+## 2b. Outbound integrations: Slack, Jira, Confluence
+
+Goal: send escalations to Slack, create Jira issues from cases, and publish case reports to Confluence. Built and tested here against recorded API contracts; tested against real Slack and Atlassian systems by the project owner.
+
+Approach:
+- **Connections live in the deployment secret.** One setting, `CASEMGR_CONNECTIONS`, holds named connections as JSON, provisioned with the other secrets through External Secrets:
+
+  ```json
+  {
+    "slack-soc": {"type": "slack", "webhook_url": "https://hooks.slack.com/services/...", "tenants": ["detect-respond"]},
+    "atlassian": {"type": "jira", "base_url": "https://acme.atlassian.net", "auth": "basic", "user": "svc@acme.com", "token": "...", "tenants": ["detect-respond", "insider-threat"]},
+    "wiki": {"type": "confluence", "base_url": "https://acme.atlassian.net/wiki", "auth": "bearer", "token": "...", "tenants": ["detect-respond"]}
+  }
+  ```
+
+  `auth` is `basic` (Atlassian Cloud: account email and API token) or `bearer` (Data Center personal access token). `tenants` lists the tenants that may use a connection. Tokens never reach the database, the API, or the browser; Settings shows connection names and types only.
+- **Slack uses incoming webhooks.** An escalation rule can name Slack connections next to its emails and webhook. Messages go through the existing notifications outbox, so they get the same retries and delivery jobs.
+- **Jira:** one issue per case, created on request from the case. Issues are created with the REST API v2 (`POST /rest/api/2/issue`), which takes a plain-text description on both Cloud and Data Center. The issue key and link are kept on the case.
+- **Confluence:** a case report (executive, technical, or post-incident review) is published as a page built from the same blocks as the PDF and DOCX, in Confluence storage format, through the REST API (`/rest/api/content`). Publishing again updates the same page as a new version.
+- **What leaves the tool is guarded:**
+  - Slack gets the case number, severity, trigger, and a link back. It gets no description, and a restricted case shows no title.
+  - Jira gets the title, severity, category, and a link back.
+  - Confluence gets the full report with its TLP and privilege markings.
+  - Restricted and TLP:RED cases cannot go to Jira or Confluence. A privileged case goes only by someone with `legal:manage`.
+  - Every send is audited and recorded on the case timeline.
+- **Outbound network:** HTTPS (443) only, which the NetworkPolicies already allow. Connections must use `https` URLs.
+
+### Phase 16 - Connections and Slack
+
+- [x] `CASEMGR_CONNECTIONS` parsed and validated at startup (types, `https` URLs, auth fields); an invalid value stops the app with a message that names the problem but never repeats a value
+- [x] `GET /tenants/{slug}/config/connections` lists the names and types a tenant may use, for admins; no secrets in any response or log
+- [x] Escalation rules gain `slack` (connection names), checked against the tenant's connections when saved and again at delivery; Settings offers them in the escalation editor
+- [x] The outbox delivers Slack messages (Block Kit with a plain-text fallback) with the existing retries; restricted cases show no title, and titles are escaped for Slack's markup
+- [x] Tests: connection parsing and tenant scoping; rule validation; the exact Slack payload; delivery retry and failure handling; no secret in API output, audit details, or recorded delivery errors (failures name the connection and HTTP status, never the URL)
+
+### Phase 17 - Jira issues
+
+- [x] Tenant config: Jira connection, project key, and issue type, set by admins in Settings
+- [x] `POST /cases/{n}/jira` creates the issue: summary `[#N] title`, a description with severity, category, state, and a link back to the case, and labels `casemgr` and the severity. One issue per case; asking again returns the existing one
+- [x] The issue key and link are shown on the case summary and recorded on the timeline ("Jira issue created: SOC-123"); merges move the link to the target case
+- [x] The guards apply: restricted and TLP:RED cases are refused, privileged cases need `legal:manage`, and Jira errors are reported to the user readably
+- [x] Tests: the request matches the Jira v2 contract for both auth types; idempotency; guards and permissions; error mapping; the UI shows the link
+
+### Phase 18 - Confluence pages
+
+- [x] Tenant config: Confluence connection, space key, and optional parent page, set by admins in Settings
+- [x] `POST /cases/{n}/reports/{kind}/confluence` publishes the report: the title is `Case #N - <report name> (<tenant>)`, the content is the report blocks in storage format, everything is HTML-escaped, and the markings sit at the top. Publishing again updates the same page with the version incremented
+- [x] The page link is shown beside each report and recorded on the timeline
+- [x] The guards apply as for Jira
+- [x] Tests: storage-format output for every block type, escaping of hostile text; create and update requests match the Confluence contract; guards; the UI shows the link
+
+### Phase 19 - Documentation and verification
+
+- [x] `docs/integrations.md`: creating a Slack incoming webhook, an Atlassian API token or personal access token and the permissions it needs, the `CASEMGR_CONNECTIONS` format, rotation, and a manual test checklist for each integration
+- [x] `docs/deployment.md` and the Helm values document the new secret key
+- [x] Backend, frontend, and E2E suites, lint, type checks, Semgrep, pip-audit, npm audit, and Trivy clean
+
+---
+
 ## 3. Recommended deployment platforms and tools
 
 | Need | Recommendation |
@@ -296,3 +355,4 @@ SR-08's annual third-party pentest and vulnerability disclosure program are orga
 7. Case sections are tabs of the case frame, kept mounted once visited so typing survives switching. Any section can pop out into its own frame, docked directly under the case, and go back as a tab. This replaced opening a frame per section wherever there was space, which scattered a case across the workspace.
 
 8. The case timeline records actions taken in the app as they happen (case opened, alerts, acknowledgement, state and other changes, major incident, legal hold, privilege, tasks, notes, comments, observables, assets, evidence, merges and splits, review and regulatory work), with source `Case Manager` and the person who acted. These entries cannot be removed. Note text and the reasons for legal hold and privilege stay out of them; manual entries are unchanged.
+9. Outbound integrations: connection credentials live in the deployment secret (`CASEMGR_CONNECTIONS`) and tenants pick connections by name; Slack uses incoming webhooks; what leaves the tool is guarded (minimal Slack content, no restricted or TLP:RED cases to Jira or Confluence, privileged cases only by `legal:manage`).

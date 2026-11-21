@@ -38,7 +38,8 @@ config:
 
 # Existing Secret (for example from External Secrets) with the secret settings as
 # CASEMGR_* keys: OIDC_CLIENT_SECRET, SECRET_KEY, and as needed S3_ACCESS_KEY,
-# S3_SECRET_KEY, SMTP_USERNAME, SMTP_PASSWORD, IMAP_URL.
+# S3_SECRET_KEY, SMTP_USERNAME, SMTP_PASSWORD, IMAP_URL, and CONNECTIONS (Slack, Jira,
+# and Confluence; see docs/integrations.md).
 secretName: casemgr
 
 # The CloudNativePG cluster from the casemgr-db chart, in the same namespace.

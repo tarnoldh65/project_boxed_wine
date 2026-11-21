@@ -226,6 +226,8 @@ export const CASE: Case = {
       },
     ],
   },
+  jira: null,
+  confluence: [],
   materiality: [
     {
       id: 'm1',

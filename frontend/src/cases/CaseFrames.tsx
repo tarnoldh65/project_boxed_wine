@@ -209,25 +209,53 @@ export function AssetsFrame({ view, split }: { view: CaseView; split: SplitSelec
 }
 
 export function ReportsFrame({ view }: { view: CaseView }) {
-  const { slug, current } = view
+  const { slug, current, config, canWrite } = view
+  const queryClient = useQueryClient()
+  const publish = useMutation({
+    mutationFn: async (kind: (typeof REPORTS)[number][0]) => {
+      const { data, error, response } = await api.POST(
+        '/api/tenants/{slug}/cases/{number}/reports/{kind}/confluence',
+        { params: { path: { slug, number: current.number, kind } } },
+      )
+      if (!data) throw new Error(describeError(error, response.status))
+      return data
+    },
+    onSuccess: (shown) => queryClient.setQueryData(['case', slug, shown.number], shown),
+  })
   return (
-    <ul>
-      {REPORTS.map(([kind, label]) => (
-        <li key={kind}>
-          {label}:{' '}
-          {(['pdf', 'docx'] as const).map((format) => (
-            <a
-              key={format}
-              className="report-link"
-              href={`/api/tenants/${slug}/cases/${current.number}/reports/${kind}?format=${format}`}
-              download
-            >
-              {label} ({format.toUpperCase()})
-            </a>
-          ))}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul>
+        {REPORTS.map(([kind, label]) => {
+          const page = current.confluence.find((p) => p.kind === kind)
+          return (
+            <li key={kind}>
+              {label}:{' '}
+              {(['pdf', 'docx'] as const).map((format) => (
+                <a
+                  key={format}
+                  className="report-link"
+                  href={`/api/tenants/${slug}/cases/${current.number}/reports/${kind}?format=${format}`}
+                  download
+                >
+                  {label} ({format.toUpperCase()})
+                </a>
+              ))}
+              {page && (
+                <a className="report-link" href={page.url} target="_blank" rel="noreferrer">
+                  {label} in Confluence (version {page.version})
+                </a>
+              )}
+              {canWrite && config.confluence && (
+                <button type="button" disabled={publish.isPending} onClick={() => publish.mutate(kind)}>
+                  {page ? 'Update' : 'Publish'} {label} in Confluence
+                </button>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+      {publish.error && <p role="alert">{publish.error.message}</p>}
+    </>
   )
 }
 

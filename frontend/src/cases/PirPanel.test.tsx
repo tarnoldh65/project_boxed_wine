@@ -83,7 +83,7 @@ test('reopens a finished action and adds one without owner or due date', async (
     owner_id: null,
     due_at: null,
   })
-  expect(await screen.findByRole('alert')).toHaveTextContent('Request failed (403)')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Not allowed')
 })
 
 test('read-only users see the review without controls', () => {

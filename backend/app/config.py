@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +35,8 @@ class Settings(BaseSettings):
     s3_access_key: str | None = None
     s3_secret_key: str | None = None
     s3_part_size_mb: int = 64
+    # Named connections to Slack, Jira, and Confluence, as JSON (see app/connections.py).
+    connections: SecretStr = SecretStr("{}")
     malware_max_mb: int = 100
 
 
