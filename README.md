@@ -63,7 +63,7 @@ After changing API routes or models, run the backend tests (they regenerate `bac
 
 ## Kubernetes
 
-Production deployment uses the Helm charts in `deploy/helm/`; see `docs/deployment.md` (secure deployment) and `docs/operations.md` (backups, restore, key rotation, load testing). To run the charts locally on kind (requires `kind` and `helm`; stop the compose stack first, since they share ports):
+Production deployment uses the Helm charts in `deploy/helm/`; see `docs/deployment.md` (secure deployment), `docs/operations.md` (backups, restore, key rotation, load testing), and `docs/integrations.md` (Slack, Jira, and Confluence). To run the charts locally on kind (requires `kind` and `helm`; stop the compose stack first, since they share ports):
 
 ```sh
 bash deploy/kind/up.sh              # app at https://localhost:8443

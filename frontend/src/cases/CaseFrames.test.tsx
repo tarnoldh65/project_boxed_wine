@@ -422,3 +422,62 @@ test('a change from another frame shows in the form without losing what is being
   )
   expect(await requests.filter((r) => r.method === 'PATCH')[1].json()).toEqual({ description: 'Half-written' })
 })
+
+const INTEGRATED = {
+  ...CONFIG,
+  jira: { connection: 'jira', project_key: 'SOC', issue_type: 'Task' },
+  confluence: { connection: 'wiki', space_key: 'IR', parent_page_id: null },
+}
+
+test('creates a Jira issue and links to it', async () => {
+  const issue = { issue_key: 'SOC-7', url: 'https://acme.atlassian.net/browse/SOC-7', created_by: 'user:u1', created_at: '2026-11-20T10:00:00Z' }
+  const requests = api(CASE, {
+    'GET /api/tenants/dr/config': () => json(INTEGRATED),
+    [`POST ${BASE}/jira`]: () => json({ ...CASE, jira: issue }),
+  })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Create Jira issue' }))
+  await sent(requests, 'POST', `${BASE}/jira`)
+  expect(await screen.findByRole('link', { name: 'SOC-7' })).toHaveAttribute('href', issue.url)
+  expect(screen.queryByRole('button', { name: 'Create Jira issue' })).not.toBeInTheDocument()
+})
+
+test('says why Jira refused', async () => {
+  api(CASE, {
+    'GET /api/tenants/dr/config': () => json(INTEGRATED),
+    [`POST ${BASE}/jira`]: () => json({ detail: 'Jira refused the request (HTTP 400): project: required' }, 502),
+  })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Create Jira issue' }))
+  expect(await screen.findByText(/Jira refused the request/)).toBeInTheDocument()
+})
+
+test('integrations are offered only once set up', async () => {
+  api()
+  open()
+  await screen.findByRole('heading', { name: '#7 Suspicious email' })
+  expect(screen.queryByRole('button', { name: 'Create Jira issue' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /in Confluence$/ })).not.toBeInTheDocument()
+})
+
+test('publishes a report to Confluence and links to the page', async () => {
+  const page = {
+    kind: 'executive',
+    url: 'https://wiki.acme.example/spaces/IR/pages/777',
+    version: 1,
+    published_by: 'user:u1',
+    published_at: '2026-11-20T10:00:00Z',
+  }
+  const requests = api(CASE, {
+    'GET /api/tenants/dr/config': () => json(INTEGRATED),
+    [`POST ${BASE}/reports/executive/confluence`]: () => json({ ...CASE, confluence: [page] }),
+  })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Publish Executive summary in Confluence' }))
+  await sent(requests, 'POST', `${BASE}/reports/executive/confluence`)
+  expect(await screen.findByRole('link', { name: 'Executive summary in Confluence (version 1)' })).toHaveAttribute(
+    'href',
+    page.url,
+  )
+  expect(screen.getByRole('button', { name: 'Update Executive summary in Confluence' })).toBeInTheDocument()
+})

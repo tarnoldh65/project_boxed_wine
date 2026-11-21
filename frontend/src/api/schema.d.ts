@@ -193,6 +193,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/config/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Connections
+         * @description The outside services this tenant may use, by name. Credentials never leave the server.
+         */
+        get: operations["get_connections_api_tenants__slug__config_connections_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tenants/{slug}/config/escalation-rules": {
         parameters: {
             query?: never;
@@ -237,6 +257,40 @@ export interface paths {
         get?: never;
         /** Put Templates */
         put: operations["put_templates_api_tenants__slug__config_templates_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/jira": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Jira */
+        put: operations["put_jira_api_tenants__slug__config_jira_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/config/confluence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Confluence */
+        put: operations["put_confluence_api_tenants__slug__config_confluence_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1087,6 +1141,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tenants/{slug}/cases/{number}/jira": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Jira Issue */
+        post: operations["create_jira_issue_api_tenants__slug__cases__number__jira_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tenants/{slug}/cases/{number}/reports/{kind}/confluence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Report */
+        post: operations["publish_report_api_tenants__slug__cases__number__reports__kind__confluence_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -1429,6 +1517,9 @@ export interface components {
             /** Disclosures */
             disclosures: components["schemas"]["DisclosureOut"][];
             pir: components["schemas"]["PirOut"];
+            jira: components["schemas"]["JiraIssueOut"] | null;
+            /** Confluence */
+            confluence: components["schemas"]["ConfluencePageOut"][];
         };
         /** CaseQueue */
         CaseQueue: {
@@ -1606,6 +1697,38 @@ export interface components {
             field: string;
             /** Value */
             value: string;
+        };
+        /** ConfluencePageOut */
+        ConfluencePageOut: {
+            /** Kind */
+            kind: string;
+            /** Url */
+            url: string;
+            /** Version */
+            version: number;
+            /** Published By */
+            published_by: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+        };
+        /** ConfluenceSettings */
+        ConfluenceSettings: {
+            /** Connection */
+            connection: string;
+            /** Space Key */
+            space_key: string;
+            /** Parent Page Id */
+            parent_page_id?: string | null;
+        };
+        /** ConnectionOut */
+        ConnectionOut: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
         };
         /**
          * CustodyAction
@@ -1788,6 +1911,11 @@ export interface components {
             notify_emails: string[];
             /** Webhook Url */
             webhook_url?: string | null;
+            /**
+             * Slack
+             * @default []
+             */
+            slack: string[];
             /** Reassign To Team */
             reassign_to_team?: string | null;
         };
@@ -1878,6 +2006,32 @@ export interface components {
             new_case: boolean;
             /** Duplicate */
             duplicate: boolean;
+        };
+        /** JiraIssueOut */
+        JiraIssueOut: {
+            /** Issue Key */
+            issue_key: string;
+            /** Url */
+            url: string;
+            /** Created By */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** JiraSettings */
+        JiraSettings: {
+            /** Connection */
+            connection: string;
+            /** Project Key */
+            project_key: string;
+            /**
+             * Issue Type
+             * @default Task
+             */
+            issue_type: string;
         };
         /**
          * Kind
@@ -2858,6 +3012,8 @@ export interface components {
              *     ]
              */
             regimes: components["schemas"]["Regime"][];
+            jira?: components["schemas"]["JiraSettings"] | null;
+            confluence?: components["schemas"]["ConfluenceSettings"] | null;
         };
         /** TenantIn */
         TenantIn: {
@@ -3427,6 +3583,37 @@ export interface operations {
             };
         };
     };
+    get_connections_api_tenants__slug__config_connections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     put_escalation_rules_api_tenants__slug__config_escalation_rules_put: {
         parameters: {
             query?: never;
@@ -3509,6 +3696,76 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Template"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_jira_api_tenants__slug__config_jira_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["JiraSettings"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_confluence_api_tenants__slug__config_confluence_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfluenceSettings"] | null;
             };
         };
         responses: {
@@ -5291,6 +5548,71 @@ export interface operations {
                 content: {
                     "application/pdf": string;
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_jira_issue_api_tenants__slug__cases__number__jira_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_report_api_tenants__slug__cases__number__reports__kind__confluence_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                number: number;
+                kind: components["schemas"]["Kind"];
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseOut"];
                 };
             };
             /** @description Validation Error */

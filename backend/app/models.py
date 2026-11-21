@@ -212,6 +212,7 @@ class Notification(Base):
     step: Mapped[str]
     emails: Mapped[list[str]] = mapped_column(ARRAY(Text))
     webhook: Mapped[str | None]
+    slack: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     sent_at: Mapped[datetime | None]
     attempts: Mapped[int] = mapped_column(server_default="0")
@@ -291,6 +292,36 @@ class TimelineEvent(Base):
     recorded_at: Mapped[datetime] = mapped_column(server_default=func.now())
     # Recorded by the app as an action happened, rather than entered by hand.
     automatic: Mapped[bool] = mapped_column(server_default="false")
+
+
+class JiraIssue(Base):
+    """The Jira issue made from a case; one per case."""
+
+    __tablename__ = "jira_issues"
+
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    connection: Mapped[str]
+    issue_key: Mapped[str]
+    url: Mapped[str]
+    created_by: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class ConfluencePage(Base):
+    """A case report published to Confluence; one page per case and report kind."""
+
+    __tablename__ = "confluence_pages"
+
+    case_id: Mapped[UUID] = mapped_column(ForeignKey("cases.id"), primary_key=True)
+    kind: Mapped[str] = mapped_column(primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
+    connection: Mapped[str]
+    page_id: Mapped[str]
+    url: Mapped[str]
+    version: Mapped[int]
+    published_by: Mapped[str]
+    published_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class Note(Base):

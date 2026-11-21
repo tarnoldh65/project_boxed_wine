@@ -227,9 +227,48 @@ test('adds and removes escalation rules', async () => {
       severities: ['high'],
       notify_emails: ['ir@example.com', 'lead@example.com'],
       webhook_url: 'https://hooks.example.com/x',
+      slack: [],
       reassign_to_team: null,
     },
   ])
+})
+
+test('escalation rules can post to the Slack connections the tenant may use', async () => {
+  let config = CONFIG
+  const requests = mockApi({
+    [`GET ${BASE}`]: () => json(config),
+    'GET /api/tenants/dr/members': () => json(MEMBERS),
+    [`GET ${BASE}/connections`]: () =>
+      json([
+        { name: 'slack-soc', type: 'slack' },
+        { name: 'slack-leads', type: 'slack' },
+        { name: 'wiki', type: 'confluence' },
+      ]),
+    [`PUT ${BASE}/escalation-rules`]: async (request) => {
+      config = { ...config, escalation_rules: await request.json() }
+      return json(config)
+    },
+  })
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Escalation rules' })
+  const rules = section('Escalation rules')
+  fireEvent.click(rules.getByRole('button', { name: 'Add rule' }))
+  fireEvent.change(rules.getByLabelText('Rule 1 name'), { target: { value: 'Page Slack' } })
+  fireEvent.click(await rules.findByLabelText('Rule 1 Slack slack-leads'))
+  expect(rules.queryByLabelText('Rule 1 Slack wiki')).not.toBeInTheDocument()
+  fireEvent.click(rules.getByRole('button', { name: 'Save' }))
+  expect((await lastBody(requests, '/escalation-rules'))[0]).toMatchObject({
+    name: 'Page Slack',
+    slack: ['slack-leads'],
+  })
+})
+
+test('the escalation editor says when no Slack connection is set up', async () => {
+  mockConfig()
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Escalation rules' })
+  fireEvent.click(section('Escalation rules').getByRole('button', { name: 'Add rule' }))
+  expect(await section('Escalation rules').findByText(/No Slack connection is set up/)).toBeInTheDocument()
 })
 
 test('reports a failed load', async () => {
@@ -314,6 +353,7 @@ test('escalation rules can reassign to a team', async () => {
       severities: [],
       notify_emails: [],
       webhook_url: null,
+      slack: [],
       reassign_to_team: 'tier2',
     },
   ])
@@ -384,4 +424,40 @@ test('edits notification regimes', async () => {
     },
   ])
   expect(await regimes.findByRole('status')).toHaveTextContent('Saved')
+})
+
+test('sets up Jira and Confluence with the connections the tenant may use', async () => {
+  let config: TenantConfig = { ...CONFIG, confluence: { connection: 'wiki', space_key: 'IR', parent_page_id: null } }
+  const requests = mockApi({
+    [`GET ${BASE}`]: () => json(config),
+    'GET /api/tenants/dr/members': () => json(MEMBERS),
+    [`GET ${BASE}/connections`]: () =>
+      json([
+        { name: 'jira', type: 'jira' },
+        { name: 'wiki', type: 'confluence' },
+      ]),
+    [`PUT ${BASE}/jira`]: async (request) => {
+      config = { ...config, jira: await request.json() }
+      return json(config)
+    },
+    [`PUT ${BASE}/confluence`]: async (request) => {
+      config = { ...config, confluence: await request.json() }
+      return json(config)
+    },
+  })
+  renderInTenant(<Settings />, ADMIN)
+  await screen.findByRole('heading', { name: 'Jira' })
+  const jira = section('Jira')
+  await jira.findByRole('option', { name: 'jira' })
+  expect(jira.queryByRole('option', { name: 'wiki' })).not.toBeInTheDocument()
+  fireEvent.change(jira.getByLabelText('Jira connection'), { target: { value: 'jira' } })
+  fireEvent.change(jira.getByLabelText('Jira project key'), { target: { value: 'SOC' } })
+  fireEvent.click(jira.getByRole('button', { name: 'Save' }))
+  expect(await lastBody(requests, '/jira')).toEqual({ connection: 'jira', project_key: 'SOC', issue_type: 'Task' })
+
+  const wiki = section('Confluence')
+  expect(wiki.getByLabelText('Confluence space key')).toHaveValue('IR')
+  fireEvent.change(wiki.getByLabelText('Confluence connection'), { target: { value: '' } })
+  fireEvent.click(wiki.getByRole('button', { name: 'Save' }))
+  expect(await lastBody(requests, '/confluence')).toBeNull()
 })

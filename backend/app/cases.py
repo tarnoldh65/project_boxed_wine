@@ -185,6 +185,25 @@ class AssetOut(BaseModel):
     external_id: str | None
 
 
+class JiraIssueOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    issue_key: str
+    url: str
+    created_by: str
+    created_at: datetime
+
+
+class ConfluencePageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    kind: str
+    url: str
+    version: int
+    published_by: str
+    published_at: datetime
+
+
 class CaseOut(CaseFields):
     merged_into: int | None
     alerts: list[AlertOut]
@@ -200,6 +219,8 @@ class CaseOut(CaseFields):
     materiality: list[DecisionOut]
     disclosures: list[DisclosureOut]
     pir: PirOut
+    jira: JiraIssueOut | None
+    confluence: list[ConfluencePageOut]
 
 
 class MarkingIn(BaseModel):
@@ -457,6 +478,9 @@ async def case_out(
         merged_into = await db.scalar(select(Case.number).where(Case.id == case.merged_into_id))
     now = datetime.now(UTC)
     case_clocks = clocks(case, config, now)
+    from app import outbound  # outbound builds on this module
+
+    jira, pages = await outbound.for_case(db, case)
     return CaseOut(
         **CaseFields.model_validate(case).model_dump(exclude={"sla_status"}),
         sla_status=sla.worst(case_clocks),
@@ -474,6 +498,8 @@ async def case_out(
         materiality=await regulatory.decisions(db, case),
         disclosures=await regulatory.disclosures(db, case),
         pir=await pir.for_case(db, case),
+        jira=jira,
+        confluence=pages,
     )
 
 
@@ -854,6 +880,9 @@ async def merge(
     moved_evidence = await evidence.move(db, source, target)
     moved_journal = await journal.move(db, source, target)
     moved_regulatory = await regulatory.move(db, source, target)
+    from app import outbound
+
+    moved_jira = await outbound.move_issue(db, source, target)
     source.state = config.terminal_states[0]
     source.resolution = Resolution.MERGED
     source.merged_into_id = target.id
@@ -870,6 +899,7 @@ async def merge(
         evidence=moved_evidence,
         **moved_journal,
         **moved_regulatory,
+        jira_issue=moved_jira,
     )
     await ctx.audit(db, "case.absorb", f"case:{target.number}", source=source.number)
     await journal.record(db, source, ctx.principal.actor, f"Merged into case #{target.number}")

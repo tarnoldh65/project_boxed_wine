@@ -4,6 +4,7 @@ import { useTenant } from '../tenant'
 import { TokensPanel } from '../TokensPanel'
 import { EscalationEditor } from './EscalationEditor'
 import { FieldsEditor } from './FieldsEditor'
+import { IntegrationsEditor } from './IntegrationsEditor'
 import { PlaybookEditor } from './PlaybookEditor'
 import { RegimesEditor } from './RegimesEditor'
 import { SeverityEditor } from './SeverityEditor'
@@ -20,6 +21,7 @@ const WORKFLOW_SECTIONS = [
   ['templates', 'Case templates'],
   ['playbooks', 'Playbooks'],
   ['regimes', 'Notification regimes'],
+  ['integrations', 'Integrations'],
 ]
 
 export function Settings() {
@@ -80,6 +82,9 @@ export function Settings() {
             </div>
             <div id="regimes" className="panel">
               <RegimesEditor slug={slug} regimes={config.data.regimes} />
+            </div>
+            <div id="integrations" className="panel">
+              <IntegrationsEditor slug={slug} config={config.data} />
             </div>
           </section>
         )}

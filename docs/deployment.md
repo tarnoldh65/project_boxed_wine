@@ -56,7 +56,7 @@ The charts never create secrets. Provision them with External Secrets Operator (
 
 | Secret | Keys | Used by |
 |---|---|---|
-| `casemgr` | `CASEMGR_OIDC_CLIENT_SECRET`, `CASEMGR_SECRET_KEY` (32+ random bytes), and as needed `CASEMGR_S3_ACCESS_KEY`, `CASEMGR_S3_SECRET_KEY`, `CASEMGR_SMTP_USERNAME`, `CASEMGR_SMTP_PASSWORD`, `CASEMGR_IMAP_URL` | backend, jobs |
+| `casemgr` | `CASEMGR_OIDC_CLIENT_SECRET`, `CASEMGR_SECRET_KEY` (32+ random bytes), and as needed `CASEMGR_S3_ACCESS_KEY`, `CASEMGR_S3_SECRET_KEY`, `CASEMGR_SMTP_USERNAME`, `CASEMGR_SMTP_PASSWORD`, `CASEMGR_IMAP_URL`, `CASEMGR_CONNECTIONS` (Slack, Jira, and Confluence; see [integrations.md](integrations.md)) | backend, jobs |
 | `casemgr-db-runtime` | `username` (`casemgr_app`), `password`; type `kubernetes.io/basic-auth` | database chart (creates the role), backend, jobs |
 | backup credentials (`backup.credentialsSecret`) | `ACCESS_KEY_ID`, `ACCESS_SECRET_KEY` | database backups; omit when using IAM roles |
 

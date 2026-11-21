@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import audit
+from app import audit, connections
 from app.config import settings
 from app.db import SessionLocal, set_tenant
 from app.models import Case, Notification, Tenant
@@ -30,6 +30,7 @@ async def fire(
             continue
         emails = [str(e) for e in rule.notify_emails]
         webhook = str(rule.webhook_url) if rule.webhook_url else None
+        slack = list(rule.slack)
         fired = await db.scalar(
             insert(Notification)
             .values(
@@ -40,8 +41,9 @@ async def fire(
                 step=step,
                 emails=emails,
                 webhook=webhook,
+                slack=slack,
                 # A reassignment-only rule has nothing to deliver.
-                sent_at=None if emails or webhook else datetime.now(UTC),
+                sent_at=None if emails or webhook or slack else datetime.now(UTC),
             )
             .on_conflict_do_nothing(index_elements=["case_id", "rule", "trigger", "step"])
             .returning(Notification.id)
@@ -102,6 +104,47 @@ def post_webhook(url: str, content: dict[str, Any]) -> None:
     httpx2.post(url, json=content, timeout=10).raise_for_status()
 
 
+def slack_message(content: dict[str, Any], title: str | None) -> dict[str, Any]:
+    """A Slack message: the case, severity, and event, plus the title unless it is restricted."""
+
+    def escape(text: str) -> str:
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    case = f"Case #{content['case_number']}"
+    heading = f"{case}: {title}" if title else case
+    event = content["summary"].split(": ", 1)[1]
+    return {
+        "text": f"{heading} ({content['severity']}): {event} {content['url']}",
+        "blocks": [
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*<{content['url']}|{escape(heading)}>*"},
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"*{escape(content['severity'])}*"},
+                    {"type": "mrkdwn", "text": escape(event)},
+                    {"type": "mrkdwn", "text": escape(content["tenant"])},
+                ],
+            },
+        ],
+    }
+
+
+def post_slack(tenant: str, name: str, message: dict[str, Any]) -> None:
+    """Post to one of the tenant's Slack connections. Errors never include the webhook URL."""
+    connection = connections.available(tenant, "slack").get(name)
+    if not isinstance(connection, connections.SlackConnection):
+        raise RuntimeError(f"Slack connection {name!r} is not available to this tenant")
+    try:
+        response = httpx2.post(connection.webhook_url.get_secret_value(), json=message, timeout=10)
+    except httpx2.HTTPError as error:
+        raise RuntimeError(f"Slack connection {name!r} failed: {type(error).__name__}") from None
+    if response.status_code >= 400:
+        raise RuntimeError(f"Slack connection {name!r} answered HTTP {response.status_code}")
+
+
 async def _deliver_one(tenant: Tenant, notification_id: UUID) -> bool:
     async with SessionLocal() as db:
         await set_tenant(db, tenant.id)
@@ -113,6 +156,10 @@ async def _deliver_one(tenant: Tenant, notification_id: UUID) -> bool:
                 send_email(row.emails, content)
             if row.webhook:
                 post_webhook(row.webhook, content)
+            if row.slack:
+                message = slack_message(content, None if case.restricted else case.title)
+                for name in row.slack:
+                    post_slack(tenant.slug, name, message)
         except Exception as error:  # any delivery failure is retried later
             row.attempts += 1
             row.last_error = str(error)[:500]

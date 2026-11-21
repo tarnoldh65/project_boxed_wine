@@ -21,7 +21,7 @@ CASE_DATA = {
     "comments": "case_id", "timeline_events": "case_id", "evidence": "case_id",
     "case_observables": "case_id", "pirs": "case_id", "pir_actions": "case_id",
     "regulatory_clocks": "case_id", "materiality_decisions": "case_id", "disclosures": "case_id",
-    "notifications": "case_id",
+    "notifications": "case_id", "jira_issues": "case_id", "confluence_pages": "case_id",
     "note_revisions": "note_id IN (SELECT id FROM notes WHERE case_id",
     "custody_log": "evidence_id IN (SELECT id FROM evidence WHERE case_id",
 }  # fmt: skip
@@ -77,6 +77,11 @@ async def full_case(client: AsyncClient, tenant: str, owner: AsyncEngine) -> dic
             "SELECT tenant_id, id, 'edr', 't', '{}' FROM cases WHERE id = :id",
             "INSERT INTO notifications (tenant_id, case_id, rule, trigger, step, emails) "
             "SELECT tenant_id, id, 'r', 'case_created', '', '{}' FROM cases WHERE id = :id",
+            "INSERT INTO jira_issues (case_id, tenant_id, connection, issue_key, url, created_by) "
+            "SELECT id, tenant_id, 'jira', 'SOC-1', 'u', 'a' FROM cases WHERE id = :id",
+            "INSERT INTO confluence_pages (case_id, kind, tenant_id, connection, page_id, url, "
+            "version, published_by) "
+            "SELECT id, 'pir', tenant_id, 'wiki', '1', 'u', 1, 'a' FROM cases WHERE id = :id",
         ):
             await conn.execute(text(insert), {"id": case["id"]})
     return case

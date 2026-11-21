@@ -27,6 +27,7 @@ from app.models import TenantConfigRow
 Key = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$", max_length=40)]
 # Timestamps are accepted with any offset and kept in UTC (NFR-09).
 UtcDatetime = Annotated[AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
+ConnectionName = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_-]*$", max_length=40)]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 # A country or region code, optionally with a subdivision: EU, US, US-CA.
 Region = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9-]{1,9}$")]
@@ -168,13 +169,17 @@ class EscalationRule(BaseModel):
     severities: list[Key] = []  # empty means every severity
     notify_emails: list[EmailStr] = []
     webhook_url: HttpUrl | None = None
+    # Names of Slack connections; their webhook URLs stay in the deployment secret.
+    slack: list[ConnectionName] = []
     # Hand the case to this team and its on-call member.
     reassign_to_team: Key | None = None
 
     @model_validator(mode="after")
     def check_action(self) -> Self:
-        if not self.notify_emails and self.webhook_url is None and self.reassign_to_team is None:
-            raise ValueError(f"rule {self.name!r} needs an email, a webhook, or a reassignment")
+        if not (self.notify_emails or self.webhook_url or self.slack or self.reassign_to_team):
+            raise ValueError(
+                f"rule {self.name!r} needs an email, a webhook, Slack, or a reassignment"
+            )
         if self.webhook_url is not None and self.webhook_url.scheme != "https":
             raise ValueError(f"rule {self.name!r} webhook must use https")
         return self
@@ -447,6 +452,19 @@ DEFAULT_REGIMES = [
 ]
 
 
+class JiraSettings(BaseModel):
+    connection: ConnectionName
+    project_key: Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9_]{0,49}$")]
+    issue_type: Label = "Task"
+
+
+class ConfluenceSettings(BaseModel):
+    connection: ConnectionName
+    space_key: Annotated[str, StringConstraints(pattern=r"^~?[A-Za-z0-9_]{1,255}$")]
+    # Pages go under this page when set, else at the top of the space.
+    parent_page_id: Annotated[str, StringConstraints(pattern=r"^[0-9]{1,20}$")] | None = None
+
+
 class TenantConfig(BaseModel):
     states: list[State] = Field(min_length=2)
     custom_fields: list[CustomField]
@@ -456,6 +474,8 @@ class TenantConfig(BaseModel):
     teams: list[Team] = []
     templates: list[Template] = Field(default=DEFAULT_TEMPLATES, min_length=1)
     regimes: list[Regime] = DEFAULT_REGIMES
+    jira: JiraSettings | None = None
+    confluence: ConfluenceSettings | None = None
 
     @model_validator(mode="after")
     def check_references(self) -> Self:
